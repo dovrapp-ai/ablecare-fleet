@@ -2028,15 +2028,6 @@ function renderOptimizerResults(result, drivers){
       <div class="opt-driver-stats">${sched.rides?.length||0} rides · ${sched.totalMiles?.toFixed(1)||'?'} mi · Done ~${sched.estimatedFinish||'?'}</div>
     </div>`;
 
-    // Base start
-    html += `<div class="opt-ride-row" style="background:#f8fafc">
-      <div class="opt-ride-num" style="background:#6b82a8">🏠</div>
-      <div class="opt-ride-info">
-        <div class="opt-ride-time">Start</div>
-        <div class="opt-ride-name">Base — 3404 Old Court Rd, Pikesville</div>
-      </div>
-    </div>`;
-
     (sched.rides||[]).forEach((ride, ri)=>{
       const driversCopy = drivers.map(d=>d.name).filter(n=>n!==driver.name);
       const moveOptions = driversCopy.map(n=>`<option value="${n}">Move to ${n}</option>`).join('');
@@ -2062,12 +2053,12 @@ function renderOptimizerResults(result, drivers){
       </div>`;
     });
 
-    // Base end
-    html += `<div class="opt-ride-row" style="background:#f8fafc">
-      <div class="opt-ride-num" style="background:#6b82a8">🏠</div>
+    // Done row
+    html += `<div class="opt-ride-row" style="background:#f0fdf4">
+      <div class="opt-ride-num" style="background:#16a34a">✓</div>
       <div class="opt-ride-info">
-        <div class="opt-ride-time">${sched.estimatedFinish||'?'}</div>
-        <div class="opt-ride-name">Return to Base</div>
+        <div class="opt-ride-time" style="color:#16a34a">${sched.estimatedFinish||'?'}</div>
+        <div class="opt-ride-name" style="color:#16a34a">All rides complete · ${sched.totalMiles?.toFixed(1)||'?'} mi total</div>
       </div>
     </div>`;
 
