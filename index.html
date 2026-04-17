@@ -1583,7 +1583,7 @@ async function renderDayView(){
           ${r.driver?`<span class="ride-block-tag">👤 ${r.driver}${r.helper?' + '+r.helper:''}</span>`:'<span class="ride-block-tag" style="color:#f59e0b">No driver yet</span>'}
           ${r.van?`<span class="ride-block-tag">Van #${r.van}</span>`:''}
           ${r.wait==='yes'?`<span class="ride-block-tag" style="background:#fff7ed;color:#c2410c">⏳ Wait</span>`:''}
-          ${r.estimatedMiles?`<span class="ride-block-tag" style="background:#f0fdf4;color:#16a34a">🗺 ${r.estimatedMiles} mi</span>`:''}
+          ${r.estimatedMiles!=null&&r.estimatedMiles!==''?`<span class="ride-block-tag" style="background:#f0fdf4;color:#16a34a;font-weight:800">🗺 ${r.estimatedMiles} mi</span>`:''}
         </div>
         ${isUnpaid?`<div class="ride-block-unpaid">💰 Unpaid — follow up</div>`:''}
         ${r.price&&r.paid==='yes'?`<div style="font-size:10px;color:#16a34a;font-weight:700;margin-top:3px">✓ Paid ${r.price}</div>`:''}
@@ -2112,7 +2112,7 @@ async function applyOptimizedSchedule(){
     (sched.rides||[]).forEach(ride=>{
       if(ride.rideKey){
         updates[`rides/${ride.rideKey}/driver`] = driverName;
-        if(ride.estimatedMiles) updates[`rides/${ride.rideKey}/estimatedMiles`] = ride.estimatedMiles;
+        updates[`rides/${ride.rideKey}/estimatedMiles`] = ride.estimatedMiles||0;
       }
     });
   });
@@ -2121,7 +2121,7 @@ async function applyOptimizedSchedule(){
   }
   closeOptimizer();
   renderDayView();
-  alert('✅ Schedule applied! Drivers and miles have been saved to all rides.');
+  alert('✅ Schedule applied!');
 }
 
 function setOptProgress(pct, msg){
