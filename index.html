@@ -1583,6 +1583,7 @@ async function renderDayView(){
           ${r.driver?`<span class="ride-block-tag">👤 ${r.driver}${r.helper?' + '+r.helper:''}</span>`:'<span class="ride-block-tag" style="color:#f59e0b">No driver yet</span>'}
           ${r.van?`<span class="ride-block-tag">Van #${r.van}</span>`:''}
           ${r.wait==='yes'?`<span class="ride-block-tag" style="background:#fff7ed;color:#c2410c">⏳ Wait</span>`:''}
+          ${r.estimatedMiles?`<span class="ride-block-tag" style="background:#f0fdf4;color:#16a34a">🗺 ${r.estimatedMiles} mi</span>`:''}
         </div>
         ${isUnpaid?`<div class="ride-block-unpaid">💰 Unpaid — follow up</div>`:''}
         ${r.price&&r.paid==='yes'?`<div style="font-size:10px;color:#16a34a;font-weight:700;margin-top:3px">✓ Paid ${r.price}</div>`:''}
@@ -1976,6 +1977,7 @@ async function optimizeWithAI(rides, drivers, distMatrix, addresses){
       triptype: ride.triptype||'rt',
       waitRequired: ride.wait==='yes',
       estimatedReturn,
+      estimatedMiles: parseFloat(totalMilesThisRide.toFixed(1)),
       notes: ride.notes||''
     });
   });
@@ -2043,6 +2045,7 @@ function renderOptimizerResults(result, drivers){
             <span class="opt-tag">${ride.triptype==='rt'?'RT':'1 Way'}</span>
             ${ride.waitRequired?'<span class="opt-tag wait">⏳ Wait Required</span>':''}
             ${ride.estimatedReturn?`<span class="opt-tag gap">Return ~${ride.estimatedReturn}</span>`:''}
+            ${ride.estimatedMiles?`<span class="opt-tag" style="background:#f0fdf4;color:#16a34a">🗺 ${ride.estimatedMiles} mi</span>`:''}
           </div>
           ${ride.notes?`<div class="opt-ride-detail" style="color:#f59e0b;margin-top:4px">📝 ${ride.notes}</div>`:''}
         </div>
@@ -2104,12 +2107,12 @@ function moveRideToDriver(rideKey, fromDriver, toDriver, selectEl){
 
 async function applyOptimizedSchedule(){
   if(!optimizedSchedule) return;
-  // Update each ride in Firebase with assigned driver
   const updates = {};
   Object.entries(optimizedSchedule.schedules).forEach(([driverName, sched])=>{
     (sched.rides||[]).forEach(ride=>{
       if(ride.rideKey){
         updates[`rides/${ride.rideKey}/driver`] = driverName;
+        if(ride.estimatedMiles) updates[`rides/${ride.rideKey}/estimatedMiles`] = ride.estimatedMiles;
       }
     });
   });
@@ -2118,7 +2121,7 @@ async function applyOptimizedSchedule(){
   }
   closeOptimizer();
   renderDayView();
-  alert('✅ Schedule applied! Drivers have been assigned to all rides.');
+  alert('✅ Schedule applied! Drivers and miles have been saved to all rides.');
 }
 
 function setOptProgress(pct, msg){
