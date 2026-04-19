@@ -907,10 +907,22 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
             <button class="toggle-btn active" id="paid-no" onclick="setToggle('paid','no')">✗ No</button>
           </div>
         </div>
+        <div class="modal-field">
+          <label>Payment Method</label>
+          <div style="display:flex;gap:8px">
+            <button class="toggle-btn active" id="pay-cc" onclick="setToggle('paymethod','cc')">💳 Credit Card</button>
+            <button class="toggle-btn" id="pay-inv" onclick="setToggle('paymethod','invoice')">📄 Invoice</button>
+          </div>
+        </div>
         <div class="modal-field" id="miles-field" style="display:none">
           <label>Miles</label>
           <input type="text" id="r-miles" placeholder="e.g. 12.5"/>
         </div>
+      </div>
+      <div class="modal-field" id="wait-hours-field" style="display:none">
+        <label>⏳ Actual Wait Time (hours)</label>
+        <input type="number" id="r-wait-hours" placeholder="e.g. 1.5" step="0.5" min="0" oninput="onWaitHoursChange()"/>
+        <div id="r-wait-charge" style="font-size:12px;color:#00b4d8;margin-top:4px;display:none"></div>
       </div>
       <div class="modal-field">
         <label>Notes</label>
@@ -1011,6 +1023,14 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
       <label>Notes (optional)</label>
       <input type="text" id="fac-notes" placeholder="e.g. RT pickup from facility, dropoff at appointment"/>
     </div>
+    <div class="modal-field">
+      <label>📧 Billing Email (for invoices)</label>
+      <input type="email" id="fac-email" placeholder="e.g. billing@chapelhill.com"/>
+    </div>
+    <div class="modal-field">
+      <label>👤 Billing Contact Name</label>
+      <input type="text" id="fac-contact" placeholder="e.g. Jane Smith — Accounts Payable"/>
+    </div>
     <div class="modal-actions">
       <button class="modal-save" onclick="saveFacility()">Save</button>
       <button class="modal-delete" id="fac-delete-btn" onclick="deleteFacility()" style="display:none">Delete</button>
@@ -1078,7 +1098,7 @@ let addrDebounce=null,selectedCoords=null,lastQuery='';
 let tsMode='pp',ppOffset=0;
 let editContext={driverName:null,shiftKey:null};
 let rideEditKey=null;
-let rideToggles={ridetype:'wc',triptype:'rt',van:'',paid:'no',wait:'no'};
+let rideToggles={ridetype:'wc',triptype:'rt',van:'',paid:'no',wait:'no',paymethod:'cc'};
 let selectedDate=new Date();
 let miniMonthOffset=0;
 let ridesFilter='all';
@@ -1539,7 +1559,7 @@ function renderFacilitiesList(){
     const div=document.createElement('div');div.className='fac-item';
     div.innerHTML=`<div class="fac-item-info">
       <div class="fac-item-name">${f.name}</div>
-      <div class="fac-item-addr">${f.pickup?'📍 Pickup: '+f.pickup:'📍 Pickup: varies — enter manually'}${f.dropoff?'<br>🏥 Drop off: '+f.dropoff:''}</div>
+      <div class="fac-item-addr">${f.pickup?'📍 Pickup: '+f.pickup:'📍 Pickup: varies — enter manually'}${f.dropoff?'<br>🏥 Drop off: '+f.dropoff:''}${f.email?'<br>📧 '+f.email:''}</div>
       ${f.notes?`<div style="font-size:11px;color:#94a3b8;margin-top:3px">📝 ${f.notes}</div>`:''}
     </div>
     <button class="fac-edit-btn" onclick="openFacilityModal(${i})">Edit</button>`;
@@ -1555,6 +1575,8 @@ function openFacilityModal(idx){
   document.getElementById('fac-pickup').value=f?f.pickup:'';
   document.getElementById('fac-dropoff').value=f?f.dropoff:'';
   document.getElementById('fac-notes').value=f?f.notes:'';
+  document.getElementById('fac-email').value=f?f.email||'':'';
+  document.getElementById('fac-contact').value=f?f.contact||'':'';
   document.getElementById('fac-delete-btn').style.display=f?'block':'none';
   document.getElementById('facility-modal').style.display='flex';
 }
@@ -1568,7 +1590,9 @@ async function saveFacility(){
     pickupNote:document.getElementById('fac-pickup').value.trim()?'Auto-filled':'Enter pickup address',
     dropoff:document.getElementById('fac-dropoff').value.trim(),
     dropoffNote:document.getElementById('fac-dropoff').value.trim()?'Auto-filled':'Enter drop off address',
-    notes:document.getElementById('fac-notes').value.trim()
+    notes:document.getElementById('fac-notes').value.trim(),
+    email:document.getElementById('fac-email').value.trim(),
+    contact:document.getElementById('fac-contact').value.trim()
   };
   if(facEditKey!==null){FACILITIES[facEditKey]=fac;}
   else{FACILITIES.push(fac);}
@@ -2240,8 +2264,30 @@ function onFacilityType(){
 }
 function showHideStretcherFields(){
   const isStr=rideToggles.ridetype==='str';
+  const hasWait=rideToggles.wait==='yes';
   document.getElementById('helper-field').style.display=isStr?'block':'none';
   document.getElementById('miles-field').style.display=isStr?'block':'none';
+  const waitHours=document.getElementById('wait-hours-field');
+  if(waitHours) waitHours.style.display=hasWait?'block':'none';
+}
+function onWaitHoursChange(){
+  const hrs=parseFloat(document.getElementById('r-wait-hours').value)||0;
+  const rt=rideToggles.ridetype;
+  const chargeEl=document.getElementById('r-wait-charge');
+  if(!chargeEl)return;
+  if(hrs<=0){chargeEl.style.display='none';return;}
+  let charge=0;
+  if(rt==='str'){
+    // $150/hr, first 30 min free
+    const billableHrs=Math.max(0,hrs-0.5);
+    charge=billableHrs*150;
+    chargeEl.textContent=`Wait charge: ${billableHrs.toFixed(1)} hrs × $150/hr = $${charge.toFixed(2)} (first 30 min free)`;
+  }else{
+    // WC: $50/hr from minute 1
+    charge=hrs*50;
+    chargeEl.textContent=`Wait charge: ${hrs.toFixed(1)} hrs × $50/hr = $${charge.toFixed(2)}`;
+  }
+  chargeEl.style.display='block';
 }
 function setToggle(group,val){rideToggles[group]=val;updateRideToggles();if(group==='ridetype')showHideStretcherFields();}
 function updateRideToggles(){
@@ -2260,6 +2306,10 @@ function updateRideToggles(){
   if(waitYes) waitYes.classList.toggle('active',rideToggles.wait==='yes');
   if(waitNo) waitNo.classList.toggle('active',rideToggles.wait==='no');
   if(waitNote) waitNote.style.display=rideToggles.wait==='yes'?'block':'none';
+  const payCc=document.getElementById('pay-cc');
+  const payInv=document.getElementById('pay-inv');
+  if(payCc) payCc.classList.toggle('active',rideToggles.paymethod==='cc');
+  if(payInv) payInv.classList.toggle('active',rideToggles.paymethod==='invoice');
 }
 async function openRideModal(key,defaultDate){
   key=key||null;rideEditKey=key;
@@ -2284,8 +2334,9 @@ async function openRideModal(key,defaultDate){
     document.getElementById('r-miles').value=r.miles||'';
     document.getElementById('r-notes').value=r.notes||'';
     document.getElementById('r-helper').value=r.helper||'';
+    if(document.getElementById('r-wait-hours')) document.getElementById('r-wait-hours').value=r.waitHours||'';
     sel.value=r.driver||'';
-    rideToggles={ridetype:r.ridetype||'wc',triptype:r.triptype||'rt',van:r.van||'',paid:r.paid||'no',wait:r.wait||'no'};
+    rideToggles={ridetype:r.ridetype||'wc',triptype:r.triptype||'rt',van:r.van||'',paid:r.paid||'no',wait:r.wait||'no',paymethod:r.paymethod||'cc'};
     document.getElementById('ride-delete-btn').style.display='block';
     fbEl.querySelectorAll('.facility-btn').forEach(b=>b.classList.toggle('active',b.textContent===r.facility));
     clearAddressNotes();
@@ -2304,7 +2355,7 @@ async function openRideModal(key,defaultDate){
     document.getElementById('r-notes').value='';
     document.getElementById('r-helper').value='';
     sel.value='';
-    rideToggles={ridetype:'wc',triptype:'rt',van:'',paid:'no',wait:'no'};
+    rideToggles={ridetype:'wc',triptype:'rt',van:'',paid:'no',wait:'no',paymethod:'cc'};
     document.getElementById('ride-delete-btn').style.display='none';
     fbEl.querySelectorAll('.facility-btn').forEach(b=>b.classList.remove('active'));
     clearAddressNotes();
@@ -2329,6 +2380,8 @@ async function saveRide(){
     invoice:document.getElementById('r-invoice').value.trim(),
     paid:rideToggles.paid||'no',
     wait:rideToggles.wait||'no',
+    waitHours:parseFloat(document.getElementById('r-wait-hours')?.value)||0,
+    paymethod:rideToggles.paymethod||'cc',
     miles:document.getElementById('r-miles').value.trim(),
     notes:document.getElementById('r-notes').value.trim(),
     updatedAt:Date.now(),
