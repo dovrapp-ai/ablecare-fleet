@@ -439,6 +439,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
     <div class="tab" onclick="switchTab('hours')" id="tab-hours"><span class="tab-icon">🕐</span> Hours</div>
     <div class="tab" onclick="switchTab('drivers')" id="tab-drivers"><span class="tab-icon">👥</span> Drivers</div>
     <div class="tab" onclick="switchTab('rides')" id="tab-rides"><span class="tab-icon">🚐</span> Rides</div>
+    <div class="tab" onclick="switchTab('quote')" id="tab-quote"><span class="tab-icon">💰</span> Quote</div>
     <div class="tab" onclick="switchTab('settings')" id="tab-settings"><span class="tab-icon">⚙️</span> Settings</div>
   </div>
 
@@ -506,6 +507,85 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
         <button class="add-btn" onclick="addDriver()">+ Add Driver</button>
       </div>
       <div class="manage-list" id="manage-list"></div>
+    </div>
+  </div>
+
+  <!-- QUOTE TAB -->
+  <div class="screen" id="screen-quote">
+    <div style="max-width:560px;margin:0 auto">
+
+      <div style="background:#fff;border-radius:16px;padding:24px;box-shadow:0 1px 6px rgba(0,0,0,0.05);margin-bottom:16px">
+        <div class="section-title" style="margin-bottom:20px">💰 Private Client Ride Quote</div>
+
+        <div class="modal-field">
+          <label>📍 Pickup Address</label>
+          <input type="text" id="q-pickup" placeholder="Enter pickup address..." style="width:100%;padding:10px 14px;border:2px solid #e8eef4;border-radius:10px;font-size:14px;color:#0d1b2a;outline:none;font-family:inherit" oninput="clearQuote()"/>
+        </div>
+
+        <div class="modal-field">
+          <label>🏥 Drop Off Address</label>
+          <input type="text" id="q-dropoff" placeholder="Enter drop off / appointment address..." style="width:100%;padding:10px 14px;border:2px solid #e8eef4;border-radius:10px;font-size:14px;color:#0d1b2a;outline:none;font-family:inherit" oninput="clearQuote()"/>
+        </div>
+
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:16px">
+          <div class="modal-field">
+            <label>Ride Type</label>
+            <div style="display:flex;gap:8px">
+              <button class="toggle-btn active" id="q-rt-wc" onclick="setQuoteToggle('ridetype','wc')">♿ WC</button>
+              <button class="toggle-btn" id="q-rt-str" onclick="setQuoteToggle('ridetype','str')">🛏 Stretcher</button>
+            </div>
+          </div>
+          <div class="modal-field">
+            <label>Trip Type</label>
+            <div style="display:flex;gap:8px">
+              <button class="toggle-btn active" id="q-tt-rt" onclick="setQuoteToggle('triptype','rt')">RT</button>
+              <button class="toggle-btn" id="q-tt-1way" onclick="setQuoteToggle('triptype','1way')">1 Way</button>
+            </div>
+          </div>
+        </div>
+
+        <button class="add-btn" style="width:100%;padding:14px;font-size:15px" onclick="calculateQuote()">📐 Calculate Quote</button>
+      </div>
+
+      <!-- Result -->
+      <div id="quote-result" style="display:none">
+        <div style="background:#0d1b2a;border-radius:16px;padding:24px;margin-bottom:16px">
+          <div style="font-size:13px;color:#6b82a8;margin-bottom:4px" id="q-route-label"></div>
+          <div style="font-size:13px;color:#00b4d8;margin-bottom:16px" id="q-type-label"></div>
+
+          <div style="display:flex;justify-content:space-between;align-items:flex-end;margin-bottom:16px">
+            <div>
+              <div style="font-size:13px;color:#6b82a8;margin-bottom:4px">Total Miles</div>
+              <div style="font-size:28px;font-weight:900;color:#fff" id="q-miles">—</div>
+            </div>
+            <div style="text-align:right">
+              <div style="font-size:13px;color:#6b82a8;margin-bottom:4px">Quote</div>
+              <div style="font-size:42px;font-weight:900;color:#00b4d8" id="q-price">—</div>
+            </div>
+          </div>
+
+          <!-- Breakdown -->
+          <div id="q-breakdown" style="border-top:1px solid rgba(255,255,255,0.1);padding-top:14px;font-size:12px;color:#6b82a8;line-height:1.8"></div>
+        </div>
+
+        <!-- Book button -->
+        <button class="add-btn" style="width:100%;padding:16px;font-size:15px;background:#06d6a0" onclick="bookQuoteAsRide()">
+          ✓ Client Says Yes — Book This Ride
+        </button>
+        <div style="font-size:12px;color:#6b82a8;text-align:center;margin-top:8px">Opens the Add Ride form pre-filled with all this info</div>
+      </div>
+
+      <!-- Loading -->
+      <div id="quote-loading" style="display:none;text-align:center;padding:32px;background:#fff;border-radius:16px">
+        <div style="font-size:24px;margin-bottom:12px">📐</div>
+        <div style="font-size:14px;color:#6b82a8">Calculating route with Google Maps...</div>
+      </div>
+
+      <!-- Error -->
+      <div id="quote-error" style="display:none;background:#fff7ed;border:1px solid #fed7aa;border-radius:14px;padding:20px;text-align:center">
+        <div style="font-size:13px;color:#c2410c;font-weight:700" id="quote-error-msg"></div>
+      </div>
+
     </div>
   </div>
 
@@ -1078,6 +1158,7 @@ function switchTab(name){
   if(name==='dispatch') initDispatchMap();
   if(name==='rides') initRides();
   if(name==='settings') initSettings();
+  if(name==='quote') initQuote();
 }
 
 // ── DASHBOARD INIT ──
@@ -2276,6 +2357,158 @@ async function sendTomorrowSchedule(){
   if(Object.keys(byDriver).length)msg+=Object.entries(byDriver).map(([dr,dRides])=>`${dr}: ${dRides.length} ride${dRides.length!==1?'s':''}`).join('\n');
   if(unassigned.length)msg+=`\n\n⚠️ ${unassigned.length} ride${unassigned.length!==1?'s':''} still have no driver assigned!`;
   alert(msg);
+}
+
+// ── RIDE QUOTE CALCULATOR ──
+const PRICING = {
+  wc: {
+    rt:   { base: 165, freeMiles: 10, ratePerMile: 1 },
+    '1way': { base: 100, freeMiles: 10, ratePerMile: 1 },
+  },
+  str: {
+    rt:   { base: 700, freeMiles: 0, ratePerMile: 10 }, // $350 x 2 legs
+    '1way': { base: 350, freeMiles: 0, ratePerMile: 10 },
+  }
+};
+
+let quoteToggles = { ridetype: 'wc', triptype: 'rt' };
+let quoteData = null;
+
+function initQuote(){
+  quoteToggles = { ridetype: 'wc', triptype: 'rt' };
+  updateQuoteToggles();
+  clearQuote();
+}
+
+function setQuoteToggle(group, val){
+  quoteToggles[group] = val;
+  updateQuoteToggles();
+  clearQuote();
+}
+
+function updateQuoteToggles(){
+  document.getElementById('q-rt-wc').classList.toggle('active', quoteToggles.ridetype==='wc');
+  document.getElementById('q-rt-str').classList.toggle('active', quoteToggles.ridetype==='str');
+  document.getElementById('q-tt-rt').classList.toggle('active', quoteToggles.triptype==='rt');
+  document.getElementById('q-tt-1way').classList.toggle('active', quoteToggles.triptype==='1way');
+}
+
+function clearQuote(){
+  document.getElementById('quote-result').style.display='none';
+  document.getElementById('quote-error').style.display='none';
+  quoteData=null;
+}
+
+function calcPrice(miles, ridetype, triptype){
+  const p = PRICING[ridetype][triptype];
+  const isRT = triptype==='rt';
+  const legs = isRT ? 2 : 1;
+
+  if(ridetype==='str'){
+    // Stretcher: $350/leg + $10/mile per leg (both legs for RT)
+    const mileCharge = miles * p.ratePerMile * legs;
+    const total = p.base + mileCharge;
+    return { total, base: p.base, miles, mileCharge, legs, p };
+  } else {
+    // Wheelchair: base + $1/mile over 10 per leg
+    const billableMiles = Math.max(0, miles - p.freeMiles);
+    const mileCharge = billableMiles * p.ratePerMile * legs;
+    const total = p.base + mileCharge;
+    return { total, base: p.base, miles, billableMiles, mileCharge, legs, p };
+  }
+}
+
+async function calculateQuote(){
+  const pickup = document.getElementById('q-pickup').value.trim();
+  const dropoff = document.getElementById('q-dropoff').value.trim();
+  if(!pickup || !dropoff){ alert('Please enter both pickup and drop off addresses.'); return; }
+
+  document.getElementById('quote-result').style.display='none';
+  document.getElementById('quote-error').style.display='none';
+  document.getElementById('quote-loading').style.display='block';
+
+  try {
+    // Get driving distance from Google Maps
+    const miles = await getDrivingMiles(pickup, dropoff);
+    document.getElementById('quote-loading').style.display='none';
+
+    const rt = quoteToggles.ridetype;
+    const tt = quoteToggles.triptype;
+    const result = calcPrice(miles, rt, tt);
+    quoteData = { pickup, dropoff, miles, result, ridetype: rt, triptype: tt };
+
+    // Display
+    document.getElementById('q-miles').textContent = `${miles.toFixed(1)} mi`;
+    document.getElementById('q-price').textContent = `$${result.total.toFixed(2)}`;
+    document.getElementById('q-route-label').textContent = `${pickup} → ${dropoff}`;
+    document.getElementById('q-type-label').textContent =
+      `${rt==='str'?'🛏 Stretcher':'♿ Wheelchair'} · ${tt==='rt'?'Round Trip':'One Way'}`;
+
+    // Breakdown
+    let breakdown = '';
+    if(rt==='str'){
+      breakdown = `
+        Base rate: $${result.p.base.toFixed(2)} (${result.legs} leg${result.legs>1?'s':''})<br>
+        Mileage: ${miles.toFixed(1)} mi × $${result.p.ratePerMile}/mi × ${result.legs} leg${result.legs>1?'s':''} = $${result.mileCharge.toFixed(2)}<br>
+        <span style="color:#00b4d8;font-weight:700">Total: $${result.total.toFixed(2)}</span>
+      `;
+    } else {
+      breakdown = `
+        Base rate: $${result.p.base.toFixed(2)}<br>
+        Free miles: first ${result.p.freeMiles} mi per leg included<br>
+        Billable miles: ${result.billableMiles.toFixed(1)} mi × $${result.p.ratePerMile}/mi × ${result.legs} leg${result.legs>1?'s':''} = $${result.mileCharge.toFixed(2)}<br>
+        <span style="color:#00b4d8;font-weight:700">Total: $${result.total.toFixed(2)}</span>
+      `;
+    }
+    document.getElementById('q-breakdown').innerHTML = breakdown;
+    document.getElementById('quote-result').style.display='block';
+
+  } catch(e) {
+    document.getElementById('quote-loading').style.display='none';
+    document.getElementById('quote-error-msg').textContent = 'Could not calculate route. Please check the addresses and try again.';
+    document.getElementById('quote-error').style.display='block';
+  }
+}
+
+async function getDrivingMiles(origin, destination){
+  return new Promise((resolve, reject)=>{
+    if(typeof google==='undefined'){ reject(new Error('Maps not loaded')); return; }
+    const service = new google.maps.DistanceMatrixService();
+    service.getDistanceMatrix({
+      origins: [origin],
+      destinations: [destination],
+      travelMode: google.maps.TravelMode.DRIVING,
+      unitSystem: google.maps.UnitSystem.IMPERIAL,
+    }, (response, status)=>{
+      if(status==='OK' && response.rows[0].elements[0].status==='OK'){
+        resolve(response.rows[0].elements[0].distance.value / 1609.34);
+      } else {
+        reject(new Error('Route not found'));
+      }
+    });
+  });
+}
+
+function bookQuoteAsRide(){
+  if(!quoteData) return;
+  // Switch to rides tab and open the add ride modal pre-filled
+  switchTab('rides');
+  setTimeout(async()=>{
+    await openRideModal(null, dateStr(new Date()));
+    // Pre-fill the fields
+    document.getElementById('r-pickup').value = quoteData.pickup;
+    document.getElementById('r-dropoff').value = quoteData.dropoff;
+    document.getElementById('r-price').value = `$${quoteData.result.total.toFixed(2)}`;
+    // Set toggles
+    rideToggles.ridetype = quoteData.ridetype;
+    rideToggles.triptype = quoteData.triptype;
+    rideToggles.paid = 'yes'; // private clients pay upfront
+    updateRideToggles();
+    showHideStretcherFields();
+    // Clear address style overrides
+    document.getElementById('r-pickup').style.background='';
+    document.getElementById('r-dropoff').style.background='';
+  }, 300);
 }
 
 // ── HELPERS ──
