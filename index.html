@@ -440,6 +440,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
     <div class="tab" onclick="switchTab('drivers')" id="tab-drivers"><span class="tab-icon">👥</span> Drivers</div>
     <div class="tab" onclick="switchTab('rides')" id="tab-rides"><span class="tab-icon">🚐</span> Rides</div>
     <div class="tab" onclick="switchTab('quote')" id="tab-quote"><span class="tab-icon">💰</span> Quote</div>
+    <div class="tab" onclick="switchTab('invoice')" id="tab-invoice"><span class="tab-icon">📄</span> Invoice</div>
     <div class="tab" onclick="switchTab('settings')" id="tab-settings"><span class="tab-icon">⚙️</span> Settings</div>
   </div>
 
@@ -584,6 +585,74 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
       <!-- Error -->
       <div id="quote-error" style="display:none;background:#fff7ed;border:1px solid #fed7aa;border-radius:14px;padding:20px;text-align:center">
         <div style="font-size:13px;color:#c2410c;font-weight:700" id="quote-error-msg"></div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- INVOICE TAB -->
+  <div class="screen" id="screen-invoice">
+    <div style="max-width:700px;margin:0 auto">
+
+      <!-- Step 1: Select facility and date range -->
+      <div id="inv-setup" style="background:#fff;border-radius:16px;padding:24px;box-shadow:0 1px 6px rgba(0,0,0,0.05);margin-bottom:16px">
+        <div class="section-title" style="margin-bottom:20px">📄 Create Facility Invoice</div>
+
+        <div class="modal-field">
+          <label>Facility</label>
+          <select id="inv-facility" style="width:100%;padding:10px 14px;border:2px solid #e8eef4;border-radius:10px;font-size:14px;color:#0d1b2a;outline:none;font-family:inherit;background:#fff" onchange="onInvFacilityChange()">
+            <option value="">Select facility...</option>
+          </select>
+        </div>
+
+        <div id="inv-facility-info" style="display:none;background:#f0faff;border-radius:10px;padding:12px 14px;margin-bottom:16px;font-size:13px;color:#0d3a52">
+          <div id="inv-facility-email"></div>
+          <div id="inv-facility-contact"></div>
+        </div>
+
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+          <div class="modal-field">
+            <label>From Date</label>
+            <input type="date" id="inv-from" style="width:100%;padding:10px 14px;border:2px solid #e8eef4;border-radius:10px;font-size:14px;color:#0d1b2a;outline:none;font-family:inherit"/>
+          </div>
+          <div class="modal-field">
+            <label>To Date</label>
+            <input type="date" id="inv-to" style="width:100%;padding:10px 14px;border:2px solid #e8eef4;border-radius:10px;font-size:14px;color:#0d1b2a;outline:none;font-family:inherit"/>
+          </div>
+        </div>
+
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+          <div class="modal-field">
+            <label>Invoice Number</label>
+            <input type="text" id="inv-number" placeholder="e.g. 1045" style="width:100%;padding:10px 14px;border:2px solid #e8eef4;border-radius:10px;font-size:14px;color:#0d1b2a;outline:none;font-family:inherit"/>
+          </div>
+          <div class="modal-field">
+            <label>Invoice Date</label>
+            <input type="date" id="inv-date" style="width:100%;padding:10px 14px;border:2px solid #e8eef4;border-radius:10px;font-size:14px;color:#0d1b2a;outline:none;font-family:inherit"/>
+          </div>
+        </div>
+
+        <div class="modal-field">
+          <label>Notes (optional)</label>
+          <input type="text" id="inv-notes" placeholder="e.g. Payment due within 30 days" style="width:100%;padding:10px 14px;border:2px solid #e8eef4;border-radius:10px;font-size:14px;color:#0d1b2a;outline:none;font-family:inherit"/>
+        </div>
+
+        <button class="add-btn" style="width:100%;padding:14px;font-size:15px" onclick="generateInvoice()">📄 Generate Invoice</button>
+      </div>
+
+      <!-- Invoice preview -->
+      <div id="inv-preview-wrap" style="display:none">
+        <div style="display:flex;gap:10px;margin-bottom:16px;flex-wrap:wrap">
+          <button class="add-btn" style="flex:1;padding:12px" onclick="printInvoice()">🖨️ Download PDF</button>
+          <button class="add-btn" style="flex:1;padding:12px;background:#0d1b2a" onclick="emailInvoice()">📧 Email to Facility</button>
+          <button class="ts-mode-btn" style="padding:12px" onclick="resetInvoice()">← New Invoice</button>
+        </div>
+        <div id="inv-preview" style="background:#fff;border-radius:16px;overflow:hidden;box-shadow:0 2px 12px rgba(0,0,0,0.08)"></div>
+      </div>
+
+      <!-- Error -->
+      <div id="inv-error" style="display:none;background:#fff7ed;border:1px solid #fed7aa;border-radius:14px;padding:20px;text-align:center">
+        <div style="font-size:13px;color:#c2410c;font-weight:700" id="inv-error-msg"></div>
       </div>
 
     </div>
@@ -1179,6 +1248,7 @@ function switchTab(name){
   if(name==='rides') initRides();
   if(name==='settings') initSettings();
   if(name==='quote') initQuote();
+  if(name==='invoice') initInvoice();
 }
 
 // ── DASHBOARD INIT ──
@@ -2410,6 +2480,248 @@ async function sendTomorrowSchedule(){
   if(Object.keys(byDriver).length)msg+=Object.entries(byDriver).map(([dr,dRides])=>`${dr}: ${dRides.length} ride${dRides.length!==1?'s':''}`).join('\n');
   if(unassigned.length)msg+=`\n\n⚠️ ${unassigned.length} ride${unassigned.length!==1?'s':''} still have no driver assigned!`;
   alert(msg);
+}
+
+// ── INVOICE SYSTEM ──
+const WAIT_RATES = {
+  str: { freeHrs: 0.5, ratePerHr: 150 },
+  wc:  { freeHrs: 0,   ratePerHr: 50  }
+};
+
+let currentInvoiceData = null;
+
+function initInvoice(){
+  // Populate facility dropdown
+  const sel = document.getElementById('inv-facility');
+  sel.innerHTML = '<option value="">Select facility...</option>' +
+    FACILITIES.filter(f=>f.name!=='Langerman'&&f.name!=='Wingo'&&f.name!=='Maxine'&&f.name!=='Insight')
+      .map(f=>`<option value="${f.name}">${f.name}</option>`).join('');
+
+  // Default dates — last 30 days
+  const today = new Date();
+  const from = new Date(today);
+  from.setDate(today.getDate()-30);
+  document.getElementById('inv-to').value = dateStr(today);
+  document.getElementById('inv-from').value = dateStr(from);
+  document.getElementById('inv-date').value = dateStr(today);
+  document.getElementById('inv-number').value = '';
+  document.getElementById('inv-notes').value = 'Payment due within 30 days';
+
+  resetInvoice();
+}
+
+function onInvFacilityChange(){
+  const name = document.getElementById('inv-facility').value;
+  const fac = FACILITIES.find(f=>f.name===name);
+  const infoEl = document.getElementById('inv-facility-info');
+  if(fac && (fac.email||fac.contact)){
+    document.getElementById('inv-facility-email').textContent = fac.email ? '📧 ' + fac.email : '';
+    document.getElementById('inv-facility-contact').textContent = fac.contact ? '👤 ' + fac.contact : '';
+    infoEl.style.display = 'block';
+  } else {
+    infoEl.style.display = 'none';
+  }
+}
+
+function calcWaitCharge(waitHours, ridetype){
+  if(!waitHours || waitHours<=0) return 0;
+  const rate = WAIT_RATES[ridetype]||WAIT_RATES.wc;
+  const billable = Math.max(0, waitHours - rate.freeHrs);
+  return billable * rate.ratePerHr;
+}
+
+async function generateInvoice(){
+  const facilityName = document.getElementById('inv-facility').value;
+  const fromDate = document.getElementById('inv-from').value;
+  const toDate = document.getElementById('inv-to').value;
+  const invNumber = document.getElementById('inv-number').value.trim();
+  const invDate = document.getElementById('inv-date').value;
+  const invNotes = document.getElementById('inv-notes').value.trim();
+
+  if(!facilityName){alert('Please select a facility.');return;}
+  if(!fromDate||!toDate){alert('Please select a date range.');return;}
+  if(!invNumber){alert('Please enter an invoice number.');return;}
+
+  document.getElementById('inv-error').style.display='none';
+
+  // Load rides for this facility in date range — invoice type only
+  const snap = await ridesRef().once('value');
+  const all = snap.val()||{};
+  const rides = Object.values(all).filter(r=>
+    r.facility===facilityName &&
+    r.date>=fromDate && r.date<=toDate &&
+    r.paymethod==='invoice'
+  ).sort((a,b)=>a.date.localeCompare(b.date)||( a.time||'').localeCompare(b.time||''));
+
+  if(!rides.length){
+    document.getElementById('inv-error-msg').textContent = `No invoice-billed rides found for ${facilityName} between ${fromDate} and ${toDate}. Make sure rides are set to "Invoice" payment method.`;
+    document.getElementById('inv-error').style.display='block';
+    return;
+  }
+
+  const fac = FACILITIES.find(f=>f.name===facilityName)||{};
+  currentInvoiceData = { facilityName, fromDate, toDate, invNumber, invDate, invNotes, rides, fac };
+
+  renderInvoicePreview(currentInvoiceData);
+  document.getElementById('inv-preview-wrap').style.display='block';
+}
+
+function renderInvoicePreview(data){
+  const { facilityName, fromDate, toDate, invNumber, invDate, invNotes, rides, fac } = data;
+
+  // Calculate totals
+  let subtotal = 0;
+  const rideRows = rides.map((r,i)=>{
+    const price = parseFloat(r.price)||0;
+    const waitCharge = calcWaitCharge(parseFloat(r.waitHours)||0, r.ridetype);
+    const lineTotal = price + waitCharge;
+    subtotal += lineTotal;
+
+    const waitStr = r.waitHours && parseFloat(r.waitHours)>0
+      ? `<br><span style="color:#6b82a8;font-size:11px">⏳ Wait: ${r.waitHours}h = $${waitCharge.toFixed(2)}</span>`
+      : '';
+
+    const milesStr = r.estimatedMiles
+      ? `<br><span style="color:#6b82a8;font-size:11px">🗺 ${r.estimatedMiles} mi</span>`
+      : '';
+
+    return `<tr style="border-bottom:1px solid #f0f4f8">
+      <td style="padding:10px 14px;font-size:13px;color:#0d1b2a;vertical-align:top">
+        <div style="font-weight:700">${formatInvDate(r.date)}</div>
+        <div style="color:#6b82a8;font-size:11px">${r.time?fmtTime12(r.time):''}</div>
+      </td>
+      <td style="padding:10px 14px;font-size:13px;color:#0d1b2a;vertical-align:top">
+        <div style="font-weight:700">${r.client||'—'}</div>
+        <div style="color:#6b82a8;font-size:11px">${r.ridetype==='str'?'🛏 Stretcher':'♿ Wheelchair'} · ${r.triptype==='rt'?'Round Trip':'One Way'}</div>
+      </td>
+      <td style="padding:10px 14px;font-size:12px;color:#6b82a8;vertical-align:top">
+        <div>📍 ${r.pickup||r.facility||'—'}</div>
+        <div>🏥 ${r.dropoff||'—'}</div>
+        ${milesStr}
+      </td>
+      <td style="padding:10px 14px;font-size:13px;color:#0d1b2a;text-align:right;vertical-align:top">
+        <div style="font-weight:800">$${price.toFixed(2)}</div>
+        ${waitStr}
+        ${waitCharge>0?`<div style="color:#c2410c;font-size:11px;font-weight:700">+$${waitCharge.toFixed(2)}</div>`:''}
+      </td>
+    </tr>`;
+  }).join('');
+
+  const fromFmt = formatInvDate(fromDate);
+  const toFmt = formatInvDate(toDate);
+  const invDateFmt = formatInvDate(invDate);
+
+  const html = `
+    <div id="printable-invoice" style="font-family:Arial,sans-serif;padding:40px;background:#fff">
+
+      <!-- Header -->
+      <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:32px;padding-bottom:24px;border-bottom:3px solid #0d1b2a">
+        <div>
+          <div style="font-size:26px;font-weight:900;color:#0d1b2a">Able<span style="color:#00b4d8">Care</span> Mobility LLC</div>
+          <div style="font-size:12px;color:#6b82a8;margin-top:4px">3404 Old Court Rd, Pikesville, MD 21208</div>
+          <div style="font-size:12px;color:#6b82a8">(443) 819-1808</div>
+          <div style="font-size:12px;color:#6b82a8">Non-Emergency Medical Transportation</div>
+        </div>
+        <div style="text-align:right">
+          <div style="font-size:32px;font-weight:900;color:#00b4d8">INVOICE</div>
+          <div style="font-size:14px;color:#0d1b2a;margin-top:4px"># ${invNumber}</div>
+          <div style="font-size:12px;color:#6b82a8">Date: ${invDateFmt}</div>
+          <div style="font-size:12px;color:#6b82a8">Period: ${fromFmt} – ${toFmt}</div>
+        </div>
+      </div>
+
+      <!-- Bill To -->
+      <div style="margin-bottom:28px">
+        <div style="font-size:11px;font-weight:700;color:#6b82a8;text-transform:uppercase;letter-spacing:1px;margin-bottom:8px">Bill To</div>
+        <div style="font-size:16px;font-weight:800;color:#0d1b2a">${facilityName}</div>
+        ${fac.contact?`<div style="font-size:13px;color:#6b82a8">${fac.contact}</div>`:''}
+        ${fac.email?`<div style="font-size:13px;color:#6b82a8">${fac.email}</div>`:''}
+      </div>
+
+      <!-- Rides table -->
+      <table style="width:100%;border-collapse:collapse;margin-bottom:24px">
+        <thead>
+          <tr style="background:#0d1b2a">
+            <th style="padding:10px 14px;font-size:12px;color:#fff;text-align:left;font-weight:700">Date</th>
+            <th style="padding:10px 14px;font-size:12px;color:#fff;text-align:left;font-weight:700">Resident</th>
+            <th style="padding:10px 14px;font-size:12px;color:#fff;text-align:left;font-weight:700">Route</th>
+            <th style="padding:10px 14px;font-size:12px;color:#fff;text-align:right;font-weight:700">Amount</th>
+          </tr>
+        </thead>
+        <tbody>${rideRows}</tbody>
+      </table>
+
+      <!-- Totals -->
+      <div style="display:flex;justify-content:flex-end;margin-bottom:28px">
+        <div style="min-width:240px">
+          <div style="display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid #e8eef4;font-size:13px">
+            <span style="color:#6b82a8">Subtotal (${rides.length} ride${rides.length!==1?'s':''})</span>
+            <span style="font-weight:700;color:#0d1b2a">$${subtotal.toFixed(2)}</span>
+          </div>
+          <div style="display:flex;justify-content:space-between;padding:12px 0;font-size:18px;font-weight:900">
+            <span style="color:#0d1b2a">Total Due</span>
+            <span style="color:#00b4d8">$${subtotal.toFixed(2)}</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Notes -->
+      ${invNotes?`<div style="background:#f4f7fb;border-radius:10px;padding:14px 16px;font-size:13px;color:#6b82a8;margin-bottom:24px">
+        <strong style="color:#0d1b2a">Notes:</strong> ${invNotes}
+      </div>`:''}
+
+      <!-- Footer -->
+      <div style="border-top:2px solid #e8eef4;padding-top:16px;text-align:center;font-size:11px;color:#94a3b8">
+        AbleCare Mobility LLC · 3404 Old Court Rd, Pikesville, MD 21208 · (443) 819-1808<br>
+        Thank you for your business.
+      </div>
+    </div>`;
+
+  document.getElementById('inv-preview').innerHTML = html;
+  currentInvoiceData.subtotal = subtotal;
+}
+
+function formatInvDate(ds){
+  if(!ds) return '—';
+  const d = new Date(ds+'T12:00:00');
+  return d.toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'});
+}
+
+function printInvoice(){
+  const content = document.getElementById('printable-invoice');
+  if(!content){alert('Generate an invoice first.');return;}
+  const win = window.open('','_blank');
+  win.document.write(`<!DOCTYPE html><html><head><title>Invoice #${currentInvoiceData?.invNumber||''}</title>
+    <style>
+      body{font-family:Arial,sans-serif;margin:0;padding:0;}
+      @media print{body{margin:0;}}
+      @page{margin:15mm;}
+    </style>
+  </head><body>${content.outerHTML}</body></html>`);
+  win.document.close();
+  win.focus();
+  setTimeout(()=>win.print(), 500);
+}
+
+function emailInvoice(){
+  if(!currentInvoiceData){alert('Generate an invoice first.');return;}
+  const {fac, facilityName, invNumber, subtotal, fromDate, toDate} = currentInvoiceData;
+  const email = fac?.email||'';
+  if(!email){
+    alert(`No email address saved for ${facilityName}.\n\nGo to Settings → Facilities → Edit ${facilityName} to add a billing email.`);
+    return;
+  }
+  const subject = encodeURIComponent(`AbleCare Mobility — Invoice #${invNumber}`);
+  const body = encodeURIComponent(
+    `Dear ${fac?.contact||facilityName},\n\nPlease find attached Invoice #${invNumber} for transportation services from ${formatInvDate(fromDate)} to ${formatInvDate(toDate)}.\n\nTotal Due: $${subtotal?.toFixed(2)||'0.00'}\n\nTo view the invoice, please open the attached PDF.\n\nThank you,\nAbleCare Mobility LLC\n(443) 819-1808\n3404 Old Court Rd, Pikesville, MD 21208`
+  );
+  window.open(`mailto:${email}?subject=${subject}&body=${body}`);
+}
+
+function resetInvoice(){
+  document.getElementById('inv-preview-wrap').style.display='none';
+  document.getElementById('inv-error').style.display='none';
+  currentInvoiceData=null;
 }
 
 // ── RIDE QUOTE CALCULATOR ──
