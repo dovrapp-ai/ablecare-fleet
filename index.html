@@ -1129,6 +1129,26 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
   </div>
 </div>
 
+<!-- Driver Rate Modal -->
+<div class="modal-overlay" id="driver-rate-modal">
+  <div class="modal-box" style="max-width:320px">
+    <div class="modal-title">Set Hourly Rate</div>
+    <div class="modal-driver" id="dr-driver-name"></div>
+    <div class="modal-field">
+      <label>Hourly Rate ($/hr)</label>
+      <div style="display:flex;align-items:center;gap:8px">
+        <span style="font-size:18px;font-weight:700;color:#0d1b2a">$</span>
+        <input type="number" id="dr-rate" placeholder="e.g. 18.00" step="0.50" min="0" style="flex:1;padding:10px 14px;border:2px solid #e8eef4;border-radius:10px;font-size:18px;font-weight:700;color:#0d1b2a;outline:none;font-family:inherit"/>
+        <span style="font-size:14px;color:#6b82a8">/hr</span>
+      </div>
+    </div>
+    <div class="modal-actions">
+      <button class="modal-save" onclick="saveDriverRate()">Save Rate</button>
+      <button class="modal-cancel" onclick="closeDriverRateModal()">Cancel</button>
+    </div>
+  </div>
+</div>
+
 <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
@@ -1446,7 +1466,15 @@ async function renderTimesheet(){
     const shifts=Object.entries(raw).filter(([k,s])=>s.clockIn>=fromTs&&s.clockIn<=toTs).sort((a,b)=>a[1].clockIn-b[1].clockIn);
     const totalMs=shifts.reduce((a,[,s])=>a+(s.durationMs||0),0);
     const block=document.createElement('div');block.className='ts-driver-block';
-    block.innerHTML=`<div class="ts-driver-header"><div class="driver-avatar" style="background:${color};width:36px;height:36px;border-radius:9px;font-size:15px;font-weight:900;color:#fff;display:flex;align-items:center;justify-content:center;flex-shrink:0">${d.name[0]}</div><div style="font-size:16px;font-weight:800;color:#0d1b2a">${d.name}</div><div class="ts-driver-total">${fmtH(totalMs)}</div></div>`;
+    const grossPay = d.hourlyRate ? (totalMs/3600000) * d.hourlyRate : null;
+    const rateStr = d.hourlyRate ? `$${parseFloat(d.hourlyRate).toFixed(2)}/hr` : 'No rate set';
+    block.innerHTML=`<div class="ts-driver-header"><div class="driver-avatar" style="background:${color};width:36px;height:36px;border-radius:9px;font-size:15px;font-weight:900;color:#fff;display:flex;align-items:center;justify-content:center;flex-shrink:0">${d.name[0]}</div>
+      <div style="flex:1"><div style="font-size:16px;font-weight:800;color:#0d1b2a">${d.name}</div>
+      <div style="font-size:11px;color:#6b82a8">${rateStr}</div></div>
+      <div style="text-align:right">
+        <div class="ts-driver-total">${fmtH(totalMs)}</div>
+        ${grossPay!=null?`<div style="font-size:13px;font-weight:800;color:#16a34a">$${grossPay.toFixed(2)}</div>`:`<div style="font-size:11px;color:#f59e0b">Set rate in Settings</div>`}
+      </div></div>`;
     if(!shifts.length){block.innerHTML+=`<div style="padding:16px 18px;color:#6b82a8;font-size:13px">No shifts in this period</div>`;}
     else{
       const byDay={};
@@ -1521,9 +1549,9 @@ async function downloadExcel(){
   else{const fv=document.getElementById('ts-from').value;const tv=document.getElementById('ts-to').value;if(!fv||!tv){alert('Please set a date range first.');return;}fromTs=new Date(fv+'T00:00:00').getTime();toTs=new Date(tv+'T23:59:59').getTime();label=`${fv} to ${tv}`;}
   const drivers=await loadDrivers();const snap=await shiftsRef().once('value');const all=snap.val()||{};
   const wb=XLSX.utils.book_new();
-  const summaryRows=[['AbleCare Mobility — Payroll Summary'],['Period: '+label],[''],['Driver','Total Hours','Decimal Hours','# Shifts']];
-  drivers.forEach(d=>{const raw=all[safe(d.name)]||{};const shifts=Object.values(raw).filter(s=>s.clockIn>=fromTs&&s.clockIn<=toTs);const ms=shifts.reduce((a,s)=>a+(s.durationMs||0),0);summaryRows.push([d.name,fmtH(ms),parseFloat(fmtHDecimal(ms)),shifts.length]);});
-  const wsSummary=XLSX.utils.aoa_to_sheet(summaryRows);wsSummary['!cols']=[{wch:20},{wch:14},{wch:16},{wch:10}];XLSX.utils.book_append_sheet(wb,wsSummary,'Summary');
+  const summaryRows=[['AbleCare Mobility — Payroll Summary'],['Period: '+label],[''],['Driver','Total Hours','Decimal Hours','# Shifts','Hourly Rate','Gross Pay']];
+  drivers.forEach(d=>{const raw=all[safe(d.name)]||{};const shifts=Object.values(raw).filter(s=>s.clockIn>=fromTs&&s.clockIn<=toTs);const ms=shifts.reduce((a,s)=>a+(s.durationMs||0),0);const hrs=parseFloat(fmtHDecimal(ms));const rate=d.hourlyRate?parseFloat(d.hourlyRate):null;const gross=rate?parseFloat((hrs*rate).toFixed(2)):'';summaryRows.push([d.name,fmtH(ms),hrs,shifts.length,rate?`$${rate.toFixed(2)}/hr`:'Not set',gross?`$${gross}`:'']);});
+  const wsSummary=XLSX.utils.aoa_to_sheet(summaryRows);wsSummary['!cols']=[{wch:20},{wch:14},{wch:16},{wch:10},{wch:14},{wch:12}];XLSX.utils.book_append_sheet(wb,wsSummary,'Summary');
   const detailRows=[['Driver','Date','Day','Clock In','Clock Out','Duration (hrs)','Duration (h:m)']];
   drivers.forEach(d=>{const raw=all[safe(d.name)]||{};const shifts=Object.values(raw).filter(s=>s.clockIn>=fromTs&&s.clockIn<=toTs).sort((a,b)=>a.clockIn-b.clockIn);shifts.forEach(s=>{const inD=new Date(s.clockIn);detailRows.push([d.name,inD.toLocaleDateString('en-US',{month:'2-digit',day:'2-digit',year:'numeric'}),inD.toLocaleDateString('en-US',{weekday:'short'}),fmtTime(s.clockIn),s.clockOut?fmtTime(s.clockOut):'Still on shift',s.durationMs?parseFloat(fmtHDecimal(s.durationMs)):'',s.durationMs?fmtDur(s.durationMs):'']);});if(shifts.length){const totalMs=shifts.reduce((a,s)=>a+(s.durationMs||0),0);detailRows.push([d.name+' TOTAL','','','','',parseFloat(fmtHDecimal(totalMs)),fmtH(totalMs)]);detailRows.push([]);}});
   const wsDetail=XLSX.utils.aoa_to_sheet(detailRows);wsDetail['!cols']=[{wch:18},{wch:12},{wch:6},{wch:10},{wch:12},{wch:14},{wch:12}];XLSX.utils.book_append_sheet(wb,wsDetail,'Shift Detail');
@@ -1597,12 +1625,29 @@ async function renderDriverPins(){
     row.innerHTML=`<div class="driver-avatar" style="background:${color};width:36px;height:36px;border-radius:9px;font-size:15px;font-weight:900;color:#fff;display:flex;align-items:center;justify-content:center;flex-shrink:0">${d.name[0]}</div>
       <div class="driver-pin-name">${d.name}</div>
       <div class="driver-pin-val">PIN: ${d.pin?'••••':'Not set'}</div>
+      <div class="driver-pin-val" style="color:${d.hourlyRate?'#16a34a':'#f59e0b'}">${d.hourlyRate?'$'+parseFloat(d.hourlyRate).toFixed(2)+'/hr':'No rate set'}</div>
+      <button class="driver-pin-btn" onclick="openDriverRateModal('${d.name}',${d.hourlyRate||0})">Set Rate</button>
       <button class="driver-pin-btn" onclick="openDriverPinModal('${d.name}')">Change PIN</button>`;
     list.appendChild(row);
   });
 }
 
-function openDriverPinModal(name){
+let drRateDriverName=null;
+function openDriverRateModal(name,currentRate){
+  drRateDriverName=name;
+  document.getElementById('dr-driver-name').textContent=name;
+  document.getElementById('dr-rate').value=currentRate||'';
+  document.getElementById('driver-rate-modal').style.display='flex';
+}
+function closeDriverRateModal(){document.getElementById('driver-rate-modal').style.display='none';drRateDriverName=null;}
+async function saveDriverRate(){
+  const rate=parseFloat(document.getElementById('dr-rate').value);
+  if(!rate||rate<=0){alert('Please enter a valid hourly rate.');return;}
+  await drvsRef().child(safe(drRateDriverName)).update({hourlyRate:rate});
+  closeDriverRateModal();
+  renderDriverPins();
+  alert(`✓ ${drRateDriverName}'s rate set to $${rate.toFixed(2)}/hr`);
+}
   dpDriverName=name;
   document.getElementById('dp-driver-name').textContent=name;
   document.getElementById('dp-pin').value='';
