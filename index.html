@@ -777,6 +777,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
       <!-- Add ride button -->
       <div style="padding:12px">
         <button class="add-btn" style="width:100%;padding:10px;font-size:13px" onclick="openRideModal(null)">+ Add Ride</button>
+        <button class="add-btn" style="width:100%;padding:10px;font-size:13px;margin-top:8px;background:#152338" onclick="openEmailParser()">📧 Paste Email</button>
       </div>
     </div>
 
@@ -1129,7 +1130,30 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
   </div>
 </div>
 
-<!-- Driver Rate Modal -->
+<!-- Email Parser Modal -->
+<div class="modal-overlay" id="email-parser-modal">
+  <div class="modal-box" style="max-width:520px;max-height:90vh;overflow-y:auto">
+    <div class="modal-title">📧 Paste Ride Email</div>
+    <div class="modal-driver">Paste the email from the facility and AI will fill in the ride details automatically</div>
+
+    <div class="modal-field">
+      <label>Email Text</label>
+      <textarea id="email-text" placeholder="Paste the full email here..." style="width:100%;height:160px;padding:10px 14px;border:2px solid #e8eef4;border-radius:10px;font-size:13px;color:#0d1b2a;outline:none;font-family:inherit;resize:vertical;line-height:1.5"></textarea>
+    </div>
+
+    <div id="email-parse-loading" style="display:none;text-align:center;padding:16px;color:#6b82a8;font-size:13px">
+      🤖 Reading email...
+    </div>
+    <div id="email-parse-error" style="display:none;background:#fff7ed;border-radius:8px;padding:10px 14px;font-size:13px;color:#c2410c;margin-bottom:12px"></div>
+
+    <div class="modal-actions">
+      <button class="modal-save" onclick="parseEmailWithAI()">🤖 Extract Ride Info</button>
+      <button class="modal-cancel" onclick="closeEmailParser()">Cancel</button>
+    </div>
+  </div>
+</div>
+
+
 <div class="modal-overlay" id="driver-rate-modal">
   <div class="modal-box" style="max-width:320px">
     <div class="modal-title">Set Hourly Rate</div>
@@ -1648,7 +1672,7 @@ async function saveDriverRate(){
   renderDriverPins();
   alert(`✓ ${drRateDriverName}'s rate set to $${rate.toFixed(2)}/hr`);
 }
-  dpDriverName=name;
+function openDriverPinModal(name){
   document.getElementById('dp-driver-name').textContent=name;
   document.getElementById('dp-pin').value='';
   document.getElementById('dp-pin2').value='';
@@ -2767,6 +2791,136 @@ function resetInvoice(){
   document.getElementById('inv-preview-wrap').style.display='none';
   document.getElementById('inv-error').style.display='none';
   currentInvoiceData=null;
+}
+
+// ── EMAIL PARSER ──
+function openEmailParser(){
+  document.getElementById('email-text').value='';
+  document.getElementById('email-parse-error').style.display='none';
+  document.getElementById('email-parse-loading').style.display='none';
+  document.getElementById('email-parser-modal').style.display='flex';
+}
+function closeEmailParser(){
+  document.getElementById('email-parser-modal').style.display='none';
+}
+
+async function parseEmailWithAI(){
+  const emailText = document.getElementById('email-text').value.trim();
+  if(!emailText){ alert('Please paste an email first.'); return; }
+
+  document.getElementById('email-parse-loading').style.display='block';
+  document.getElementById('email-parse-error').style.display='none';
+
+  // Build facility list for context
+  const facilityNames = FACILITIES.map(f=>f.name).join(', ');
+  const today = dateStr(new Date());
+
+  const prompt = `You are a dispatcher for AbleCare Mobility, a wheelchair transportation company. Extract ride information from this email.
+
+Known facilities: ${facilityNames}
+Today's date: ${today}
+
+EMAIL:
+${emailText}
+
+Extract the following and respond ONLY with valid JSON, no markdown, no explanation:
+{
+  "client": "full client name or empty string",
+  "facility": "facility name if it matches one of the known facilities, otherwise empty string",
+  "pickup": "full pickup address if mentioned, otherwise empty string",
+  "dropoff": "full drop off / appointment address if mentioned, otherwise empty string",
+  "date": "date in YYYY-MM-DD format if mentioned, otherwise empty string",
+  "time": "pickup time in HH:MM 24hr format if mentioned, otherwise empty string",
+  "ridetype": "wc if wheelchair mentioned, str if stretcher mentioned, wc if unclear",
+  "triptype": "rt if round trip mentioned, 1way if one way mentioned, rt if unclear",
+  "notes": "any other relevant info like doctor name, appointment type, etc"
+}`;
+
+  try {
+    const response = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'x-api-key': '',
+        'anthropic-version': '2023-06-01'
+      },
+      body: JSON.stringify({
+        model: 'claude-sonnet-4-20250514',
+        max_tokens: 500,
+        messages: [{ role: 'user', content: prompt }]
+      })
+    });
+
+    document.getElementById('email-parse-loading').style.display='none';
+
+    if(!response.ok) throw new Error('API error');
+    const data = await response.json();
+    const text = data.content[0].text.replace(/```json|```/g,'').trim();
+    const parsed = JSON.parse(text);
+
+    // Close parser and open ride modal pre-filled
+    closeEmailParser();
+    await openRideModal(null, parsed.date||dateStr(new Date()));
+
+    // Fill in extracted fields
+    if(parsed.client) document.getElementById('r-client').value = parsed.client;
+    if(parsed.notes) document.getElementById('r-notes').value = parsed.notes;
+    if(parsed.time) document.getElementById('r-time').value = parsed.time;
+    if(parsed.date) document.getElementById('r-date').value = parsed.date;
+
+    // Handle facility — if matched, select it (which auto-fills addresses)
+    if(parsed.facility){
+      const fac = FACILITIES.find(f=>f.name.toLowerCase()===parsed.facility.toLowerCase());
+      if(fac){
+        selectFacility(fac.name);
+      } else {
+        document.getElementById('r-facility').value = parsed.facility;
+      }
+    }
+
+    // Override addresses if explicitly in email
+    if(parsed.pickup) {
+      document.getElementById('r-pickup').value = parsed.pickup;
+      document.getElementById('r-pickup').style.background='#f0faff';
+    }
+    if(parsed.dropoff) {
+      document.getElementById('r-dropoff').value = parsed.dropoff;
+      document.getElementById('r-dropoff').style.background='#f0faff';
+    }
+
+    // Set toggles
+    rideToggles.ridetype = parsed.ridetype||'wc';
+    rideToggles.triptype = parsed.triptype||'rt';
+    updateRideToggles();
+    showHideStretcherFields();
+
+  } catch(e) {
+    document.getElementById('email-parse-loading').style.display='none';
+
+    // Fallback — do basic keyword extraction without AI
+    fallbackParseEmail(emailText);
+  }
+}
+
+function fallbackParseEmail(text){
+  // Simple keyword extraction if API fails
+  const lower = text.toLowerCase();
+  const extracted = {
+    ridetype: lower.includes('stretcher') ? 'str' : 'wc',
+    triptype: lower.includes('one way') || lower.includes('1 way') ? '1way' : 'rt',
+  };
+
+  closeEmailParser();
+  openRideModal(null, dateStr(new Date())).then(()=>{
+    rideToggles.ridetype = extracted.ridetype;
+    rideToggles.triptype = extracted.triptype;
+    updateRideToggles();
+    showHideStretcherFields();
+    // Put the raw email in notes so nothing is lost
+    document.getElementById('r-notes').value = text.substring(0,200);
+    document.getElementById('email-parse-error').style.display='block';
+    document.getElementById('email-parse-error').textContent = 'Could not fully parse — basic info extracted. Please fill in the remaining fields.';
+  });
 }
 
 // ── RIDE QUOTE CALCULATOR ──
