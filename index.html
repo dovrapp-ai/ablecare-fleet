@@ -1793,6 +1793,29 @@ async function downloadExcel(){
 }
 
 // ── SETTINGS TAB ──
+// ── STATUS HELPERS ──
+const DEFAULT_STATUSES = [
+  {value:'completed',        label:'✅ Completed',            color:'#16a34a', bg:'#f0fdf4'},
+  {value:'cancelled_pickup', label:'🚫 Cancelled at Pickup',  color:'#dc2626', bg:'#fef2f2'},
+  {value:'cancelled',        label:'❌ Cancelled',             color:'#dc2626', bg:'#fef2f2'},
+  {value:'noshow',           label:'👻 No Show',               color:'#9333ea', bg:'#faf5ff'},
+];
+function getStatuses(){
+  return [...DEFAULT_STATUSES, ...(window._customStatuses||[])];
+}
+function statusBadgeHtml(statusVal){
+  if(!statusVal) return '';
+  const s = getStatuses().find(x=>x.value===statusVal);
+  if(!s) return `<div style="font-size:10px;font-weight:800;padding:2px 6px;border-radius:5px;margin-bottom:3px;background:#f0f4f8;color:#6b82a8">${statusVal}</div>`;
+  return `<div style="font-size:10px;font-weight:800;padding:2px 6px;border-radius:5px;margin-bottom:3px;background:${s.bg};color:${s.color}">${s.label}</div>`;
+}
+function statusBadgeTableHtml(statusVal){
+  if(!statusVal) return '<span style="color:#94a3b8;font-size:12px">—</span>';
+  const s = getStatuses().find(x=>x.value===statusVal);
+  if(!s) return `<span style="font-size:12px;font-weight:700;padding:2px 8px;border-radius:6px;background:#f0f4f8;color:#6b82a8">${statusVal}</span>`;
+  return `<span style="font-size:12px;font-weight:700;padding:2px 8px;border-radius:6px;background:${s.bg};color:${s.color}">${s.label}</span>`;
+}
+
 async function initSettings(){
   if(!firebaseReady)return;
   const snap=await settingsRef().once('value');
@@ -2036,29 +2059,6 @@ function renderMiniCal(){
     el.textContent=d;el.onclick=()=>selectDay(ds);
     container.appendChild(el);
   }
-}
-
-// ── STATUS HELPERS ──
-const DEFAULT_STATUSES = [
-  {value:'completed',        label:'✅ Completed',            color:'#16a34a', bg:'#f0fdf4'},
-  {value:'cancelled_pickup', label:'🚫 Cancelled at Pickup',  color:'#dc2626', bg:'#fef2f2'},
-  {value:'cancelled',        label:'❌ Cancelled',             color:'#dc2626', bg:'#fef2f2'},
-  {value:'noshow',           label:'👻 No Show',               color:'#9333ea', bg:'#faf5ff'},
-];
-function getStatuses(){
-  return [...DEFAULT_STATUSES, ...(window._customStatuses||[])];
-}
-function statusBadgeHtml(statusVal){
-  if(!statusVal) return '';
-  const s = getStatuses().find(x=>x.value===statusVal);
-  if(!s) return `<div style="font-size:10px;font-weight:800;padding:2px 6px;border-radius:5px;margin-bottom:3px;background:#f0f4f8;color:#6b82a8">${statusVal}</div>`;
-  return `<div style="font-size:10px;font-weight:800;padding:2px 6px;border-radius:5px;margin-bottom:3px;background:${s.bg};color:${s.color}">${s.label}</div>`;
-}
-function statusBadgeTableHtml(statusVal){
-  if(!statusVal) return '<span style="color:#94a3b8;font-size:12px">—</span>';
-  const s = getStatuses().find(x=>x.value===statusVal);
-  if(!s) return `<span style="font-size:12px;font-weight:700;padding:2px 8px;border-radius:6px;background:#f0f4f8;color:#6b82a8">${statusVal}</span>`;
-  return `<span style="font-size:12px;font-weight:700;padding:2px 8px;border-radius:6px;background:${s.bg};color:${s.color}">${s.label}</span>`;
 }
 
 async function renderDayView(){
