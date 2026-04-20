@@ -54,9 +54,7 @@ button,input,select,textarea{-webkit-appearance:none;font-family:inherit}
 /* ── SCREENS ── */
 .screen{display:none;padding:24px;max-width:1100px;margin:0 auto}
 .screen.active{display:block}
-#screen-rides{padding:0 !important;max-width:100% !important}
-#screen-rides.active{display:flex !important;flex-direction:row;height:calc(100vh - 122px);overflow:hidden;border:3px solid red}
-
+#screen-rides.active{display:flex}
 
 /* ── PIN SCREEN ── */
 #screen-pin{
@@ -927,11 +925,10 @@ button,input,select,textarea{-webkit-appearance:none;font-family:inherit}
     </div>
 
   <!-- RIDES TAB -->
-  <div class="screen" id="screen-rides">
+  <div class="screen" id="screen-rides" style="padding:0;display:flex;height:calc(100vh - 120px);overflow:hidden">
 
     <!-- LEFT: Mini calendar + nav -->
     <div class="rides-sidebar">
-      <div style="background:#00b4d8;color:#fff;padding:8px;font-weight:800;font-size:12px;text-align:center">✓ SIDEBAR LOADED</div>
       <!-- Mini month calendar -->
       <div class="mini-cal">
         <div class="mini-cal-header">
