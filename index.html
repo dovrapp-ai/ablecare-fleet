@@ -54,7 +54,8 @@ button,input,select,textarea{-webkit-appearance:none;font-family:inherit}
 /* ── SCREENS ── */
 .screen{display:none;padding:24px;max-width:1100px;margin:0 auto}
 .screen.active{display:block}
-#screen-rides.active{display:flex}
+#screen-rides{padding:0 !important;max-width:100% !important}
+#screen-rides.active{display:flex;height:calc(100vh - 120px);overflow:hidden}
 
 /* ── PIN SCREEN ── */
 #screen-pin{
@@ -925,10 +926,11 @@ button,input,select,textarea{-webkit-appearance:none;font-family:inherit}
     </div>
 
   <!-- RIDES TAB -->
-  <div class="screen" id="screen-rides" style="padding:0;height:calc(100vh - 120px);overflow:hidden">
+  <div class="screen" id="screen-rides">
 
     <!-- LEFT: Mini calendar + nav -->
     <div class="rides-sidebar">
+      <div style="background:#00b4d8;color:#fff;padding:8px;font-weight:800;font-size:12px;text-align:center">✓ SIDEBAR LOADED</div>
       <!-- Mini month calendar -->
       <div class="mini-cal">
         <div class="mini-cal-header">
@@ -1489,16 +1491,6 @@ function switchTab(name){
   document.getElementById('tab-'+name).classList.add('active');
   const scr = document.getElementById('screen-'+name);
   scr.classList.add('active');
-
-  // On mobile, remove fixed height from rides so page can scroll
-  const ridesEl = document.getElementById('screen-rides');
-  if(window.innerWidth <= 700){
-    ridesEl.style.height = 'auto';
-    ridesEl.style.overflow = 'visible';
-  } else {
-    ridesEl.style.height = 'calc(100vh - 120px)';
-    ridesEl.style.overflow = 'hidden';
-  }
 
   if(name==='map') refreshMap();
   if(name==='hours') initTimesheet();
