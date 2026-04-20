@@ -2837,11 +2837,10 @@ Extract the following and respond ONLY with valid JSON, no markdown, no explanat
 }`;
 
   try {
-    const response = await fetch('https://api.openai.com/v1/chat/completions', {
+    const response = await fetch('https://ablecare-ai.dovrapp.workers.dev', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'Authorization': 'Bearer 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'
       },
       body: JSON.stringify({
         model: 'gpt-4o-mini',
