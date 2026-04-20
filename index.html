@@ -3561,7 +3561,7 @@ async function parseEmailWithAI(){
   const prompt = `You are a dispatcher for AbleCare Mobility, a wheelchair transportation company. Extract ride information from this email/text message.
 
 Known facilities and their aliases: ${facilityNames}
-- "WAAP" also known as "Maryland Wound & Amputation Prevention", "wound care", "vein and vascular", "Vein and Vascular Center of Central MD", "1300 York Road Building C Suite 200 Lutherville", "1300 York Road"
+- "WAAP" also known as "Maryland Wound & Amputation Prevention", "wound care", "vein and vascular", "Vein and Vascular Center of Central MD", "1300 York Road Building C Suite 200 Lutherville", "1300 York Road". ONLY match WAAP if the address is specifically 1300 York Road. Other Lutherville addresses like "10803 Falls Rd Lutherville" are NOT WAAP.
 - "Edenbridge PACE" also known as "Edenbridge", "PACE", "3201 Tioga Parkway"
 - "Resorts of Augsburg" also known as "Augsburg", "6825 Campfield"
 - "Chapel Hill" also known as "Chapel Hill Manor", "4511 Robinwood"
@@ -3647,7 +3647,7 @@ Respond ONLY with valid JSON, no markdown, no explanation:
       const hasBlockedWord = blockedWords.some(w => allAddresses.includes(w));
 
       if(!hasBlockedWord){
-        if(dropoff_lower.includes('1300 york') || dropoff_lower.includes('vein and vascular') || dropoff_lower.includes('lutherville')) parsed.facility='WAAP';
+        if(dropoff_lower.includes('1300 york') || dropoff_lower.includes('vein and vascular') || (dropoff_lower.includes('lutherville') && dropoff_lower.includes('1300'))) parsed.facility='WAAP';
         else if(dropoff_lower.includes('tioga') || dropoff_lower.includes('3201')) parsed.facility='Edenbridge PACE';
         else if(pickup_lower.includes('4511 robinwood') || pickup_lower.includes('robinwood rd') || dropoff_lower.includes('4511 robinwood')) parsed.facility='Chapel Hill';
         else if(pickup_lower.includes('4204 old milford') || pickup_lower.includes('old milford mill') || dropoff_lower.includes('4204 old milford')) parsed.facility='King David';
