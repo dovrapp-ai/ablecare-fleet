@@ -2640,7 +2640,7 @@ async function loadReports(){
 
   const snap = await ridesRef().once('value');
   const all = snap.val()||{};
-  let rides = Object.values(all).filter(r=>{
+  let rides = Object.entries(all).map(([k,v])=>({...v,_key:k})).filter(r=>{
     if(from && r.date < from) return false;
     if(to && r.date > to) return false;
     if(facilityFilter && r.facility !== facilityFilter) return false;
@@ -2689,38 +2689,39 @@ function renderRepView(){
 
 function renderRideLog(){
   const el = document.getElementById('rep-content');
-  if(!repRides.length){el.innerHTML='<div style="padding:40px;text-align:center;color:#6b82a8">No rides found for this period</div>';return;}
 
   let html = `<div style="overflow-x:auto">
-  <table style="width:100%;border-collapse:collapse;font-size:13px">
+  <table style="width:100%;border-collapse:collapse;font-size:13px" id="ride-log-table">
     <thead>
       <tr style="background:#0d1b2a;color:#fff">
         <th style="padding:10px 12px;text-align:left;font-weight:700;white-space:nowrap">Date</th>
-        <th style="padding:10px 12px;text-align:left;font-weight:700">Day</th>
         <th style="padding:10px 12px;text-align:left;font-weight:700">Facility</th>
         <th style="padding:10px 12px;text-align:left;font-weight:700">Client</th>
         <th style="padding:10px 12px;text-align:left;font-weight:700">Type</th>
-        <th style="padding:10px 12px;text-align:left;font-weight:700">Vehicle</th>
+        <th style="padding:10px 12px;text-align:left;font-weight:700">Van</th>
         <th style="padding:10px 12px;text-align:left;font-weight:700">Driver</th>
         <th style="padding:10px 12px;text-align:right;font-weight:700">Price</th>
         <th style="padding:10px 12px;text-align:center;font-weight:700">Paid</th>
         <th style="padding:10px 12px;text-align:left;font-weight:700">Invoice #</th>
         <th style="padding:10px 12px;text-align:left;font-weight:700">Notes</th>
+        <th style="padding:10px 12px;text-align:center;font-weight:700">Edit</th>
       </tr>
     </thead>
-    <tbody>`;
+    <tbody id="ride-log-tbody">`;
+
+  if(!repRides.length){
+    html += `<tr><td colspan="11" style="padding:40px;text-align:center;color:#6b82a8">No rides found — click + Add Row to add one</td></tr>`;
+  }
 
   repRides.forEach((r,i)=>{
     const d = new Date(r.date+'T12:00:00');
-    const dayName = d.toLocaleDateString('en-US',{weekday:'short'});
-    const dateDisp = d.toLocaleDateString('en-US',{month:'2-digit',day:'2-digit',year:'numeric'});
+    const dateDisp = r.date?d.toLocaleDateString('en-US',{month:'2-digit',day:'2-digit',year:'numeric'}):'—';
     const isPaid = r.paid==='yes';
     const isUnpaid = r.price && !isPaid;
     const typeStr = `${r.ridetype==='str'?'🛏 Str':'♿ WC'} ${r.triptype==='rt'?'RT':'1W'}`;
     const bg = i%2===0?'#fff':'#f8fafc';
-    html += `<tr style="background:${bg};border-bottom:1px solid #f0f4f8">
+    html += `<tr style="background:${bg};border-bottom:1px solid #f0f4f8" id="log-row-${r._key||i}">
       <td style="padding:9px 12px;white-space:nowrap;color:#0d1b2a;font-weight:600">${dateDisp}</td>
-      <td style="padding:9px 12px;color:#6b82a8">${dayName}</td>
       <td style="padding:9px 12px;font-weight:700;color:#0d1b2a">${r.facility||'—'}</td>
       <td style="padding:9px 12px;color:#0d1b2a">${r.client||'—'}</td>
       <td style="padding:9px 12px;white-space:nowrap;color:#6b82a8">${typeStr}</td>
@@ -2730,11 +2731,216 @@ function renderRideLog(){
       <td style="padding:9px 12px;text-align:center"><span style="font-size:11px;font-weight:700;padding:2px 8px;border-radius:6px;background:${isPaid?'#f0fdf4':'#fff7ed'};color:${isPaid?'#16a34a':'#f59e0b'}">${isPaid?'✓ Yes':'✗ No'}</span></td>
       <td style="padding:9px 12px;color:#6b82a8">${r.invoice||'—'}</td>
       <td style="padding:9px 12px;color:#94a3b8;font-style:italic;font-size:11px">${r.notes||''}</td>
+      <td style="padding:9px 12px;text-align:center">
+        <button onclick="openLogEdit('${r._key||''}')" style="background:#f4f7fb;border:1px solid #e8eef4;border-radius:6px;padding:4px 10px;font-size:11px;font-weight:600;color:#6b82a8;cursor:pointer">✏️ Edit</button>
+      </td>
     </tr>`;
   });
 
-  html += '</tbody></table></div>';
+  html += `</tbody></table>
+  <div style="padding:12px 16px;border-top:1px solid #e8eef4">
+    <button class="add-btn" style="padding:10px 20px;font-size:13px" onclick="openLogEdit(null)">+ Add Ride</button>
+  </div>
+  </div>`;
   el.innerHTML = html;
+}
+
+// Edit modal for ride log
+let logEditKey = null;
+
+async function openLogEdit(key){
+  logEditKey = key;
+  let r = {};
+  if(key){
+    const snap = await ridesRef().child(key).once('value');
+    r = snap.val()||{};
+  }
+
+  // Build modal
+  const drivers = await loadDrivers();
+  const driverOpts = '<option value="">—</option>' + drivers.map(d=>`<option value="${d.name}"${r.driver===d.name?' selected':''}>${d.name}</option>`).join('');
+  const facOpts = '<option value="">—</option>' + FACILITIES.map(f=>`<option value="${f.name}"${r.facility===f.name?' selected':''}>${f.name}</option>`).join('');
+
+  const modal = document.createElement('div');
+  modal.id = 'log-edit-modal';
+  modal.className = 'modal-overlay';
+  modal.style.display = 'flex';
+  modal.innerHTML = `
+    <div class="modal-box" style="max-width:520px;max-height:90vh;overflow-y:auto">
+      <div class="modal-title">${key?'Edit Ride':'Add Ride'}</div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+        <div class="modal-field">
+          <label>Date</label>
+          <input type="date" id="le-date" value="${r.date||''}" style="width:100%;padding:9px 12px;border:2px solid #e8eef4;border-radius:10px;font-size:13px;outline:none;font-family:inherit"/>
+        </div>
+        <div class="modal-field">
+          <label>Pickup Time</label>
+          <input type="time" id="le-time" value="${r.time||''}" style="width:100%;padding:9px 12px;border:2px solid #e8eef4;border-radius:10px;font-size:13px;outline:none;font-family:inherit"/>
+        </div>
+      </div>
+      <div class="modal-field">
+        <label>Facility / Client</label>
+        <select id="le-facility" style="width:100%;padding:9px 12px;border:2px solid #e8eef4;border-radius:10px;font-size:13px;outline:none;font-family:inherit;background:#fff">${facOpts}</select>
+      </div>
+      <div class="modal-field">
+        <label>Client Name</label>
+        <input type="text" id="le-client" value="${r.client||''}" placeholder="e.g. John Smith" style="width:100%;padding:9px 12px;border:2px solid #e8eef4;border-radius:10px;font-size:13px;outline:none;font-family:inherit"/>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+        <div class="modal-field">
+          <label>Ride Type</label>
+          <div style="display:flex;gap:8px">
+            <button class="toggle-btn ${(r.ridetype||'wc')==='wc'?'active':''}" id="le-wc" onclick="leToggle('ridetype','wc')">♿ WC</button>
+            <button class="toggle-btn ${r.ridetype==='str'?'active':''}" id="le-str" onclick="leToggle('ridetype','str')">🛏 Str</button>
+          </div>
+        </div>
+        <div class="modal-field">
+          <label>Trip Type</label>
+          <div style="display:flex;gap:8px">
+            <button class="toggle-btn ${(r.triptype||'rt')==='rt'?'active':''}" id="le-rt" onclick="leToggle('triptype','rt')">RT</button>
+            <button class="toggle-btn ${r.triptype==='1way'?'active':''}" id="le-1way" onclick="leToggle('triptype','1way')">1 Way</button>
+          </div>
+        </div>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+        <div class="modal-field">
+          <label>Driver</label>
+          <select id="le-driver" style="width:100%;padding:9px 12px;border:2px solid #e8eef4;border-radius:10px;font-size:13px;outline:none;font-family:inherit;background:#fff">${driverOpts}</select>
+        </div>
+        <div class="modal-field">
+          <label>Van</label>
+          <div style="display:flex;gap:8px">
+            <button class="toggle-btn ${r.van==='1'?'active':''}" id="le-van1" onclick="leToggle('van','1')">#1</button>
+            <button class="toggle-btn ${r.van==='2'?'active':''}" id="le-van2" onclick="leToggle('van','2')">#2</button>
+            <button class="toggle-btn ${r.van==='3'?'active':''}" id="le-van3" onclick="leToggle('van','3')">#3</button>
+          </div>
+        </div>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+        <div class="modal-field">
+          <label>Price</label>
+          <input type="text" id="le-price" value="${r.price||''}" placeholder="e.g. $145.00" style="width:100%;padding:9px 12px;border:2px solid #e8eef4;border-radius:10px;font-size:13px;outline:none;font-family:inherit"/>
+        </div>
+        <div class="modal-field">
+          <label>Invoice #</label>
+          <input type="text" id="le-invoice" value="${r.invoice||''}" placeholder="e.g. 1045" style="width:100%;padding:9px 12px;border:2px solid #e8eef4;border-radius:10px;font-size:13px;outline:none;font-family:inherit"/>
+        </div>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+        <div class="modal-field">
+          <label>Paid?</label>
+          <div style="display:flex;gap:8px">
+            <button class="toggle-btn ${r.paid==='yes'?'active':''}" id="le-paid-yes" onclick="leToggle('paid','yes')">✓ Yes</button>
+            <button class="toggle-btn ${(r.paid||'no')==='no'?'active':''}" id="le-paid-no" onclick="leToggle('paid','no')">✗ No</button>
+          </div>
+        </div>
+        <div class="modal-field">
+          <label>Payment Method</label>
+          <div style="display:flex;gap:8px">
+            <button class="toggle-btn ${(r.paymethod||'cc')==='cc'?'active':''}" id="le-cc" onclick="leToggle('paymethod','cc')">💳 CC</button>
+            <button class="toggle-btn ${r.paymethod==='invoice'?'active':''}" id="le-inv2" onclick="leToggle('paymethod','invoice')">📄 Invoice</button>
+          </div>
+        </div>
+      </div>
+      <div class="modal-field">
+        <label>Notes</label>
+        <input type="text" id="le-notes" value="${r.notes||''}" placeholder="Any notes..." style="width:100%;padding:9px 12px;border:2px solid #e8eef4;border-radius:10px;font-size:13px;outline:none;font-family:inherit"/>
+      </div>
+      <div class="modal-actions">
+        <button class="modal-save" onclick="saveLogEdit()">Save</button>
+        ${key?`<button class="modal-delete" onclick="deleteLogRide()">Delete</button>`:''}
+        <button class="modal-cancel" onclick="closeLogEdit()">Cancel</button>
+      </div>
+    </div>`;
+
+  document.body.appendChild(modal);
+
+  // Store toggles state
+  window._leToggles = {
+    ridetype: r.ridetype||'wc',
+    triptype: r.triptype||'rt',
+    van: r.van||'',
+    paid: r.paid||'no',
+    paymethod: r.paymethod||'cc'
+  };
+}
+
+function leToggle(group, val){
+  window._leToggles[group] = val;
+  // Update button states
+  if(group==='ridetype'){
+    document.getElementById('le-wc').classList.toggle('active',val==='wc');
+    document.getElementById('le-str').classList.toggle('active',val==='str');
+  }
+  if(group==='triptype'){
+    document.getElementById('le-rt').classList.toggle('active',val==='rt');
+    document.getElementById('le-1way').classList.toggle('active',val==='1way');
+  }
+  if(group==='van'){
+    ['1','2','3'].forEach(v=>document.getElementById('le-van'+v).classList.toggle('active',val===v));
+  }
+  if(group==='paid'){
+    document.getElementById('le-paid-yes').classList.toggle('active',val==='yes');
+    document.getElementById('le-paid-no').classList.toggle('active',val==='no');
+  }
+  if(group==='paymethod'){
+    document.getElementById('le-cc').classList.toggle('active',val==='cc');
+    document.getElementById('le-inv2').classList.toggle('active',val==='invoice');
+  }
+}
+
+function closeLogEdit(){
+  const m = document.getElementById('log-edit-modal');
+  if(m) m.remove();
+  logEditKey = null;
+}
+
+async function saveLogEdit(){
+  const date = document.getElementById('le-date').value;
+  const facility = document.getElementById('le-facility').value;
+  if(!date){alert('Date is required.');return;}
+
+  const ride = {
+    date,
+    time: document.getElementById('le-time').value||'',
+    facility,
+    client: document.getElementById('le-client').value.trim(),
+    ridetype: window._leToggles.ridetype||'wc',
+    triptype: window._leToggles.triptype||'rt',
+    van: window._leToggles.van||'',
+    driver: document.getElementById('le-driver').value,
+    price: document.getElementById('le-price').value.trim(),
+    invoice: document.getElementById('le-invoice').value.trim(),
+    paid: window._leToggles.paid||'no',
+    paymethod: window._leToggles.paymethod||'cc',
+    notes: document.getElementById('le-notes').value.trim(),
+    updatedAt: Date.now()
+  };
+
+  // Auto-fill pickup/dropoff from facility
+  const fac = FACILITIES.find(f=>f.name===facility);
+  if(fac){
+    if(fac.pickup) ride.pickup = fac.pickup;
+    if(fac.dropoff) ride.dropoff = fac.dropoff;
+  }
+
+  if(logEditKey){
+    await ridesRef().child(logEditKey).update(ride);
+  } else {
+    ride.createdAt = Date.now();
+    await ridesRef().push(ride);
+  }
+
+  closeLogEdit();
+  await loadReports();
+}
+
+async function deleteLogRide(){
+  if(!logEditKey) return;
+  if(!confirm('Delete this ride?')) return;
+  await ridesRef().child(logEditKey).remove();
+  closeLogEdit();
+  await loadReports();
 }
 
 function renderByFacility(){
