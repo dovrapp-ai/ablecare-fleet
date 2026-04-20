@@ -441,6 +441,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
     <div class="tab" onclick="switchTab('rides')" id="tab-rides"><span class="tab-icon">🚐</span> Rides</div>
     <div class="tab" onclick="switchTab('quote')" id="tab-quote"><span class="tab-icon">💰</span> Quote</div>
     <div class="tab" onclick="switchTab('invoice')" id="tab-invoice"><span class="tab-icon">📄</span> Invoice</div>
+    <div class="tab" onclick="switchTab('reports')" id="tab-reports"><span class="tab-icon">📊</span> Reports</div>
     <div class="tab" onclick="switchTab('settings')" id="tab-settings"><span class="tab-icon">⚙️</span> Settings</div>
   </div>
 
@@ -654,6 +655,52 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
       <div id="inv-error" style="display:none;background:#fff7ed;border:1px solid #fed7aa;border-radius:14px;padding:20px;text-align:center">
         <div style="font-size:13px;color:#c2410c;font-weight:700" id="inv-error-msg"></div>
       </div>
+
+    </div>
+  </div>
+
+  <!-- REPORTS TAB -->
+  <div class="screen" id="screen-reports">
+    <div style="max-width:1100px;margin:0 auto">
+
+      <!-- Controls -->
+      <div style="background:#fff;border-radius:16px;padding:20px;box-shadow:0 1px 6px rgba(0,0,0,0.05);margin-bottom:16px">
+        <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap">
+          <div style="font-size:13px;font-weight:700;color:#0d1b2a">📊 Reports</div>
+          <div style="display:flex;gap:8px;align-items:center">
+            <input type="date" id="rep-from" class="date-input" style="font-size:13px"/>
+            <span style="font-size:13px;color:#6b82a8">to</span>
+            <input type="date" id="rep-to" class="date-input" style="font-size:13px"/>
+          </div>
+          <select id="rep-facility" class="settings-input" style="font-size:13px">
+            <option value="">All Facilities</option>
+          </select>
+          <select id="rep-driver" class="settings-input" style="font-size:13px">
+            <option value="">All Drivers</option>
+          </select>
+          <select id="rep-paid" class="settings-input" style="font-size:13px">
+            <option value="">All</option>
+            <option value="yes">Paid</option>
+            <option value="no">Unpaid</option>
+          </select>
+          <button class="add-btn" style="padding:8px 16px;font-size:13px" onclick="loadReports()">Apply</button>
+          <button class="export-btn" onclick="exportReportsExcel()" style="margin-left:auto">📥 Export Excel</button>
+        </div>
+      </div>
+
+      <!-- Summary Cards -->
+      <div id="rep-summary-cards" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:14px;margin-bottom:16px"></div>
+
+      <!-- View Toggle -->
+      <div style="display:flex;gap:8px;margin-bottom:12px">
+        <button class="ts-mode-btn active" id="rep-view-log" onclick="setRepView('log')">📋 Ride Log</button>
+        <button class="ts-mode-btn" id="rep-view-facility" onclick="setRepView('facility')">🏥 By Facility</button>
+        <button class="ts-mode-btn" id="rep-view-driver" onclick="setRepView('driver')">👤 By Driver</button>
+        <button class="ts-mode-btn" id="rep-view-month" onclick="setRepView('month')">📅 By Month</button>
+      </div>
+
+      <!-- Content Area -->
+      <div id="rep-content" style="background:#fff;border-radius:16px;overflow:hidden;box-shadow:0 1px 6px rgba(0,0,0,0.05)"></div>
 
     </div>
   </div>
@@ -1293,6 +1340,7 @@ function switchTab(name){
   if(name==='settings') initSettings();
   if(name==='quote') initQuote();
   if(name==='invoice') initInvoice();
+  if(name==='reports') initReports();
 }
 
 // ── DASHBOARD INIT ──
@@ -2553,6 +2601,291 @@ async function sendTomorrowSchedule(){
   if(Object.keys(byDriver).length)msg+=Object.entries(byDriver).map(([dr,dRides])=>`${dr}: ${dRides.length} ride${dRides.length!==1?'s':''}`).join('\n');
   if(unassigned.length)msg+=`\n\n⚠️ ${unassigned.length} ride${unassigned.length!==1?'s':''} still have no driver assigned!`;
   alert(msg);
+}
+
+// ── REPORTS ──
+let repView = 'log';
+let repRides = [];
+
+async function initReports(){
+  if(!firebaseReady) return;
+
+  // Set default date range — current month
+  const now = new Date();
+  const firstDay = new Date(now.getFullYear(), now.getMonth(), 1);
+  document.getElementById('rep-from').value = dateStr(firstDay);
+  document.getElementById('rep-to').value = dateStr(now);
+
+  // Populate facility dropdown
+  const facSel = document.getElementById('rep-facility');
+  facSel.innerHTML = '<option value="">All Facilities</option>' +
+    FACILITIES.map(f=>`<option value="${f.name}">${f.name}</option>`).join('');
+
+  // Populate driver dropdown
+  const drivers = await loadDrivers();
+  const drvSel = document.getElementById('rep-driver');
+  drvSel.innerHTML = '<option value="">All Drivers</option>' +
+    drivers.map(d=>`<option value="${d.name}">${d.name}</option>`).join('');
+
+  await loadReports();
+}
+
+async function loadReports(){
+  if(!firebaseReady) return;
+  const from = document.getElementById('rep-from').value;
+  const to = document.getElementById('rep-to').value;
+  const facilityFilter = document.getElementById('rep-facility').value;
+  const driverFilter = document.getElementById('rep-driver').value;
+  const paidFilter = document.getElementById('rep-paid').value;
+
+  const snap = await ridesRef().once('value');
+  const all = snap.val()||{};
+  let rides = Object.values(all).filter(r=>{
+    if(from && r.date < from) return false;
+    if(to && r.date > to) return false;
+    if(facilityFilter && r.facility !== facilityFilter) return false;
+    if(driverFilter && r.driver !== driverFilter) return false;
+    if(paidFilter && r.paid !== paidFilter) return false;
+    return true;
+  }).sort((a,b)=>a.date.localeCompare(b.date)||(a.time||'').localeCompare(b.time||''));
+
+  repRides = rides;
+  renderSummaryCards(rides);
+  renderRepView();
+}
+
+function renderSummaryCards(rides){
+  const totalRevenue = rides.reduce((s,r)=>s+(parseFloat(r.price)||0),0);
+  const paidRevenue = rides.filter(r=>r.paid==='yes').reduce((s,r)=>s+(parseFloat(r.price)||0),0);
+  const unpaidRevenue = rides.filter(r=>r.paid!=='yes'&&r.price).reduce((s,r)=>s+(parseFloat(r.price)||0),0);
+  const totalRides = rides.length;
+  const wcRides = rides.filter(r=>r.ridetype!=='str').length;
+  const strRides = rides.filter(r=>r.ridetype==='str').length;
+
+  document.getElementById('rep-summary-cards').innerHTML = `
+    <div class="sum-card"><div class="sum-card-num cyan">$${totalRevenue.toFixed(2)}</div><div class="sum-card-label">Total Revenue</div></div>
+    <div class="sum-card"><div class="sum-card-num" style="color:#16a34a">$${paidRevenue.toFixed(2)}</div><div class="sum-card-label">Collected</div></div>
+    <div class="sum-card"><div class="sum-card-num" style="color:#f59e0b">$${unpaidRevenue.toFixed(2)}</div><div class="sum-card-label">Outstanding</div></div>
+    <div class="sum-card"><div class="sum-card-num">${totalRides}</div><div class="sum-card-label">Total Rides</div></div>
+    <div class="sum-card"><div class="sum-card-num">${wcRides}</div><div class="sum-card-label">Wheelchair</div></div>
+    <div class="sum-card"><div class="sum-card-num">${strRides}</div><div class="sum-card-label">Stretcher</div></div>
+  `;
+}
+
+function setRepView(v){
+  repView = v;
+  ['log','facility','driver','month'].forEach(x=>{
+    document.getElementById('rep-view-'+x).classList.toggle('active',x===v);
+  });
+  renderRepView();
+}
+
+function renderRepView(){
+  if(repView==='log') renderRideLog();
+  else if(repView==='facility') renderByFacility();
+  else if(repView==='driver') renderByDriver();
+  else if(repView==='month') renderByMonth();
+}
+
+function renderRideLog(){
+  const el = document.getElementById('rep-content');
+  if(!repRides.length){el.innerHTML='<div style="padding:40px;text-align:center;color:#6b82a8">No rides found for this period</div>';return;}
+
+  let html = `<div style="overflow-x:auto">
+  <table style="width:100%;border-collapse:collapse;font-size:13px">
+    <thead>
+      <tr style="background:#0d1b2a;color:#fff">
+        <th style="padding:10px 12px;text-align:left;font-weight:700;white-space:nowrap">Date</th>
+        <th style="padding:10px 12px;text-align:left;font-weight:700">Day</th>
+        <th style="padding:10px 12px;text-align:left;font-weight:700">Facility</th>
+        <th style="padding:10px 12px;text-align:left;font-weight:700">Client</th>
+        <th style="padding:10px 12px;text-align:left;font-weight:700">Type</th>
+        <th style="padding:10px 12px;text-align:left;font-weight:700">Vehicle</th>
+        <th style="padding:10px 12px;text-align:left;font-weight:700">Driver</th>
+        <th style="padding:10px 12px;text-align:right;font-weight:700">Price</th>
+        <th style="padding:10px 12px;text-align:center;font-weight:700">Paid</th>
+        <th style="padding:10px 12px;text-align:left;font-weight:700">Invoice #</th>
+        <th style="padding:10px 12px;text-align:left;font-weight:700">Notes</th>
+      </tr>
+    </thead>
+    <tbody>`;
+
+  repRides.forEach((r,i)=>{
+    const d = new Date(r.date+'T12:00:00');
+    const dayName = d.toLocaleDateString('en-US',{weekday:'short'});
+    const dateDisp = d.toLocaleDateString('en-US',{month:'2-digit',day:'2-digit',year:'numeric'});
+    const isPaid = r.paid==='yes';
+    const isUnpaid = r.price && !isPaid;
+    const typeStr = `${r.ridetype==='str'?'🛏 Str':'♿ WC'} ${r.triptype==='rt'?'RT':'1W'}`;
+    const bg = i%2===0?'#fff':'#f8fafc';
+    html += `<tr style="background:${bg};border-bottom:1px solid #f0f4f8">
+      <td style="padding:9px 12px;white-space:nowrap;color:#0d1b2a;font-weight:600">${dateDisp}</td>
+      <td style="padding:9px 12px;color:#6b82a8">${dayName}</td>
+      <td style="padding:9px 12px;font-weight:700;color:#0d1b2a">${r.facility||'—'}</td>
+      <td style="padding:9px 12px;color:#0d1b2a">${r.client||'—'}</td>
+      <td style="padding:9px 12px;white-space:nowrap;color:#6b82a8">${typeStr}</td>
+      <td style="padding:9px 12px;color:#6b82a8">${r.van?'#'+r.van:'—'}</td>
+      <td style="padding:9px 12px;color:#0d1b2a">${r.driver||'—'}${r.helper?' + '+r.helper:''}</td>
+      <td style="padding:9px 12px;text-align:right;font-weight:800;color:${isUnpaid?'#f59e0b':'#0d1b2a'}">${r.price||'—'}</td>
+      <td style="padding:9px 12px;text-align:center"><span style="font-size:11px;font-weight:700;padding:2px 8px;border-radius:6px;background:${isPaid?'#f0fdf4':'#fff7ed'};color:${isPaid?'#16a34a':'#f59e0b'}">${isPaid?'✓ Yes':'✗ No'}</span></td>
+      <td style="padding:9px 12px;color:#6b82a8">${r.invoice||'—'}</td>
+      <td style="padding:9px 12px;color:#94a3b8;font-style:italic;font-size:11px">${r.notes||''}</td>
+    </tr>`;
+  });
+
+  html += '</tbody></table></div>';
+  el.innerHTML = html;
+}
+
+function renderByFacility(){
+  const el = document.getElementById('rep-content');
+  const byFac = {};
+  repRides.forEach(r=>{
+    const f = r.facility||'Private';
+    if(!byFac[f]) byFac[f]={rides:0,revenue:0,unpaid:0,wc:0,str:0};
+    byFac[f].rides++;
+    byFac[f].revenue += parseFloat(r.price)||0;
+    if(r.paid!=='yes'&&r.price) byFac[f].unpaid += parseFloat(r.price)||0;
+    if(r.ridetype==='str') byFac[f].str++; else byFac[f].wc++;
+  });
+
+  const sorted = Object.entries(byFac).sort((a,b)=>b[1].revenue-a[1].revenue);
+  let html = `<table style="width:100%;border-collapse:collapse;font-size:13px">
+    <thead><tr style="background:#0d1b2a;color:#fff">
+      <th style="padding:10px 16px;text-align:left;font-weight:700">Facility</th>
+      <th style="padding:10px 16px;text-align:right;font-weight:700">Rides</th>
+      <th style="padding:10px 16px;text-align:right;font-weight:700">WC</th>
+      <th style="padding:10px 16px;text-align:right;font-weight:700">Str</th>
+      <th style="padding:10px 16px;text-align:right;font-weight:700">Revenue</th>
+      <th style="padding:10px 16px;text-align:right;font-weight:700">Outstanding</th>
+    </tr></thead><tbody>`;
+
+  sorted.forEach(([fac,d],i)=>{
+    html += `<tr style="background:${i%2?'#f8fafc':'#fff'};border-bottom:1px solid #f0f4f8">
+      <td style="padding:12px 16px;font-weight:800;color:#0d1b2a">${fac}</td>
+      <td style="padding:12px 16px;text-align:right;color:#6b82a8">${d.rides}</td>
+      <td style="padding:12px 16px;text-align:right;color:#00b4d8">${d.wc}</td>
+      <td style="padding:12px 16px;text-align:right;color:#f97316">${d.str}</td>
+      <td style="padding:12px 16px;text-align:right;font-weight:800;color:#0d1b2a">$${d.revenue.toFixed(2)}</td>
+      <td style="padding:12px 16px;text-align:right;font-weight:700;color:${d.unpaid>0?'#f59e0b':'#16a34a'}">${d.unpaid>0?'$'+d.unpaid.toFixed(2):'✓ Clear'}</td>
+    </tr>`;
+  });
+  html += '</tbody></table>';
+  el.innerHTML = html;
+}
+
+function renderByDriver(){
+  const el = document.getElementById('rep-content');
+  const byDrv = {};
+  repRides.forEach(r=>{
+    const d = r.driver||'Unassigned';
+    if(!byDrv[d]) byDrv[d]={rides:0,revenue:0,wc:0,str:0};
+    byDrv[d].rides++;
+    byDrv[d].revenue += parseFloat(r.price)||0;
+    if(r.ridetype==='str') byDrv[d].str++; else byDrv[d].wc++;
+  });
+
+  const sorted = Object.entries(byDrv).sort((a,b)=>b[1].rides-a[1].rides);
+  let html = `<table style="width:100%;border-collapse:collapse;font-size:13px">
+    <thead><tr style="background:#0d1b2a;color:#fff">
+      <th style="padding:10px 16px;text-align:left;font-weight:700">Driver</th>
+      <th style="padding:10px 16px;text-align:right;font-weight:700">Rides</th>
+      <th style="padding:10px 16px;text-align:right;font-weight:700">WC</th>
+      <th style="padding:10px 16px;text-align:right;font-weight:700">Str</th>
+      <th style="padding:10px 16px;text-align:right;font-weight:700">Revenue Generated</th>
+    </tr></thead><tbody>`;
+
+  sorted.forEach(([drv,d],i)=>{
+    html += `<tr style="background:${i%2?'#f8fafc':'#fff'};border-bottom:1px solid #f0f4f8">
+      <td style="padding:12px 16px;font-weight:800;color:#0d1b2a">${drv}</td>
+      <td style="padding:12px 16px;text-align:right;color:#6b82a8">${d.rides}</td>
+      <td style="padding:12px 16px;text-align:right;color:#00b4d8">${d.wc}</td>
+      <td style="padding:12px 16px;text-align:right;color:#f97316">${d.str}</td>
+      <td style="padding:12px 16px;text-align:right;font-weight:800;color:#0d1b2a">$${d.revenue.toFixed(2)}</td>
+    </tr>`;
+  });
+  html += '</tbody></table>';
+  el.innerHTML = html;
+}
+
+function renderByMonth(){
+  const el = document.getElementById('rep-content');
+  const byMonth = {};
+  repRides.forEach(r=>{
+    const m = r.date?r.date.substring(0,7):'Unknown';
+    if(!byMonth[m]) byMonth[m]={rides:0,revenue:0,unpaid:0};
+    byMonth[m].rides++;
+    byMonth[m].revenue += parseFloat(r.price)||0;
+    if(r.paid!=='yes'&&r.price) byMonth[m].unpaid += parseFloat(r.price)||0;
+  });
+
+  const sorted = Object.entries(byMonth).sort((a,b)=>a[0].localeCompare(b[0]));
+  let html = `<table style="width:100%;border-collapse:collapse;font-size:13px">
+    <thead><tr style="background:#0d1b2a;color:#fff">
+      <th style="padding:10px 16px;text-align:left;font-weight:700">Month</th>
+      <th style="padding:10px 16px;text-align:right;font-weight:700">Rides</th>
+      <th style="padding:10px 16px;text-align:right;font-weight:700">Revenue</th>
+      <th style="padding:10px 16px;text-align:right;font-weight:700">Outstanding</th>
+    </tr></thead><tbody>`;
+
+  sorted.forEach(([month,d],i)=>{
+    const label = new Date(month+'-15').toLocaleDateString('en-US',{month:'long',year:'numeric'});
+    html += `<tr style="background:${i%2?'#f8fafc':'#fff'};border-bottom:1px solid #f0f4f8">
+      <td style="padding:12px 16px;font-weight:800;color:#0d1b2a">${label}</td>
+      <td style="padding:12px 16px;text-align:right;color:#6b82a8">${d.rides}</td>
+      <td style="padding:12px 16px;text-align:right;font-weight:800;color:#0d1b2a">$${d.revenue.toFixed(2)}</td>
+      <td style="padding:12px 16px;text-align:right;font-weight:700;color:${d.unpaid>0?'#f59e0b':'#16a34a'}">${d.unpaid>0?'$'+d.unpaid.toFixed(2):'✓ Clear'}</td>
+    </tr>`;
+  });
+  html += '</tbody></table>';
+  el.innerHTML = html;
+}
+
+function exportReportsExcel(){
+  if(!repRides.length){alert('No rides to export.');return;}
+  const wb = XLSX.utils.book_new();
+
+  // Ride Log sheet — matches your Budget & Running tab format
+  const rows = [['Date','Day','Facility','Client','RT/1Way','WC/Stretcher','Van','Price','Paid','Invoice #','Driver','Notes']];
+  repRides.forEach(r=>{
+    const d = new Date(r.date+'T12:00:00');
+    rows.push([
+      r.date?d.toLocaleDateString('en-US',{month:'2-digit',day:'2-digit',year:'numeric'}):'',
+      r.date?d.toLocaleDateString('en-US',{weekday:'short'}):'',
+      r.facility||'',
+      r.client||'',
+      r.triptype==='rt'?'RT':'1 Way',
+      r.ridetype==='str'?'Stretcher':'Wheelchair',
+      r.van?'#'+r.van:'',
+      r.price||'',
+      r.paid==='yes'?'Yes':'No',
+      r.invoice||'',
+      r.driver||''+(r.helper?' + '+r.helper:''),
+      r.notes||''
+    ]);
+  });
+  const ws = XLSX.utils.aoa_to_sheet(rows);
+  ws['!cols']=[{wch:12},{wch:5},{wch:16},{wch:20},{wch:8},{wch:12},{wch:5},{wch:10},{wch:6},{wch:10},{wch:16},{wch:30}];
+  XLSX.utils.book_append_sheet(wb, ws, 'Ride Log');
+
+  // Summary sheet
+  const totalRev = repRides.reduce((s,r)=>s+(parseFloat(r.price)||0),0);
+  const paidRev = repRides.filter(r=>r.paid==='yes').reduce((s,r)=>s+(parseFloat(r.price)||0),0);
+  const summRows = [
+    ['AbleCare Mobility — Ride Summary'],
+    ['Period:', `${document.getElementById('rep-from').value} to ${document.getElementById('rep-to').value}`],
+    [''],
+    ['Total Rides:', repRides.length],
+    ['Total Revenue:', `$${totalRev.toFixed(2)}`],
+    ['Collected:', `$${paidRev.toFixed(2)}`],
+    ['Outstanding:', `$${(totalRev-paidRev).toFixed(2)}`],
+  ];
+  const wsSumm = XLSX.utils.aoa_to_sheet(summRows);
+  XLSX.utils.book_append_sheet(wb, wsSumm, 'Summary');
+
+  const from = document.getElementById('rep-from').value;
+  const to = document.getElementById('rep-to').value;
+  XLSX.writeFile(wb, `AbleCare_Rides_${from}_to_${to}.xlsx`);
 }
 
 // ── INVOICE SYSTEM ──
