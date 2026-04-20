@@ -3309,7 +3309,7 @@ function renderInvoicePreview(data){
       <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:32px;padding-bottom:24px;border-bottom:3px solid #0d1b2a">
         <div>
           <div style="font-size:26px;font-weight:900;color:#0d1b2a">Able<span style="color:#00b4d8">Care</span> Mobility LLC</div>
-          <div style="font-size:12px;color:#6b82a8;margin-top:4px">3404 Old Court Rd, Pikesville, MD 21208</div>
+          <div style="font-size:12px;color:#6b82a8;margin-top:4px">1829 Reisterstown Rd Suite 350, Pikesville, MD 21208</div>
           <div style="font-size:12px;color:#6b82a8">(443) 819-1808</div>
           <div style="font-size:12px;color:#6b82a8">Non-Emergency Medical Transportation</div>
         </div>
@@ -3363,7 +3363,7 @@ function renderInvoicePreview(data){
 
       <!-- Footer -->
       <div style="border-top:2px solid #e8eef4;padding-top:16px;text-align:center;font-size:11px;color:#94a3b8">
-        AbleCare Mobility LLC · 3404 Old Court Rd, Pikesville, MD 21208 · (443) 819-1808<br>
+        AbleCare Mobility LLC · 1829 Reisterstown Rd Suite 350, Pikesville, MD 21208 · (443) 819-1808<br>
         Thank you for your business.
       </div>
     </div>`;
@@ -3404,7 +3404,7 @@ function emailInvoice(){
   }
   const subject = encodeURIComponent(`AbleCare Mobility — Invoice #${invNumber}`);
   const body = encodeURIComponent(
-    `Dear ${fac?.contact||facilityName},\n\nPlease find attached Invoice #${invNumber} for transportation services from ${formatInvDate(fromDate)} to ${formatInvDate(toDate)}.\n\nTotal Due: $${subtotal?.toFixed(2)||'0.00'}\n\nTo view the invoice, please open the attached PDF.\n\nThank you,\nAbleCare Mobility LLC\n(443) 819-1808\n3404 Old Court Rd, Pikesville, MD 21208`
+    `Dear ${fac?.contact||facilityName},\n\nPlease find attached Invoice #${invNumber} for transportation services from ${formatInvDate(fromDate)} to ${formatInvDate(toDate)}.\n\nTotal Due: $${subtotal?.toFixed(2)||'0.00'}\n\nTo view the invoice, please open the attached PDF.\n\nThank you,\nAbleCare Mobility LLC\n(443) 819-1808\n1829 Reisterstown Rd Suite 350, Pikesville, MD 21208`
   );
   window.open(`mailto:${email}?subject=${subject}&body=${body}`);
 }
