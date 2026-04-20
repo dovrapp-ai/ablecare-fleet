@@ -2838,7 +2838,7 @@ async function openLogEdit(key){
   logEditKey = key;
   let r = {};
   if(key){
-    const snap = await ridesRef().child(key).once('value');
+    const snap = await rideLogRef().child(key).once('value');
     r = snap.val()||{};
   }
 
