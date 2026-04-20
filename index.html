@@ -2818,11 +2818,13 @@ async function parseEmailWithAI(){
   const prompt = `You are a dispatcher for AbleCare Mobility, a wheelchair transportation company. Extract ride information from this email.
 
 Known facilities and their aliases: ${facilityNames}
-- "WAAP" also known as "Maryland Wound & Amputation Prevention", "wound care", "vein and vascular"
-- "Edenbridge PACE" also known as "Edenbridge", "PACE"
-- "Resorts of Augsburg" also known as "Augsburg"
-- "Chapel Hill" also known as "Chapel Hill Manor"
-- "Meadow Park" also known as "Meadow Park Manor"
+- "WAAP" also known as "Maryland Wound & Amputation Prevention", "wound care", "vein and vascular", "Vein and Vascular Center of Central MD", "1300 York Road Building C Suite 200 Lutherville", "1300 York Road"
+- "Edenbridge PACE" also known as "Edenbridge", "PACE", "3201 Tioga Parkway"
+- "Resorts of Augsburg" also known as "Augsburg", "6825 Campfield"
+- "Chapel Hill" also known as "Chapel Hill Manor", "4511 Robinwood"
+- "Meadow Park" also known as "Meadow Park Manor", "1525 Rolling"
+- "King David" also known as "4204 Old Milford Mill"
+- "Orchard Hill" also known as "111 West Road Towson"
 Today's date: ${today}
 
 EMAIL:
@@ -2886,6 +2888,19 @@ Respond ONLY with valid JSON, no markdown, no explanation:
       if(parsed.notes) document.getElementById('r-notes').value = parsed.notes;
       if(parsed.time) document.getElementById('r-time').value = parsed.time;
       if(parsed.date) document.getElementById('r-date').value = parsed.date;
+
+      // Auto-detect facility from addresses if not already matched
+      if(!parsed.facility){
+        const pickup_lower = (parsed.pickup||'').toLowerCase();
+        const dropoff_lower = (parsed.dropoff||'').toLowerCase();
+        if(dropoff_lower.includes('1300 york') || dropoff_lower.includes('vein and vascular') || dropoff_lower.includes('waap')) parsed.facility='WAAP';
+        else if(dropoff_lower.includes('tioga') || dropoff_lower.includes('3201')) parsed.facility='Edenbridge PACE';
+        else if(pickup_lower.includes('4511 robinwood') || pickup_lower.includes('chapel hill')) parsed.facility='Chapel Hill';
+        else if(pickup_lower.includes('4204 old milford') || pickup_lower.includes('king david')) parsed.facility='King David';
+        else if(pickup_lower.includes('111 west road') || pickup_lower.includes('orchard hill')) parsed.facility='Orchard Hill';
+        else if(pickup_lower.includes('1525 rolling') || pickup_lower.includes('meadow park')) parsed.facility='Meadow Park';
+        else if(pickup_lower.includes('6825 campfield') || pickup_lower.includes('augsburg')) parsed.facility='Resorts of Augsburg';
+      }
 
       // Handle facility — if matched, select it (which auto-fills addresses)
       if(parsed.facility){
