@@ -2016,7 +2016,7 @@ async function buildDistanceMatrix(addresses){
 
   // Only calculate each address against all others in batches of max 10 origins x 10 destinations
   const MAX_ORIGINS = 5;
-  const MAX_DESTS = 10;
+  const MAX_DESTS = 5;
 
   for(let i=0; i<addresses.length; i+=MAX_ORIGINS){
     const batch = addresses.slice(i, i+MAX_ORIGINS);
