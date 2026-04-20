@@ -2823,17 +2823,28 @@ Today's date: ${today}
 EMAIL:
 ${emailText}
 
-Extract the following and respond ONLY with valid JSON, no markdown, no explanation:
+IMPORTANT EXTRACTION RULES:
+- "client" = the PATIENT name only (not the facility or sender)
+- "facility" = match EXACTLY to one of the known facilities if possible, otherwise empty string
+- "pickup" = the full pickup address including street, city, state, zip
+- "dropoff" = the full drop off / appointment address including street, city, state, zip
+- "date" = convert to YYYY-MM-DD format (e.g. "Wednesday 4-22-2026" = "2026-04-22")
+- "time" = the PICKUP time in HH:MM 24hr format. If email says "arrive by 6:30am" calculate pickup time as 30-60 min earlier (e.g. "06:00"). If a specific pickup time is given use that.
+- "ridetype" = "str" if stretcher mentioned, "wc" if wheelchair mentioned, "wc" if unclear
+- "triptype" = "rt" if round trip mentioned, "1way" if one way, "rt" if unclear
+- "notes" = any extra info like appointment type, special instructions, contact info
+
+Respond ONLY with valid JSON, no markdown, no explanation:
 {
-  "client": "full client name or empty string",
-  "facility": "facility name if it matches one of the known facilities, otherwise empty string",
-  "pickup": "full pickup address if mentioned, otherwise empty string",
-  "dropoff": "full drop off / appointment address if mentioned, otherwise empty string",
-  "date": "date in YYYY-MM-DD format if mentioned, otherwise empty string",
-  "time": "pickup time in HH:MM 24hr format if mentioned, otherwise empty string",
-  "ridetype": "wc if wheelchair mentioned, str if stretcher mentioned, wc if unclear",
-  "triptype": "rt if round trip mentioned, 1way if one way mentioned, rt if unclear",
-  "notes": "any other relevant info like doctor name, appointment type, etc"
+  "client": "",
+  "facility": "",
+  "pickup": "",
+  "dropoff": "",
+  "date": "",
+  "time": "",
+  "ridetype": "",
+  "triptype": "",
+  "notes": ""
 }`;
 
   try {
@@ -2863,37 +2874,40 @@ Extract the following and respond ONLY with valid JSON, no markdown, no explanat
     closeEmailParser();
     await openRideModal(null, parsed.date||dateStr(new Date()));
 
-    // Fill in extracted fields
-    if(parsed.client) document.getElementById('r-client').value = parsed.client;
-    if(parsed.notes) document.getElementById('r-notes').value = parsed.notes;
-    if(parsed.time) document.getElementById('r-time').value = parsed.time;
-    if(parsed.date) document.getElementById('r-date').value = parsed.date;
+    // Wait for modal to fully render then fill fields
+    setTimeout(()=>{
+      // Fill in extracted fields
+      if(parsed.client) document.getElementById('r-client').value = parsed.client;
+      if(parsed.notes) document.getElementById('r-notes').value = parsed.notes;
+      if(parsed.time) document.getElementById('r-time').value = parsed.time;
+      if(parsed.date) document.getElementById('r-date').value = parsed.date;
 
-    // Handle facility — if matched, select it (which auto-fills addresses)
-    if(parsed.facility){
-      const fac = FACILITIES.find(f=>f.name.toLowerCase()===parsed.facility.toLowerCase());
-      if(fac){
-        selectFacility(fac.name);
-      } else {
-        document.getElementById('r-facility').value = parsed.facility;
+      // Handle facility — if matched, select it (which auto-fills addresses)
+      if(parsed.facility){
+        const fac = FACILITIES.find(f=>f.name.toLowerCase()===parsed.facility.toLowerCase());
+        if(fac){
+          selectFacility(fac.name);
+        } else {
+          document.getElementById('r-facility').value = parsed.facility;
+        }
       }
-    }
 
-    // Override addresses if explicitly in email
-    if(parsed.pickup) {
-      document.getElementById('r-pickup').value = parsed.pickup;
-      document.getElementById('r-pickup').style.background='#f0faff';
-    }
-    if(parsed.dropoff) {
-      document.getElementById('r-dropoff').value = parsed.dropoff;
-      document.getElementById('r-dropoff').style.background='#f0faff';
-    }
+      // Override addresses if explicitly in email
+      if(parsed.pickup){
+        document.getElementById('r-pickup').value = parsed.pickup;
+        document.getElementById('r-pickup').style.background='#f0faff';
+      }
+      if(parsed.dropoff){
+        document.getElementById('r-dropoff').value = parsed.dropoff;
+        document.getElementById('r-dropoff').style.background='#f0faff';
+      }
 
-    // Set toggles
-    rideToggles.ridetype = parsed.ridetype||'wc';
-    rideToggles.triptype = parsed.triptype||'rt';
-    updateRideToggles();
-    showHideStretcherFields();
+      // Set toggles
+      rideToggles.ridetype = parsed.ridetype||'wc';
+      rideToggles.triptype = parsed.triptype||'rt';
+      updateRideToggles();
+      showHideStretcherFields();
+    }, 300);
 
   } catch(e) {
     console.error('Email parse error:', e);
