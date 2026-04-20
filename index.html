@@ -896,7 +896,30 @@ button,input,select,textarea{-webkit-appearance:none;font-family:inherit}
       <div id="s-biz-msg" style="font-size:12px;margin-top:6px;display:none"></div>
     </div>
 
-  </div>
+    <!-- Ride Statuses -->
+    <div class="settings-section">
+      <div class="settings-section-title">🏷️ Ride Statuses</div>
+      <div style="font-size:12px;color:#6b82a8;margin-bottom:12px">Default statuses are built-in. Add custom ones below.</div>
+      <div style="display:flex;flex-direction:column;gap:6px;margin-bottom:12px">
+        <div style="display:flex;gap:8px;align-items:center;padding:8px 12px;background:#f8fafc;border-radius:8px">
+          <span style="font-size:12px;font-weight:700;color:#16a34a">✅ Completed</span><span style="font-size:11px;color:#94a3b8;margin-left:auto">built-in</span>
+        </div>
+        <div style="display:flex;gap:8px;align-items:center;padding:8px 12px;background:#f8fafc;border-radius:8px">
+          <span style="font-size:12px;font-weight:700;color:#dc2626">🚫 Cancelled at Pickup</span><span style="font-size:11px;color:#94a3b8;margin-left:auto">built-in</span>
+        </div>
+        <div style="display:flex;gap:8px;align-items:center;padding:8px 12px;background:#f8fafc;border-radius:8px">
+          <span style="font-size:12px;font-weight:700;color:#dc2626">❌ Cancelled</span><span style="font-size:11px;color:#94a3b8;margin-left:auto">built-in</span>
+        </div>
+        <div style="display:flex;gap:8px;align-items:center;padding:8px 12px;background:#f8fafc;border-radius:8px">
+          <span style="font-size:12px;font-weight:700;color:#9333ea">👻 No Show</span><span style="font-size:11px;color:#94a3b8;margin-left:auto">built-in</span>
+        </div>
+      </div>
+      <div id="custom-statuses-list" style="display:flex;flex-direction:column;gap:6px;margin-bottom:12px"></div>
+      <div style="display:flex;gap:8px">
+        <input type="text" id="new-status-input" class="settings-input" placeholder="e.g. Late Arrival" style="flex:1"/>
+        <button class="settings-save-btn" onclick="addCustomStatus()">+ Add</button>
+      </div>
+    </div>
 
   <!-- RIDES TAB -->
   <div class="screen" id="screen-rides" style="padding:0;height:calc(100vh - 120px);overflow:hidden">
@@ -1151,6 +1174,16 @@ button,input,select,textarea{-webkit-appearance:none;font-family:inherit}
         <label>⏳ Actual Wait Time (hours)</label>
         <input type="number" id="r-wait-hours" placeholder="e.g. 1.5" step="0.5" min="0" oninput="onWaitHoursChange()"/>
         <div id="r-wait-charge" style="font-size:12px;color:#00b4d8;margin-top:4px;display:none"></div>
+      </div>
+      <div class="modal-field">
+        <label>Ride Status</label>
+        <select id="r-status" style="width:100%;padding:9px 12px;border:2px solid #e8eef4;border-radius:10px;font-size:13px;outline:none;font-family:inherit;background:#fff">
+          <option value="">— Set Status —</option>
+          <option value="completed">✅ Completed</option>
+          <option value="cancelled_pickup">🚫 Cancelled at Pickup</option>
+          <option value="cancelled">❌ Cancelled</option>
+          <option value="noshow">👻 No Show</option>
+        </select>
       </div>
       <div class="modal-field">
         <label>Notes</label>
@@ -1473,6 +1506,11 @@ function initDash(){
   if(dashInt) clearInterval(dashInt);
   dashInt=setInterval(refreshMap,10000);
   updatePPDisplay();
+  // Load custom statuses from Firebase
+  settingsRef().once('value').then(snap=>{
+    const s = snap.val()||{};
+    window._customStatuses = s.customStatuses||[];
+  });
 }
 
 // ── MAP ──
@@ -1763,7 +1801,7 @@ async function initSettings(){
   // Pay period
   document.getElementById('s-pp-days').value=s.payPeriodDays||PAY_PERIOD_DAYS;
   document.getElementById('s-pp-ref').value=s.payPeriodRef||PAY_PERIOD_REF_DATE;
-  document.getElementById('s-pp-start').value='1'; // Monday default
+  document.getElementById('s-pp-start').value='1';
 
   // Business info
   document.getElementById('s-company').value=s.company||'AbleCare Mobility LLC';
@@ -1775,6 +1813,51 @@ async function initSettings(){
 
   // Facilities
   renderFacilitiesList();
+
+  // Custom statuses
+  window._customStatuses = s.customStatuses||[];
+  renderCustomStatuses();
+}
+
+function populateStatusDropdown(id, selectedVal){
+  const sel = document.getElementById(id);
+  if(!sel) return;
+  sel.innerHTML = '<option value="">— Set Status —</option>' +
+    getStatuses().map(s=>`<option value="${s.value}"${s.value===selectedVal?' selected':''}>${s.label}</option>`).join('');
+}
+
+function renderCustomStatuses(){
+  const list = document.getElementById('custom-statuses-list');
+  if(!list) return;
+  const customs = window._customStatuses||[];
+  if(!customs.length){ list.innerHTML=''; return; }
+  list.innerHTML = customs.map((s,i)=>`
+    <div style="display:flex;gap:8px;align-items:center;padding:8px 12px;background:#fff;border:1px solid #e8eef4;border-radius:8px">
+      <span style="font-size:12px;font-weight:700;color:#0d1b2a">${s.label}</span>
+      <button onclick="removeCustomStatus(${i})" style="margin-left:auto;background:#fef2f2;border:1px solid #fecaca;border-radius:6px;padding:2px 8px;font-size:11px;color:#dc2626;cursor:pointer">Remove</button>
+    </div>`).join('');
+}
+
+async function addCustomStatus(){
+  const input = document.getElementById('new-status-input');
+  const label = input.value.trim();
+  if(!label){ alert('Please enter a status name.'); return; }
+  const customs = window._customStatuses||[];
+  const value = label.toLowerCase().replace(/\s+/g,'_').replace(/[^a-z0-9_]/g,'');
+  customs.push({ value, label });
+  window._customStatuses = customs;
+  await settingsRef().update({ customStatuses: customs });
+  input.value = '';
+  renderCustomStatuses();
+  showToast('✓ Status added!');
+}
+
+async function removeCustomStatus(index){
+  const customs = window._customStatuses||[];
+  customs.splice(index,1);
+  window._customStatuses = customs;
+  await settingsRef().update({ customStatuses: customs });
+  renderCustomStatuses();
 }
 
 async function saveOwnerPin(){
@@ -1955,6 +2038,29 @@ function renderMiniCal(){
   }
 }
 
+// ── STATUS HELPERS ──
+const DEFAULT_STATUSES = [
+  {value:'completed',        label:'✅ Completed',            color:'#16a34a', bg:'#f0fdf4'},
+  {value:'cancelled_pickup', label:'🚫 Cancelled at Pickup',  color:'#dc2626', bg:'#fef2f2'},
+  {value:'cancelled',        label:'❌ Cancelled',             color:'#dc2626', bg:'#fef2f2'},
+  {value:'noshow',           label:'👻 No Show',               color:'#9333ea', bg:'#faf5ff'},
+];
+function getStatuses(){
+  return [...DEFAULT_STATUSES, ...(window._customStatuses||[])];
+}
+function statusBadgeHtml(statusVal){
+  if(!statusVal) return '';
+  const s = getStatuses().find(x=>x.value===statusVal);
+  if(!s) return `<div style="font-size:10px;font-weight:800;padding:2px 6px;border-radius:5px;margin-bottom:3px;background:#f0f4f8;color:#6b82a8">${statusVal}</div>`;
+  return `<div style="font-size:10px;font-weight:800;padding:2px 6px;border-radius:5px;margin-bottom:3px;background:${s.bg};color:${s.color}">${s.label}</div>`;
+}
+function statusBadgeTableHtml(statusVal){
+  if(!statusVal) return '<span style="color:#94a3b8;font-size:12px">—</span>';
+  const s = getStatuses().find(x=>x.value===statusVal);
+  if(!s) return `<span style="font-size:12px;font-weight:700;padding:2px 8px;border-radius:6px;background:#f0f4f8;color:#6b82a8">${statusVal}</span>`;
+  return `<span style="font-size:12px;font-weight:700;padding:2px 8px;border-radius:6px;background:${s.bg};color:${s.color}">${s.label}</span>`;
+}
+
 async function renderDayView(){
   if(!firebaseReady)return;
   const snap=await ridesRef().once('value');
@@ -1986,8 +2092,10 @@ async function renderDayView(){
       const isUnpaid=r.price&&r.price!==''&&r.paid!=='yes';
       const isReturn=!!r.returnOf;
       const cls=isReturn?'return-ride':(isUnpaid?'unpaid-block':(r.ridetype==='str'?'str':'wc'));
+      const statusBadge = r.status ? statusBadgeHtml(r.status) : '';
       html+=`<div class="ride-block ${cls}" onclick="event.stopPropagation();openRideModal('${r._key}')">
         ${isReturn?`<div style="font-size:10px;font-weight:800;color:#16a34a;margin-bottom:4px">↩ RETURN RIDE — ${r.returnOfClient||r.client||''} ${r.returnOfTime?'(orig. '+fmtTime12(r.returnOfTime)+')':''}</div>`:''}
+        ${statusBadge}
         <div class="ride-block-time">${r.time?fmtTime12(r.time):'Awaiting call...'}</div>
         <div class="ride-block-title">${r.facility||r.client||'—'}</div>
         ${r.client&&r.facility?`<div class="ride-block-client">${r.client}</div>`:''}
@@ -2001,7 +2109,7 @@ async function renderDayView(){
           ${r.wait==='yes'?`<span class="ride-block-tag" style="background:#fff7ed;color:#c2410c">⏳ Wait</span>`:''}
           ${r.estimatedMiles!=null&&r.estimatedMiles!==''?`<span class="ride-block-tag" style="background:#f0fdf4;color:#16a34a;font-weight:800">🗺 ${r.estimatedMiles} mi</span>`:''}
         </div>
-        ${isUnpaid?`<div class="ride-block-unpaid">💰 Unpaid — follow up</div>`:''}
+        ${isUnpaid&&!r.status?`<div class="ride-block-unpaid">💰 Unpaid — follow up</div>`:''}
         ${r.price&&r.paid==='yes'?`<div style="font-size:10px;color:#16a34a;font-weight:700;margin-top:3px">✓ Paid ${r.price}</div>`:''}
         <div onclick="event.stopPropagation()" style="margin-top:6px;padding-top:6px;border-top:1px solid rgba(0,0,0,0.07);display:flex;gap:4px">
           ${r.triptype==='rt'&&!isReturn?`<button class="add-return-btn" style="flex:1" onclick="event.stopPropagation();openReturnModal('${r._key}')">↩ Return</button>`:''}
@@ -2649,6 +2757,8 @@ async function openRideModal(key,defaultDate){
     document.getElementById('r-invoice').value=r.invoice||'';
     document.getElementById('r-miles').value=r.miles||'';
     document.getElementById('r-notes').value=r.notes||'';
+    // Populate status dropdown with any custom statuses
+    populateStatusDropdown('r-status', r.status||'');
     document.getElementById('r-helper').value=r.helper||'';
     if(document.getElementById('r-wait-hours')) document.getElementById('r-wait-hours').value=r.waitHours||'';
     sel.value=r.driver||'';
@@ -2669,6 +2779,7 @@ async function openRideModal(key,defaultDate){
     document.getElementById('r-invoice').value='';
     document.getElementById('r-miles').value='';
     document.getElementById('r-notes').value='';
+    populateStatusDropdown('r-status', '');
     document.getElementById('r-helper').value='';
     sel.value='';
     rideToggles={ridetype:'wc',triptype:'rt',van:'',paid:'no',wait:'no',paymethod:'cc'};
@@ -2700,6 +2811,7 @@ async function saveRide(){
     paymethod:rideToggles.paymethod||'cc',
     miles:document.getElementById('r-miles').value.trim(),
     notes:document.getElementById('r-notes').value.trim(),
+    status:document.getElementById('r-status').value||'',
     updatedAt:Date.now(),
   };
   if(rideEditKey){await ridesRef().child(rideEditKey).update(ride);}
@@ -2759,6 +2871,7 @@ async function logRideFromCalendar(rideKey){
     waitHours: r.waitHours||0,
     estimatedMiles: r.estimatedMiles||0,
     notes: r.notes||'',
+    status: r.status||'',
     calendarKey: rideKey,
     createdAt: Date.now()
   });
@@ -2911,6 +3024,7 @@ function renderRideLog(){
         <th style="padding:10px 12px;text-align:center;font-weight:700">Paid</th>
         <th style="padding:10px 12px;text-align:left;font-weight:700">Invoice #</th>
         <th style="padding:10px 12px;text-align:left;font-weight:700">Notes</th>
+        <th style="padding:10px 12px;text-align:center;font-weight:700">Status</th>
         <th style="padding:10px 12px;text-align:center;font-weight:700">Edit</th>
       </tr>
     </thead>
@@ -2938,6 +3052,7 @@ function renderRideLog(){
       <td style="padding:9px 12px;text-align:center"><span style="font-size:11px;font-weight:700;padding:2px 8px;border-radius:6px;background:${isPaid?'#f0fdf4':'#fff7ed'};color:${isPaid?'#16a34a':'#f59e0b'}">${isPaid?'✓ Yes':'✗ No'}</span></td>
       <td style="padding:9px 12px;color:#6b82a8">${r.invoice||'—'}</td>
       <td style="padding:9px 12px;color:#94a3b8;font-style:italic;font-size:11px">${r.notes||''}</td>
+      <td style="padding:9px 12px;text-align:center">${statusBadgeTableHtml(r.status||'')}</td>
       <td style="padding:9px 12px;text-align:center">
         <button onclick="openLogEdit('${r._key||''}')" style="background:#f4f7fb;border:1px solid #e8eef4;border-radius:6px;padding:4px 10px;font-size:11px;font-weight:600;color:#6b82a8;cursor:pointer">✏️ Edit</button>
       </td>
@@ -3050,6 +3165,13 @@ async function openLogEdit(key){
         </div>
       </div>
       <div class="modal-field">
+        <label>Ride Status</label>
+        <select id="le-status" style="width:100%;padding:9px 12px;border:2px solid #e8eef4;border-radius:10px;font-size:13px;outline:none;font-family:inherit;background:#fff">
+          <option value="">— Set Status —</option>
+          ${getStatuses().map(s=>`<option value="${s.value}"${r.status===s.value?' selected':''}>${s.label}</option>`).join('')}
+        </select>
+      </div>
+      <div class="modal-field">
         <label>Notes</label>
         <input type="text" id="le-notes" value="${r.notes||''}" placeholder="Any notes..." style="width:100%;padding:9px 12px;border:2px solid #e8eef4;border-radius:10px;font-size:13px;outline:none;font-family:inherit"/>
       </div>
@@ -3121,6 +3243,7 @@ async function saveLogEdit(){
     paid: window._leToggles.paid||'no',
     paymethod: window._leToggles.paymethod||'cc',
     notes: document.getElementById('le-notes').value.trim(),
+    status: document.getElementById('le-status').value||'',
     updatedAt: Date.now()
   };
 
