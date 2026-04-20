@@ -1994,7 +1994,7 @@ async function runOptimizer(ds){
   setOptProgress(40,'Calculating routes...');
   let distMatrix={};
   try{distMatrix=await buildDistanceMatrix(uniqueAddresses);}
-  catch(e){distMatrix=buildFallbackMatrix(uniqueAddresses);}
+  catch(e){console.error('Distance matrix failed:', e);distMatrix=buildFallbackMatrix(uniqueAddresses);}
 
   setOptProgress(70,'Balancing rides across drivers...');
 
@@ -2031,6 +2031,7 @@ async function buildDistanceMatrix(addresses){
         travelMode: google.maps.TravelMode.DRIVING,
         unitSystem: google.maps.UnitSystem.IMPERIAL,
       },(response, status)=>{
+        console.log('Distance Matrix status:', status, response);
         if(status==='OK'){
           response.rows.forEach((row,i)=>{
             const origin = batch[i];
@@ -2044,6 +2045,14 @@ async function buildDistanceMatrix(addresses){
               } else {
                 matrix[origin][dest] = {distMiles:10,durationMins:20};
               }
+            });
+          });
+        } else {
+          console.error('Distance Matrix error:', status);
+          // Fill with fallback values for this batch
+          batch.forEach(origin=>{
+            addresses.forEach(dest=>{
+              matrix[origin][dest] = {distMiles:10,durationMins:20};
             });
           });
         }
