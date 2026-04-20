@@ -839,6 +839,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
         <button class="cal-today-btn" onclick="goToToday()">Today</button>
         <button class="optimize-btn" onclick="openOptimizer()">🤖 Optimize</button>
         <button class="send-schedule-btn" style="margin-left:4px;padding:8px 14px;font-size:12px;width:auto" onclick="sendTomorrowSchedule()">📤 Send Schedule</button>
+        <button class="send-schedule-btn" style="margin-left:4px;padding:8px 14px;font-size:12px;width:auto;background:#1e3a5f" onclick="logAllRidesForDay()">📋 Log All</button>
       </div>
 
       <!-- Time grid -->
@@ -1282,6 +1283,7 @@ const shiftsRef=()=>db.ref('shifts');
 const drvsRef=()=>db.ref('drivers');
 const ridesRef=()=>db.ref('rides');
 const settingsRef=()=>db.ref('settings');
+const rideLogRef=()=>db.ref('rideLog');
 function safe(n){return n.replace(/[^a-zA-Z0-9_-]/g,'_');}
 
 async function loadDrivers(){
@@ -1880,9 +1882,10 @@ async function renderDayView(){
         </div>
         ${isUnpaid?`<div class="ride-block-unpaid">💰 Unpaid — follow up</div>`:''}
         ${r.price&&r.paid==='yes'?`<div style="font-size:10px;color:#16a34a;font-weight:700;margin-top:3px">✓ Paid ${r.price}</div>`:''}
-        ${r.triptype==='rt'&&!isReturn?`<div onclick="event.stopPropagation()" style="margin-top:6px;padding-top:6px;border-top:1px solid rgba(0,0,0,0.07)">
-          <button class="add-return-btn" onclick="event.stopPropagation();openReturnModal('${r._key}')">↩ Add Return</button>
-        </div>`:''}
+        <div onclick="event.stopPropagation()" style="margin-top:6px;padding-top:6px;border-top:1px solid rgba(0,0,0,0.07);display:flex;gap:4px">
+          ${r.triptype==='rt'&&!isReturn?`<button class="add-return-btn" style="flex:1" onclick="event.stopPropagation();openReturnModal('${r._key}')">↩ Return</button>`:''}
+          <button class="add-return-btn" style="flex:1;background:#f0f4ff;border-color:#6b82a8;color:#6b82a8" onclick="event.stopPropagation();logRideFromCalendar('${r._key}')">📋 Log</button>
+        </div>
       </div>`;
     });
     html+=`</div></div><div class="time-row"><div class="time-label" style="opacity:0.35;font-size:10px">${h}:30</div><div class="time-content" onclick="openRideModal(null,'${ds}')"></div></div>`;
@@ -2604,6 +2607,87 @@ async function sendTomorrowSchedule(){
   alert(msg);
 }
 
+// ── LOG RIDES TO REPORTS ──
+async function logRideFromCalendar(rideKey){
+  if(!rideKey) return;
+  const snap = await ridesRef().child(rideKey).once('value');
+  const r = snap.val();
+  if(!r) return;
+
+  // Check if already logged
+  const existSnap = await rideLogRef().orderByChild('calendarKey').equalTo(rideKey).once('value');
+  if(existSnap.val()){
+    if(!confirm('This ride is already in your log. Add it again?')) return;
+  }
+
+  await rideLogRef().push({
+    date: r.date||'',
+    time: r.time||'',
+    facility: r.facility||'',
+    client: r.client||'',
+    ridetype: r.ridetype||'wc',
+    triptype: r.triptype||'rt',
+    van: r.van||'',
+    driver: r.driver||'',
+    helper: r.helper||'',
+    price: r.price||'',
+    invoice: r.invoice||'',
+    paid: r.paid||'no',
+    paymethod: r.paymethod||'cc',
+    waitHours: r.waitHours||0,
+    estimatedMiles: r.estimatedMiles||0,
+    notes: r.notes||'',
+    calendarKey: rideKey,
+    createdAt: Date.now()
+  });
+  showToast('✓ Ride logged to Reports!');
+}
+
+async function logAllRidesForDay(){
+  const ds = dateStr(selectedDate);
+  const snap = await ridesRef().once('value');
+  const all = snap.val()||{};
+  const dayRides = Object.entries(all).filter(([k,v])=>v.date===ds);
+  if(!dayRides.length){alert('No rides on this day to log.');return;}
+
+  // Check how many already logged
+  const logSnap = await rideLogRef().once('value');
+  const loggedKeys = new Set();
+  if(logSnap.val()) Object.values(logSnap.val()).forEach(r=>{ if(r.calendarKey) loggedKeys.add(r.calendarKey); });
+
+  const newRides = dayRides.filter(([k])=>!loggedKeys.has(k));
+  const alreadyLogged = dayRides.length - newRides.length;
+
+  let msg = `Log ${newRides.length} ride${newRides.length!==1?'s':''} to Reports?`;
+  if(alreadyLogged>0) msg += `\n(${alreadyLogged} already logged will be skipped)`;
+  if(!newRides.length){alert('All rides for this day are already in your log.');return;}
+  if(!confirm(msg)) return;
+
+  const updates = {};
+  newRides.forEach(([k,r])=>{
+    const newKey = rideLogRef().push().key;
+    updates[newKey] = {
+      date: r.date||'', time: r.time||'', facility: r.facility||'',
+      client: r.client||'', ridetype: r.ridetype||'wc', triptype: r.triptype||'rt',
+      van: r.van||'', driver: r.driver||'', helper: r.helper||'',
+      price: r.price||'', invoice: r.invoice||'', paid: r.paid||'no',
+      paymethod: r.paymethod||'cc', waitHours: r.waitHours||0,
+      estimatedMiles: r.estimatedMiles||0, notes: r.notes||'',
+      calendarKey: k, createdAt: Date.now()
+    };
+  });
+  await rideLogRef().update(updates);
+  showToast(`✓ ${newRides.length} ride${newRides.length!==1?'s':''} logged to Reports!`);
+}
+
+function showToast(msg){
+  const t = document.createElement('div');
+  t.style.cssText='position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:#0d1b2a;color:#fff;padding:12px 24px;border-radius:12px;font-size:14px;font-weight:700;z-index:9999;box-shadow:0 4px 20px rgba(0,0,0,0.3)';
+  t.textContent=msg;
+  document.body.appendChild(t);
+  setTimeout(()=>t.remove(),2500);
+}
+
 // ── REPORTS ──
 let repView = 'log';
 let repRides = [];
@@ -2639,7 +2723,7 @@ async function loadReports(){
   const driverFilter = document.getElementById('rep-driver').value;
   const paidFilter = document.getElementById('rep-paid').value;
 
-  const snap = await ridesRef().once('value');
+  const snap = await rideLogRef().once('value');
   const all = snap.val()||{};
   let rides = Object.entries(all).map(([k,v])=>({...v,_key:k})).filter(r=>{
     if(from && r.date < from) return false;
@@ -2918,18 +3002,11 @@ async function saveLogEdit(){
     updatedAt: Date.now()
   };
 
-  // Auto-fill pickup/dropoff from facility
-  const fac = FACILITIES.find(f=>f.name===facility);
-  if(fac){
-    if(fac.pickup) ride.pickup = fac.pickup;
-    if(fac.dropoff) ride.dropoff = fac.dropoff;
-  }
-
   if(logEditKey){
-    await ridesRef().child(logEditKey).update(ride);
+    await rideLogRef().child(logEditKey).update(ride);
   } else {
     ride.createdAt = Date.now();
-    await ridesRef().push(ride);
+    await rideLogRef().push(ride);
   }
 
   closeLogEdit();
@@ -2939,7 +3016,7 @@ async function saveLogEdit(){
 async function deleteLogRide(){
   if(!logEditKey) return;
   if(!confirm('Delete this ride?')) return;
-  await ridesRef().child(logEditKey).remove();
+  await rideLogRef().child(logEditKey).remove();
   closeLogEdit();
   await loadReports();
 }
