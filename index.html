@@ -2010,33 +2010,51 @@ async function runOptimizer(ds){
 }
 
 async function buildDistanceMatrix(addresses){
-  const MAPS_KEY = 'AIzaSyB4AqXu2zGTrspYjyG6TuVYjSCtJzbjh0A';
   const matrix = {};
   addresses.forEach(a => matrix[a]={});
 
-  // Calculate one pair at a time to avoid MAX_ELEMENTS_EXCEEDED
-  for(let i=0; i<addresses.length; i++){
-    for(let j=0; j<addresses.length; j++){
-      const origin = addresses[i];
-      const dest = addresses[j];
-      if(origin===dest){ matrix[origin][dest]={distMiles:0,durationMins:0}; continue; }
+  // Process in batches of 5 origins x 5 destinations through Cloudflare worker
+  const BATCH = 5;
+  for(let i=0; i<addresses.length; i+=BATCH){
+    const origins = addresses.slice(i, i+BATCH);
+    for(let j=0; j<addresses.length; j+=BATCH){
+      const destinations = addresses.slice(j, j+BATCH);
       try{
-        const res = await fetch(`https://maps.googleapis.com/maps/api/distancematrix/json?origins=${encodeURIComponent(origin)}&destinations=${encodeURIComponent(dest)}&mode=driving&units=imperial&key=${MAPS_KEY}`);
+        const res = await fetch('https://ablecare-ai.dovrapp.workers.dev', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'X-Service': 'maps'
+          },
+          body: JSON.stringify({ origins, destinations })
+        });
         const data = await res.json();
-        if(data.status==='OK' && data.rows[0].elements[0].status==='OK'){
-          matrix[origin][dest]={
-            distMiles: data.rows[0].elements[0].distance.value/1609.34,
-            durationMins: Math.round(data.rows[0].elements[0].duration.value/60)
-          };
+        if(data.status==='OK'){
+          data.rows.forEach((row,ri)=>{
+            const origin = origins[ri];
+            if(!matrix[origin]) matrix[origin]={};
+            row.elements.forEach((el,ci)=>{
+              const dest = destinations[ci];
+              if(el.status==='OK'){
+                matrix[origin][dest]={
+                  distMiles: el.distance.value/1609.34,
+                  durationMins: Math.round(el.duration.value/60)
+                };
+              } else {
+                matrix[origin][dest]={distMiles:10,durationMins:20};
+              }
+            });
+          });
         } else {
-          matrix[origin][dest]={distMiles:10,durationMins:20};
+          console.error('Maps error:', data.status, data.error_message);
+          origins.forEach(o=>destinations.forEach(d=>{ if(!matrix[o]) matrix[o]={}; matrix[o][d]={distMiles:10,durationMins:20}; }));
         }
       } catch(e){
-        matrix[origin][dest]={distMiles:10,durationMins:20};
+        console.error('Worker error:', e);
+        origins.forEach(o=>destinations.forEach(d=>{ if(!matrix[o]) matrix[o]={}; matrix[o][d]={distMiles:10,durationMins:20}; }));
       }
     }
   }
-  console.log('Distance matrix built:', matrix);
   return matrix;
 }
 
