@@ -1366,8 +1366,8 @@ button,input,select,textarea{-webkit-appearance:none;font-family:inherit}
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
-<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-database-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
 <script>
 // Wait for all scripts to be ready
 window.addEventListener('load', function() {
@@ -1418,13 +1418,11 @@ function tryAutoInit(){
   }
   try{
     const cfg={apiKey:'AIzaSyBhVuubrvIg5iq_CWByHCn-LF6txhZG0Ig',authDomain:'ablecare-fleet.firebaseapp.com',databaseURL:'https://ablecare-fleet-default-rtdb.firebaseio.com',projectId:'ablecare-fleet',storageBucket:'ablecare-fleet.firebasestorage.app',messagingSenderId:'429072390729',appId:'1:429072390729:web:fb3bbb1561c376cf9ebd98'};
-    // Only initialize if not already done
-    if(!firebase.apps.length){
-      firebase.initializeApp(cfg);
-    }
-    db=firebase.apps[0].database ? firebase.apps[0].database() : firebase.database();
+    if(!firebase.apps.length) firebase.initializeApp(cfg);
+    db = firebase.database();
     firebaseReady=true;
     loadSettings();
+    initDash();
   } catch(e){
     console.error('Firebase init error:', e);
     alert('Firebase connection failed: ' + e.message);
@@ -1475,7 +1473,7 @@ function checkPin(){
     document.getElementById('screen-pin').style.display='none';
     document.getElementById('screen-dash').style.display='block';
     tryAutoInit();
-    initDash();
+    if(firebaseReady) initDash();
   } else {
     document.getElementById('pin-error').textContent='Incorrect PIN. Try again.';
     pinBuf='';updatePinDots();
@@ -2040,6 +2038,11 @@ async function deleteFacility(){
 }
 
 // ── RIDES / DAY VIEW ──
+function toggleMobileMenu(){
+  const tabs = document.querySelector('.tabs');
+  if(tabs) tabs.style.display = tabs.style.display==='none'?'flex':'flex';
+}
+
 function dateStr(d){return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');}
 function fmtTime12(t){if(!t)return'—';const[h,m]=t.split(':').map(Number);const ap=h>=12?'PM':'AM';const h12=h%12||12;return`${h12}:${String(m).padStart(2,'0')} ${ap}`;}
 
