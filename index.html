@@ -2613,6 +2613,7 @@ async function logRideFromCalendar(rideKey){
   const snap = await ridesRef().child(rideKey).once('value');
   const r = snap.val();
   if(!r) return;
+  if(r.returnOf){alert('This is a return ride — log the original RT ride instead.');return;}
 
   // Check if already logged
   const existSnap = await rideLogRef().orderByChild('calendarKey').equalTo(rideKey).once('value');
@@ -2647,7 +2648,7 @@ async function logAllRidesForDay(){
   const ds = dateStr(selectedDate);
   const snap = await ridesRef().once('value');
   const all = snap.val()||{};
-  const dayRides = Object.entries(all).filter(([k,v])=>v.date===ds);
+  const dayRides = Object.entries(all).filter(([k,v])=>v.date===ds && !v.returnOf);
   if(!dayRides.length){alert('No rides on this day to log.');return;}
 
   // Check how many already logged
