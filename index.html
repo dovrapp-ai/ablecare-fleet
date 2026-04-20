@@ -2088,7 +2088,7 @@ async function optimizeWithAI(rides, drivers, distMatrix, addresses){
   const driverState = {};
   driverNames.forEach(name=>{
     driverState[name]={
-      currentTime: timeToMins('07:00'), // drivers start at 7am
+      currentTime: timeToMins('04:30'), // drivers can start as early as 4:30am
       currentLocation: BASE,
       blocked: false,
       blockedUntil: 0,
@@ -2140,9 +2140,9 @@ async function optimizeWithAI(rides, drivers, distMatrix, addresses){
       // Drive time from current location to pickup
       const driveToPickup = getDriveTime(state.currentLocation, pickup);
       const arriveAtPickup = state.currentTime + driveToPickup;
-      // Can they arrive on time? (within 90 mins of scheduled time is ok)
+      // Can they arrive on time? (within 120 mins of scheduled time is ok)
       const lateness = arriveAtPickup - rideTimeMins;
-      if(lateness > 90) return; // too late
+      if(lateness > 120) return; // too late
       // Score: miles + lateness penalty + balance penalty (prefer drivers with fewer rides)
       const miles = getDriveMiles(state.currentLocation, pickup);
       const balancePenalty = schedules[name].rides.length * 15; // encourage spreading
