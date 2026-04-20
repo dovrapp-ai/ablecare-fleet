@@ -2014,54 +2014,29 @@ async function buildDistanceMatrix(addresses){
   const matrix = {};
   addresses.forEach(a => matrix[a]={});
 
-  // Only calculate each address against all others in batches of max 10 origins x 10 destinations
-  const MAX_ORIGINS = 5;
-  const MAX_DESTS = 5;
-
-  for(let i=0; i<addresses.length; i+=MAX_ORIGINS){
-    const batch = addresses.slice(i, i+MAX_ORIGINS);
-    for(let j=0; j<addresses.length; j+=MAX_DESTS){
-      const destBatch = addresses.slice(j, j+MAX_DESTS);
+  // Calculate one pair at a time to avoid MAX_ELEMENTS_EXCEEDED
+  for(let i=0; i<addresses.length; i++){
+    for(let j=0; j<addresses.length; j++){
+      const origin = addresses[i];
+      const dest = addresses[j];
+      if(origin===dest){ matrix[origin][dest]={distMiles:0,durationMins:0}; continue; }
       try{
-        const res = await fetch(`https://maps.googleapis.com/maps/api/distancematrix/json?origins=${batch.map(a=>encodeURIComponent(a)).join('|')}&destinations=${destBatch.map(a=>encodeURIComponent(a)).join('|')}&mode=driving&units=imperial&key=${MAPS_KEY}`);
+        const res = await fetch(`https://maps.googleapis.com/maps/api/distancematrix/json?origins=${encodeURIComponent(origin)}&destinations=${encodeURIComponent(dest)}&mode=driving&units=imperial&key=${MAPS_KEY}`);
         const data = await res.json();
-        console.log('Distance Matrix response:', data.status);
-        if(data.status==='OK'){
-          data.rows.forEach((row,ri)=>{
-            const origin = batch[ri];
-            if(!matrix[origin]) matrix[origin]={};
-            row.elements.forEach((el,ci)=>{
-              const dest = destBatch[ci];
-              if(el.status==='OK'){
-                matrix[origin][dest]={
-                  distMiles: el.distance.value/1609.34,
-                  durationMins: Math.round(el.duration.value/60)
-                };
-              } else {
-                matrix[origin][dest]={distMiles:10,durationMins:20};
-              }
-            });
-          });
+        if(data.status==='OK' && data.rows[0].elements[0].status==='OK'){
+          matrix[origin][dest]={
+            distMiles: data.rows[0].elements[0].distance.value/1609.34,
+            durationMins: Math.round(data.rows[0].elements[0].duration.value/60)
+          };
         } else {
-          console.error('Distance Matrix error:', data.status, data.error_message);
-          batch.forEach(origin=>{
-            destBatch.forEach(dest=>{
-              if(!matrix[origin]) matrix[origin]={};
-              matrix[origin][dest]={distMiles:10,durationMins:20};
-            });
-          });
+          matrix[origin][dest]={distMiles:10,durationMins:20};
         }
       } catch(e){
-        console.error('Distance Matrix fetch error:', e);
-        batch.forEach(origin=>{
-          destBatch.forEach(dest=>{
-            if(!matrix[origin]) matrix[origin]={};
-            matrix[origin][dest]={distMiles:10,durationMins:20};
-          });
-        });
+        matrix[origin][dest]={distMiles:10,durationMins:20};
       }
     }
   }
+  console.log('Distance matrix built:', matrix);
   return matrix;
 }
 
