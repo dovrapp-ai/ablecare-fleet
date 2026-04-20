@@ -2817,7 +2817,12 @@ async function parseEmailWithAI(){
 
   const prompt = `You are a dispatcher for AbleCare Mobility, a wheelchair transportation company. Extract ride information from this email.
 
-Known facilities: ${facilityNames}
+Known facilities and their aliases: ${facilityNames}
+- "WAAP" also known as "Maryland Wound & Amputation Prevention", "wound care", "vein and vascular"
+- "Edenbridge PACE" also known as "Edenbridge", "PACE"
+- "Resorts of Augsburg" also known as "Augsburg"
+- "Chapel Hill" also known as "Chapel Hill Manor"
+- "Meadow Park" also known as "Meadow Park Manor"
 Today's date: ${today}
 
 EMAIL:
@@ -2884,7 +2889,11 @@ Respond ONLY with valid JSON, no markdown, no explanation:
 
       // Handle facility — if matched, select it (which auto-fills addresses)
       if(parsed.facility){
-        const fac = FACILITIES.find(f=>f.name.toLowerCase()===parsed.facility.toLowerCase());
+        const fac = FACILITIES.find(f=>
+          f.name.toLowerCase()===parsed.facility.toLowerCase() ||
+          parsed.facility.toLowerCase().includes(f.name.toLowerCase()) ||
+          f.name.toLowerCase().includes(parsed.facility.toLowerCase())
+        );
         if(fac){
           selectFacility(fac.name);
         } else {
