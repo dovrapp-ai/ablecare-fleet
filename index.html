@@ -2889,18 +2889,16 @@ Respond ONLY with valid JSON, no markdown, no explanation:
       if(parsed.time) document.getElementById('r-time').value = parsed.time;
       if(parsed.date) document.getElementById('r-date').value = parsed.date;
 
-      // Auto-detect facility from addresses if not already matched
-      if(!parsed.facility){
-        const pickup_lower = (parsed.pickup||'').toLowerCase();
-        const dropoff_lower = (parsed.dropoff||'').toLowerCase();
-        if(dropoff_lower.includes('1300 york') || dropoff_lower.includes('vein and vascular') || dropoff_lower.includes('waap')) parsed.facility='WAAP';
-        else if(dropoff_lower.includes('tioga') || dropoff_lower.includes('3201')) parsed.facility='Edenbridge PACE';
-        else if(pickup_lower.includes('4511 robinwood') || pickup_lower.includes('chapel hill')) parsed.facility='Chapel Hill';
-        else if(pickup_lower.includes('4204 old milford') || pickup_lower.includes('king david')) parsed.facility='King David';
-        else if(pickup_lower.includes('111 west road') || pickup_lower.includes('orchard hill')) parsed.facility='Orchard Hill';
-        else if(pickup_lower.includes('1525 rolling') || pickup_lower.includes('meadow park')) parsed.facility='Meadow Park';
-        else if(pickup_lower.includes('6825 campfield') || pickup_lower.includes('augsburg')) parsed.facility='Resorts of Augsburg';
-      }
+      // Always check addresses to detect facility — overrides AI if address matches
+      const pickup_lower = (parsed.pickup||'').toLowerCase();
+      const dropoff_lower = (parsed.dropoff||'').toLowerCase();
+      if(dropoff_lower.includes('1300 york') || dropoff_lower.includes('vein and vascular') || dropoff_lower.includes('lutherville')) parsed.facility='WAAP';
+      else if(dropoff_lower.includes('tioga') || dropoff_lower.includes('3201')) parsed.facility='Edenbridge PACE';
+      else if(pickup_lower.includes('4511 robinwood')) parsed.facility='Chapel Hill';
+      else if(pickup_lower.includes('4204 old milford')) parsed.facility='King David';
+      else if(pickup_lower.includes('111 west road')) parsed.facility='Orchard Hill';
+      else if(pickup_lower.includes('1525 rolling')) parsed.facility='Meadow Park';
+      else if(pickup_lower.includes('6825 campfield')) parsed.facility='Resorts of Augsburg';
 
       // Handle facility — if matched, select it (which auto-fills addresses)
       if(parsed.facility){
@@ -2931,7 +2929,7 @@ Respond ONLY with valid JSON, no markdown, no explanation:
       rideToggles.triptype = parsed.triptype||'rt';
       updateRideToggles();
       showHideStretcherFields();
-    }, 300);
+    }, 600);
 
   } catch(e) {
     console.error('Email parse error:', e);
