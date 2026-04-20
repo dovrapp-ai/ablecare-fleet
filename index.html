@@ -2683,7 +2683,7 @@ function closeRideModal(){document.getElementById('ride-modal').style.display='n
 async function saveRide(){
   const date=document.getElementById('r-date').value;
   const facility=document.getElementById('r-facility').value.trim();
-  if(!date||!facility){alert('Date and facility/client are required.');return;}
+  if(!date){alert('Date is required.');return;}
   const ride={
     date,time:document.getElementById('r-time').value||'',
     facility,client:document.getElementById('r-client').value.trim(),
