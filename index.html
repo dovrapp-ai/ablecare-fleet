@@ -7,7 +7,8 @@
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css"/>
 <style>
 *{box-sizing:border-box;margin:0;padding:0}
-body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:#f4f7fb;color:#1a2a3a;min-height:100vh}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:#f4f7fb;color:#1a2a3a;min-height:100vh;-webkit-tap-highlight-color:transparent}
+button,input,select,textarea{-webkit-appearance:none;font-family:inherit}
 
 /* ── TOP BAR ── */
 .topbar{
@@ -378,9 +379,100 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
 .no-rides-msg{text-align:center;padding:60px 24px;color:#94a3b8}
 .no-rides-msg div:first-child{font-size:36px;margin-bottom:12px}
 @media(max-width:700px){
-  .rides-sidebar{width:160px}
-  .ride-block{min-width:100px}
-  .day-title{font-size:13px;min-width:120px}
+  /* ── TOPBAR ── */
+  .topbar{padding:0 14px;height:52px}
+  .topbar-name{font-size:15px}
+  .topbar-sub{display:none}
+  .topbar-icon{width:28px;height:28px;font-size:14px}
+
+  /* ── TABS ── */
+  .tabs{
+    padding:0;
+    overflow-x:auto;
+    -webkit-overflow-scrolling:touch;
+    scrollbar-width:none;
+    gap:0;
+  }
+  .tabs::-webkit-scrollbar{display:none}
+  .tab{
+    padding:10px 12px;
+    font-size:11px;
+    font-weight:700;
+    white-space:nowrap;
+    flex-shrink:0;
+  }
+  .tab-icon{font-size:14px}
+
+  /* ── SCREENS ── */
+  .screen{padding:14px}
+
+  /* ── SUMMARY CARDS ── */
+  .summary-row{grid-template-columns:repeat(2,1fr);gap:10px;margin-bottom:16px}
+  .sum-card{padding:14px 16px}
+  .sum-card-num{font-size:22px}
+
+  /* ── MAP ── */
+  #map{height:280px}
+
+  /* ── DRIVER ROWS ── */
+  .driver-row{padding:12px}
+
+  /* ── RIDES TAB ── */
+  #screen-rides.active{flex-direction:column;height:auto;overflow:visible}
+  .rides-sidebar{
+    width:100% !important;
+    border-right:none;
+    border-bottom:1px solid #e8eef4;
+    flex-direction:row;
+    overflow-x:auto;
+    padding:10px 14px;
+    gap:12px;
+    align-items:center;
+    flex-shrink:0;
+    max-height:none;
+  }
+  .rides-main{overflow:visible;height:auto}
+  .day-header{padding:10px 14px;flex-wrap:wrap;gap:6px}
+  .day-title{font-size:13px;min-width:unset}
+  .time-grid{overflow-x:auto}
+  .time-row{min-height:52px}
+  .ride-block{min-width:120px;max-width:180px}
+
+  /* ── FORMS / MODALS ── */
+  .modal-box{
+    margin:8px;
+    padding:20px 16px;
+    max-width:100% !important;
+    max-height:92vh;
+    border-radius:16px;
+  }
+  .modal-grid{grid-template-columns:1fr !important}
+
+  /* ── SETTINGS ── */
+  .settings-section{padding:16px}
+  .settings-input{font-size:14px}
+
+  /* ── HOURS TAB ── */
+  .hours-table{font-size:12px}
+  .hours-table th,.hours-table td{padding:8px 6px}
+
+  /* ── REPORTS ── */
+  #rep-content{overflow-x:auto}
+  #rep-content table{min-width:700px}
+  .rep-filters{flex-direction:column !important;gap:8px !important}
+  .rep-filters input,.rep-filters select{width:100% !important}
+
+  /* ── INVOICE ── */
+  .invoice-controls{flex-direction:column;gap:8px}
+
+  /* ── QUOTE ── */
+  .quote-grid{grid-template-columns:1fr !important}
+
+  /* ── BUTTONS ── */
+  .add-btn{padding:10px 16px;font-size:13px}
+  .export-btn{padding:8px 14px;font-size:12px}
+  .optimize-btn{padding:6px 10px;font-size:11px}
+  .send-schedule-btn{padding:6px 10px;font-size:11px;width:auto !important}
 }
 </style>
 </head>
@@ -430,6 +522,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
     </div>
     <div class="topbar-right">
       <div class="online-pill"><div class="online-dot"></div><span id="online-count">0 Online</span></div>
+      <button id="mobile-menu-btn" onclick="toggleMobileMenu()" style="display:none;background:none;border:none;color:#fff;font-size:22px;cursor:pointer;padding:4px 8px">☰</button>
     </div>
   </div>
 
@@ -482,7 +575,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
 
   <!-- HOURS TAB -->
   <div class="screen" id="screen-hours">
-    <div class="ts-controls">
+    <div class="ts-controls" style="flex-wrap:wrap">
       <button class="ts-mode-btn active" id="btn-pp" onclick="setTsMode('pp')">Pay Period</button>
       <button class="ts-mode-btn" id="btn-custom" onclick="setTsMode('custom')">Custom Range</button>
       <div class="pp-nav" id="pp-nav">
@@ -498,7 +591,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
       </div>
       <button class="export-btn" onclick="downloadExcel()">⬇ Export Excel</button>
     </div>
-    <div id="timesheet-content"></div>
+    <div style="overflow-x:auto"><div id="timesheet-content"></div></div>
   </div>
 
   <!-- DRIVERS TAB -->
@@ -612,7 +705,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
           <div id="inv-facility-contact"></div>
         </div>
 
-        <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+        <div class="modal-grid" style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
           <div class="modal-field">
             <label>From Date</label>
             <input type="date" id="inv-from" style="width:100%;padding:10px 14px;border:2px solid #e8eef4;border-radius:10px;font-size:14px;color:#0d1b2a;outline:none;font-family:inherit"/>
@@ -623,7 +716,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
           </div>
         </div>
 
-        <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+        <div class="modal-grid" style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
           <div class="modal-field">
             <label>Invoice Number</label>
             <input type="text" id="inv-number" placeholder="e.g. 1045" style="width:100%;padding:10px 14px;border:2px solid #e8eef4;border-radius:10px;font-size:14px;color:#0d1b2a;outline:none;font-family:inherit"/>
@@ -666,7 +759,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
 
       <!-- Controls -->
       <div style="background:#fff;border-radius:16px;padding:20px;box-shadow:0 1px 6px rgba(0,0,0,0.05);margin-bottom:16px">
-        <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap">
+        <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap" class="rep-filters">
           <div style="font-size:13px;font-weight:700;color:#0d1b2a">📊 Reports</div>
           <div style="display:flex;gap:8px;align-items:center">
             <input type="date" id="rep-from" class="date-input" style="font-size:13px"/>
@@ -918,7 +1011,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
     <!-- SECTION 1: Quick Entry -->
     <div class="modal-section-label">📋 Ride Info</div>
 
-    <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+    <div class="modal-grid" style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
       <div class="modal-field">
         <label>Date</label>
         <input type="date" id="r-date"/>
@@ -952,7 +1045,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
       <div id="r-dropoff-note" style="font-size:11px;color:#00b4d8;margin-top:4px;display:none"></div>
     </div>
 
-    <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+    <div class="modal-grid" style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
       <div class="modal-field">
         <label>Ride Type</label>
         <div style="display:flex;gap:8px">
@@ -982,7 +1075,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
     <!-- SECTION 2: Night Before (Driver Assignment) -->
     <div style="border-top:2px dashed #e8eef4;padding-top:14px;margin-top:8px">
       <div class="modal-section-label">🌙 Night Before — Driver Assignment</div>
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+      <div class="modal-grid" style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
         <div class="modal-field">
           <label>Driver</label>
           <select id="r-driver" style="width:100%;padding:10px 14px;border:2px solid #e8eef4;border-radius:10px;font-size:14px;color:#0d1b2a;outline:none;font-family:inherit;background:#fff">
@@ -1008,7 +1101,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
     <!-- SECTION 3: After Ride -->
     <div style="border-top:2px dashed #e8eef4;padding-top:14px;margin-top:8px">
       <div class="modal-section-label">✅ After Ride — Fill In Later</div>
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+      <div class="modal-grid" style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
         <div class="modal-field">
           <label>Price</label>
           <input type="text" id="r-price" placeholder="e.g. $145.00"/>
@@ -1018,7 +1111,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
           <input type="text" id="r-invoice" placeholder="e.g. 1187"/>
         </div>
       </div>
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+      <div class="modal-grid" style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
         <div class="modal-field">
           <label>Paid?</label>
           <div style="display:flex;gap:8px">
@@ -1083,7 +1176,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
       <div id="return-modal-ref" style="font-size:13px;color:#14532d;font-weight:600"></div>
     </div>
     <div class="modal-section-label">📋 Return Ride Info</div>
-    <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+    <div class="modal-grid" style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
       <div class="modal-field">
         <label>Date</label>
         <input type="date" id="ret-date"/>
@@ -2854,7 +2947,7 @@ async function openLogEdit(key){
   modal.innerHTML = `
     <div class="modal-box" style="max-width:520px;max-height:90vh;overflow-y:auto">
       <div class="modal-title">${key?'Edit Ride':'Add Ride'}</div>
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+      <div class="modal-grid" style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
         <div class="modal-field">
           <label>Date</label>
           <input type="date" id="le-date" value="${r.date||''}" style="width:100%;padding:9px 12px;border:2px solid #e8eef4;border-radius:10px;font-size:13px;outline:none;font-family:inherit"/>
@@ -2872,7 +2965,7 @@ async function openLogEdit(key){
         <label>Client Name</label>
         <input type="text" id="le-client" value="${r.client||''}" placeholder="e.g. John Smith" style="width:100%;padding:9px 12px;border:2px solid #e8eef4;border-radius:10px;font-size:13px;outline:none;font-family:inherit"/>
       </div>
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+      <div class="modal-grid" style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
         <div class="modal-field">
           <label>Ride Type</label>
           <div style="display:flex;gap:8px">
@@ -2888,7 +2981,7 @@ async function openLogEdit(key){
           </div>
         </div>
       </div>
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+      <div class="modal-grid" style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
         <div class="modal-field">
           <label>Driver</label>
           <select id="le-driver" style="width:100%;padding:9px 12px;border:2px solid #e8eef4;border-radius:10px;font-size:13px;outline:none;font-family:inherit;background:#fff">${driverOpts}</select>
@@ -2902,7 +2995,7 @@ async function openLogEdit(key){
           </div>
         </div>
       </div>
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+      <div class="modal-grid" style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
         <div class="modal-field">
           <label>Price</label>
           <input type="text" id="le-price" value="${r.price||''}" placeholder="e.g. $145.00" style="width:100%;padding:9px 12px;border:2px solid #e8eef4;border-radius:10px;font-size:13px;outline:none;font-family:inherit"/>
@@ -2912,7 +3005,7 @@ async function openLogEdit(key){
           <input type="text" id="le-invoice" value="${r.invoice||''}" placeholder="e.g. 1045" style="width:100%;padding:9px 12px;border:2px solid #e8eef4;border-radius:10px;font-size:13px;outline:none;font-family:inherit"/>
         </div>
       </div>
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+      <div class="modal-grid" style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
         <div class="modal-field">
           <label>Paid?</label>
           <div style="display:flex;gap:8px">
