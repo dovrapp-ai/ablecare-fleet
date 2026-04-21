@@ -2510,8 +2510,10 @@ async function optimizeWithAI(rides, drivers, distMatrix, addresses){
       rideId: ri+1,
       rideKey: ride._key,
       sequence: schedules[bestDriver].rides.length+1,
-      departBase: state.currentTime > rideTimeMins ? minsToTime(state.currentTime-driveToPickup) : minsToTime(rideTimeMins-driveToPickup),
+      scheduledTime: ride.time || '',
+      departBase: state.currentTime > rideTimeMins ? minsToTime(state.currentTime-driveToPickup) : minsToTime(Math.max(0, rideTimeMins-driveToPickup)),
       pickupTime: minsToTime(arriveAtPickup),
+      displayTime: ride.time ? fmtTime12(ride.time) : minsToTime(arriveAtPickup),
       facility: ride.facility||'',
       client: ride.client||'',
       pickup: pickup,
@@ -2579,7 +2581,7 @@ function renderOptimizerResults(result, drivers){
       html += `<div class="opt-ride-row">
         <div class="opt-ride-num">${ri+1}</div>
         <div class="opt-ride-info">
-          <div class="opt-ride-time">${ride.pickupTime||ride.departBase||'?'}</div>
+          <div class="opt-ride-time">${ride.displayTime||ride.pickupTime||ride.departBase||'?'}</div>
           <div class="opt-ride-name">${ride.facility||''} ${ride.client?'— '+ride.client:''}</div>
           ${ride.pickup?`<div class="opt-ride-detail">📍 ${ride.pickup}</div>`:''}
           ${ride.dropoff?`<div class="opt-ride-detail">🏥 ${ride.dropoff}</div>`:''}
