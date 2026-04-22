@@ -495,22 +495,41 @@ button,input,select,textarea{-webkit-appearance:none;font-family:inherit}
 }
 
 
-/* ── EMAIL REVIEW PANEL ── */
-.email-review-wrap{display:none;border-top:2px dashed #e8eef4;padding-top:14px;margin-top:14px}
-.email-review-title{font-size:11px;font-weight:700;color:#00b4d8;text-transform:uppercase;letter-spacing:1px;margin-bottom:8px}
-.email-review-box{background:#f8fafc;border:1px solid #e8eef4;border-radius:12px;padding:12px;max-height:240px;overflow:auto;white-space:pre-wrap;font-size:12px;line-height:1.5;color:#334155}
+/* ── EMAIL REVIEW SIDE BY SIDE ── */
+.ride-modal-layout{display:grid;grid-template-columns:minmax(0,1.2fr) minmax(320px,.8fr);gap:18px;align-items:start}
+.ride-form-pane{min-width:0}
+.ride-email-pane{min-width:0;background:#f8fafc;border:1px solid #e8eef4;border-radius:14px;padding:14px;position:sticky;top:0}
+.email-review-wrap{display:block;border-top:none;padding-top:0;margin-top:0}
+.email-review-title{font-size:12px;font-weight:800;color:#00b4d8;text-transform:uppercase;letter-spacing:1px;margin-bottom:8px}
+.email-review-box{background:#fff;border:1px solid #e8eef4;border-radius:12px;padding:12px;min-height:420px;max-height:62vh;overflow:auto;white-space:pre-wrap;font-size:12px;line-height:1.5;color:#334155}
 .email-review-note{font-size:11px;color:#6b82a8;margin-top:6px}
+.email-review-empty{color:#94a3b8;font-style:italic}
 
 /* ── MOBILE IMPROVEMENTS ── */
+@media(max-width:900px){
+  .ride-modal-layout{grid-template-columns:1fr}
+  .ride-email-pane{position:static}
+  .email-review-box{min-height:220px;max-height:260px}
+}
 @media(max-width:700px){
-  #screen-rides.active{height:auto !important;min-height:calc(100vh - 104px);}
-  .rides-sidebar{width:100%;border-right:none;border-bottom:1px solid #e8eef4;overflow:visible}
-  .rides-main{min-height:60vh}
+  .topbar{height:52px;padding:0 12px}
+  .topbar-right{gap:8px}
+  .tabs{padding:0 10px;overflow-x:auto;scroll-snap-type:x proximity}
+  .tab{scroll-snap-align:start}
+  .screen{padding:12px}
+  #screen-rides.active{flex-direction:column;height:auto !important;max-height:none !important;overflow:visible !important}
+  .rides-sidebar{width:100% !important;border-right:none;border-bottom:1px solid #e8eef4;overflow:visible;padding-bottom:8px}
+  .rides-main{min-height:auto;overflow:visible !important;height:auto !important;max-height:none !important}
+  .mini-cal{padding:10px 12px}
   .day-header{flex-wrap:wrap;gap:8px;padding:10px 12px}
   .day-title{min-width:0;width:100%;order:1}
-  .day-header .cal-nav, .day-header .cal-today-btn, .day-header .optimize-btn, .day-header .send-schedule-btn{order:2}
+  .day-header .cal-nav,.day-header .cal-today-btn,.day-header .optimize-btn,.day-header .send-schedule-btn{order:2}
   .day-header .send-schedule-btn{width:calc(50% - 4px);margin-left:0 !important;justify-content:center}
   .day-header .optimize-btn{margin-left:0}
+  .time-grid{overflow:visible !important;height:auto !important;max-height:none !important}
+  .ride-block{min-width:100%;max-width:none}
+  .modal-box{width:min(96vw,980px) !important;max-width:min(96vw,980px) !important;padding:18px 14px !important;max-height:92vh;overflow:auto}
+  .header-actions,.quick-actions,.bottom-grid{grid-template-columns:1fr !important}
 }
 
 </style>
@@ -1070,9 +1089,12 @@ button,input,select,textarea{-webkit-appearance:none;font-family:inherit}
 
 <!-- Ride Modal -->
 <div class="modal-overlay" id="ride-modal">
-  <div class="modal-box" style="max-width:480px;max-height:90vh;overflow-y:auto">
+  <div class="modal-box" style="max-width:980px;width:min(980px,96vw);max-height:92vh;overflow-y:auto">
     <div class="modal-title" id="ride-modal-title">Add Ride</div>
     <div class="modal-driver" id="ride-modal-status"></div>
+
+    <div class="ride-modal-layout">
+      <div class="ride-form-pane">
 
     <!-- SECTION 1: Quick Entry -->
     <div class="modal-section-label">📋 Ride Info</div>
@@ -1218,10 +1240,15 @@ button,input,select,textarea{-webkit-appearance:none;font-family:inherit}
       </div>
     </div>
 
-    <div class="email-review-wrap" id="email-review-wrap">
-      <div class="email-review-title">Original Pasted Email</div>
-      <div class="email-review-box" id="email-review-text"></div>
-      <div class="email-review-note">Use this to compare the parsed fields before saving the ride.</div>
+      </div>
+
+      <div class="ride-email-pane">
+        <div class="email-review-wrap" id="email-review-wrap">
+          <div class="email-review-title">Original Pasted Email</div>
+          <div class="email-review-box" id="email-review-text"><span class="email-review-empty">Paste an email and the original message will stay here on the right so you can compare it with the form.</span></div>
+          <div class="email-review-note">Compare the parsed fields on the left with the original pasted email on the right before saving the ride.</div>
+        </div>
+      </div>
     </div>
 
     <div class="modal-actions">
@@ -3912,12 +3939,11 @@ function syncEmailReviewPanel(){
   const wrap = document.getElementById('email-review-wrap');
   const box = document.getElementById('email-review-text');
   if(!wrap || !box) return;
+  wrap.style.display = 'block';
   if(lastPastedEmail && lastPastedEmail.trim()){
     box.textContent = lastPastedEmail;
-    wrap.style.display = 'block';
   } else {
-    box.textContent = '';
-    wrap.style.display = 'none';
+    box.innerHTML = '<span class="email-review-empty">Paste an email and the original message will stay here on the right so you can compare it with the form.</span>';
   }
 }
 
