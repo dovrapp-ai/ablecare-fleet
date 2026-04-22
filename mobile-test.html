@@ -1,0 +1,180 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>AbleCare Mobile</title>
+
+  <style>
+    body {
+      margin: 0;
+      font-family: Arial, sans-serif;
+      background: #f3f4f6;
+    }
+
+    .header {
+      background: #0f172a;
+      color: white;
+      padding: 20px;
+      border-bottom-left-radius: 25px;
+      border-bottom-right-radius: 25px;
+    }
+
+    .stats {
+      display: flex;
+      gap: 10px;
+      margin-top: 10px;
+    }
+
+    .stat {
+      flex: 1;
+      background: rgba(255,255,255,0.1);
+      padding: 10px;
+      border-radius: 10px;
+      text-align: center;
+    }
+
+    .container {
+      padding: 15px;
+    }
+
+    .section-title {
+      font-weight: bold;
+      margin: 15px 0 5px;
+    }
+
+    .card {
+      background: white;
+      border-radius: 15px;
+      padding: 15px;
+      margin-bottom: 10px;
+      box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+    }
+
+    .unassigned {
+      background: #fef3c7;
+      border: 2px solid #f59e0b;
+    }
+
+    .time {
+      color: #0ea5e9;
+      font-weight: bold;
+    }
+
+    .buttons {
+      display: flex;
+      gap: 10px;
+      margin-top: 10px;
+    }
+
+    .btn {
+      flex: 1;
+      padding: 10px;
+      border-radius: 10px;
+      border: none;
+      font-weight: bold;
+      cursor: pointer;
+    }
+
+    .btn-dark {
+      background: #0f172a;
+      color: white;
+    }
+
+    .btn-light {
+      background: #e5e7eb;
+    }
+
+    .bottom-bar {
+      position: fixed;
+      bottom: 0;
+      width: 100%;
+      background: white;
+      padding: 10px;
+      display: flex;
+      gap: 10px;
+      box-shadow: 0 -2px 5px rgba(0,0,0,0.1);
+    }
+  </style>
+</head>
+
+<body>
+
+<div class="header">
+  <h2>AbleCare Fleet</h2>
+  <div>Wednesday, April 29</div>
+
+  <div class="stats">
+    <div class="stat">9 Total</div>
+    <div class="stat">8 Assigned</div>
+    <div class="stat">1 ⚠️</div>
+  </div>
+</div>
+
+<div class="container">
+
+  <div class="section-title">⚠️ Needs Attention</div>
+
+  <div class="card unassigned">
+    <div class="time">8:30 AM</div>
+    <div>Edenbridge PACE</div>
+    <div>Linda May</div>
+    <div>♿ Wheelchair</div>
+
+    <div class="buttons">
+      <button class="btn btn-dark">Assign</button>
+      <button class="btn btn-light">Open</button>
+    </div>
+  </div>
+
+  <div class="section-title">Assigned Rides</div>
+
+  <div class="card">
+    <div class="time">5:45 AM</div>
+    <div>WAAP</div>
+    <div>Kenneth Smith</div>
+    <div>🛏 Stretcher — Raul/wife</div>
+
+    <div class="buttons">
+      <button class="btn btn-dark">Open</button>
+      <button class="btn btn-light">Edit</button>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="time">7:45 AM</div>
+    <div>WAAP</div>
+    <div>Carolyn Myrtle</div>
+    <div>♿ Wheelchair — Joel</div>
+
+    <div class="buttons">
+      <button class="btn btn-dark">Open</button>
+      <button class="btn btn-light">Edit</button>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="time">1:30 PM</div>
+    <div>Chapel Hill</div>
+    <div>Dana Kelly</div>
+    <div>♿ Wheelchair — Joel</div>
+
+    <div class="buttons">
+      <button class="btn btn-dark">Open</button>
+      <button class="btn btn-light">Edit</button>
+    </div>
+  </div>
+
+  <div class="section-title">Drivers</div>
+  <div>Raul — 3 rides</div>
+  <div>Joel — 3 rides</div>
+  <div>Gerson — 2 rides</div>
+
+</div>
+
+<div class="bottom-bar">
+  <button class="btn btn-dark">+ Add Ride</button>
+  <button class="btn btn-dark">🤖 Optimize</button>
+</div>
+
+</body>
+</html>
