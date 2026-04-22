@@ -495,41 +495,257 @@ button,input,select,textarea{-webkit-appearance:none;font-family:inherit}
 }
 
 
-/* ── EMAIL REVIEW SIDE BY SIDE ── */
-.ride-modal-layout{display:grid;grid-template-columns:minmax(0,1.2fr) minmax(320px,.8fr);gap:18px;align-items:start}
-.ride-form-pane{min-width:0}
-.ride-email-pane{min-width:0;background:#f8fafc;border:1px solid #e8eef4;border-radius:14px;padding:14px;position:sticky;top:0}
-.email-review-wrap{display:block;border-top:none;padding-top:0;margin-top:0}
-.email-review-title{font-size:12px;font-weight:800;color:#00b4d8;text-transform:uppercase;letter-spacing:1px;margin-bottom:8px}
-.email-review-box{background:#fff;border:1px solid #e8eef4;border-radius:12px;padding:12px;min-height:420px;max-height:62vh;overflow:auto;white-space:pre-wrap;font-size:12px;line-height:1.5;color:#334155}
+/* ── EMAIL REVIEW PANEL ── */
+.email-review-wrap{display:none;border-top:2px dashed #e8eef4;padding-top:14px;margin-top:14px}
+.email-review-title{font-size:11px;font-weight:700;color:#00b4d8;text-transform:uppercase;letter-spacing:1px;margin-bottom:8px}
+.email-review-box{background:#f8fafc;border:1px solid #e8eef4;border-radius:12px;padding:12px;max-height:240px;overflow:auto;white-space:pre-wrap;font-size:12px;line-height:1.5;color:#334155}
 .email-review-note{font-size:11px;color:#6b82a8;margin-top:6px}
-.email-review-empty{color:#94a3b8;font-style:italic}
 
 /* ── MOBILE IMPROVEMENTS ── */
-@media(max-width:900px){
-  .ride-modal-layout{grid-template-columns:1fr}
-  .ride-email-pane{position:static}
-  .email-review-box{min-height:220px;max-height:260px}
-}
 @media(max-width:700px){
-  .topbar{height:52px;padding:0 12px}
-  .topbar-right{gap:8px}
-  .tabs{padding:0 10px;overflow-x:auto;scroll-snap-type:x proximity}
-  .tab{scroll-snap-align:start}
-  .screen{padding:12px}
-  #screen-rides.active{flex-direction:column;height:auto !important;max-height:none !important;overflow:visible !important}
-  .rides-sidebar{width:100% !important;border-right:none;border-bottom:1px solid #e8eef4;overflow:visible;padding-bottom:8px}
-  .rides-main{min-height:auto;overflow:visible !important;height:auto !important;max-height:none !important}
-  .mini-cal{padding:10px 12px}
+  #screen-rides.active{height:auto !important;min-height:calc(100vh - 104px);}
+  .rides-sidebar{width:100%;border-right:none;border-bottom:1px solid #e8eef4;overflow:visible}
+  .rides-main{min-height:60vh}
   .day-header{flex-wrap:wrap;gap:8px;padding:10px 12px}
   .day-title{min-width:0;width:100%;order:1}
-  .day-header .cal-nav,.day-header .cal-today-btn,.day-header .optimize-btn,.day-header .send-schedule-btn{order:2}
+  .day-header .cal-nav, .day-header .cal-today-btn, .day-header .optimize-btn, .day-header .send-schedule-btn{order:2}
   .day-header .send-schedule-btn{width:calc(50% - 4px);margin-left:0 !important;justify-content:center}
   .day-header .optimize-btn{margin-left:0}
-  .time-grid{overflow:visible !important;height:auto !important;max-height:none !important}
-  .ride-block{min-width:100%;max-width:none}
-  .modal-box{width:min(96vw,980px) !important;max-width:min(96vw,980px) !important;padding:18px 14px !important;max-height:92vh;overflow:auto}
-  .header-actions,.quick-actions,.bottom-grid{grid-template-columns:1fr !important}
+}
+
+
+/* ── ENHANCED MOBILE COMPONENT ── */
+@media (max-width: 700px){
+  body{background:#eef3f8;}
+
+  .topbar{
+    height:auto;
+    min-height:56px;
+    padding:10px 12px;
+  }
+  .topbar-right{gap:8px}
+  .online-pill{padding:4px 10px;font-size:10px}
+  .topbar-name{font-size:16px}
+  .topbar-sub{display:none}
+
+  .tabs{
+    padding:0 8px;
+    overflow-x:auto;
+    scrollbar-width:none;
+    -webkit-overflow-scrolling:touch;
+  }
+  .tabs::-webkit-scrollbar{display:none}
+  .tab{
+    padding:12px 10px;
+    font-size:11px;
+    gap:5px;
+    flex-shrink:0;
+  }
+
+  .screen{
+    max-width:none;
+    width:100%;
+    padding:12px;
+  }
+
+  .summary-row{
+    grid-template-columns:repeat(2,1fr);
+    gap:10px;
+  }
+  .sum-card{
+    padding:14px;
+    border-radius:16px;
+  }
+  .sum-card-num{font-size:24px}
+
+  .map-wrap,.dispatch-wrap,.drivers-wrap,.settings-section,.ts-driver-block,.hours-row,.report-row,.quote-row{
+    border-radius:16px;
+  }
+  #map{height:260px}
+  #dispatch-map{height:180px}
+
+  .dispatch-input-row,
+  .add-driver-row,
+  .settings-row,
+  .modal-actions,
+  .custom-range{
+    flex-direction:column;
+    align-items:stretch;
+  }
+  .find-btn,.add-btn,.settings-save-btn,.export-btn,.modal-save,.modal-cancel,.modal-delete{
+    width:100%;
+    justify-content:center;
+  }
+
+  /* Rides screen becomes phone-first */
+  #screen-rides{
+    display:block !important;
+    height:auto !important;
+    max-height:none !important;
+    overflow:visible !important;
+    padding:0 !important;
+  }
+  .rides-sidebar{
+    width:100% !important;
+    border-right:none;
+    border-bottom:none;
+    background:transparent;
+    overflow:visible !important;
+    padding:12px;
+    gap:12px;
+  }
+  .rides-main{
+    width:100%;
+    background:transparent;
+    overflow:visible !important;
+    min-height:0;
+  }
+
+  .mini-cal,
+  #unpaid-bar,
+  .rides-sidebar > div[style*="padding:0 12px"],
+  .rides-sidebar > div[style*="padding:12px;display:grid"]{
+    background:#fff;
+    border-radius:16px;
+    border:1px solid #e8eef4;
+    box-shadow:0 1px 6px rgba(0,0,0,0.05);
+  }
+  .rides-sidebar > div[style*="padding:0 12px"]{
+    padding:12px !important;
+  }
+
+  .sidebar-filter{
+    padding:10px 12px;
+    font-size:13px;
+    border-radius:10px;
+  }
+
+  .rides-sidebar > div[style*="padding:12px;display:grid"]{
+    grid-template-columns:1fr 1fr !important;
+    padding:12px !important;
+  }
+  .rides-sidebar .add-btn{
+    padding:12px 10px !important;
+    font-size:13px !important;
+    border-radius:12px;
+  }
+
+  .day-header{
+    margin:0 12px 10px;
+    background:#fff;
+    border:1px solid #e8eef4;
+    border-radius:16px;
+    padding:12px;
+    box-shadow:0 1px 6px rgba(0,0,0,0.05);
+    position:sticky;
+    top:66px;
+    z-index:50;
+  }
+  .day-title{
+    width:100%;
+    min-width:0;
+    font-size:15px;
+    order:1;
+  }
+  .day-header .cal-nav,
+  .day-header .cal-today-btn,
+  .day-header .optimize-btn,
+  .day-header .send-schedule-btn{
+    order:2;
+  }
+  .day-header .send-schedule-btn{
+    width:calc(50% - 4px) !important;
+    margin:0 !important;
+    padding:10px 12px !important;
+  }
+  .day-header .optimize-btn{
+    margin:0 !important;
+    padding:8px 12px !important;
+  }
+
+  .time-grid{
+    background:transparent;
+    overflow:visible !important;
+    padding:0 12px 12px;
+  }
+  .time-row{
+    display:block;
+    min-height:unset;
+    border-bottom:none;
+    margin-bottom:12px;
+  }
+  .time-label{
+    width:auto;
+    transform:none;
+    text-align:left;
+    padding:0 0 6px 4px;
+    font-size:12px;
+    color:#6b82a8;
+  }
+  .time-content{
+    border-left:none;
+    padding:0;
+    display:flex;
+    flex-direction:column;
+    gap:8px;
+  }
+  .ride-block{
+    width:100%;
+    max-width:none;
+    min-width:0;
+    border-radius:14px;
+    padding:12px;
+  }
+
+  /* Tables and report content */
+  #rep-content{
+    overflow-x:auto;
+    border-radius:16px;
+  }
+
+  /* Modal / email parser */
+  .modal-overlay{
+    align-items:flex-start;
+    padding:12px;
+    overflow:auto;
+  }
+  .modal-box{
+    width:100%;
+    max-width:100% !important;
+    margin-top:12px;
+    padding:18px 16px;
+    border-radius:18px;
+    max-height:none;
+  }
+  .modal-grid{
+    grid-template-columns:1fr !important;
+  }
+  .ride-modal-layout{
+    display:flex !important;
+    flex-direction:column !important;
+    gap:12px !important;
+  }
+  .ride-email-pane,
+  .ride-form-pane{
+    width:100%;
+  }
+  .ride-email-pane .email-review-box{
+    max-height:220px;
+    min-height:180px;
+  }
+
+  /* Quote and reports */
+  #screen-quote > div,
+  #screen-invoice > div,
+  #screen-reports > div{
+    max-width:none !important;
+  }
+
+  /* Driver rows */
+  .driver-row,.manage-row,.driver-pin-row,.fac-item{
+    padding:12px;
+    border-radius:14px;
+  }
 }
 
 </style>
@@ -1089,12 +1305,9 @@ button,input,select,textarea{-webkit-appearance:none;font-family:inherit}
 
 <!-- Ride Modal -->
 <div class="modal-overlay" id="ride-modal">
-  <div class="modal-box" style="max-width:980px;width:min(980px,96vw);max-height:92vh;overflow-y:auto">
+  <div class="modal-box" style="max-width:480px;max-height:90vh;overflow-y:auto">
     <div class="modal-title" id="ride-modal-title">Add Ride</div>
     <div class="modal-driver" id="ride-modal-status"></div>
-
-    <div class="ride-modal-layout">
-      <div class="ride-form-pane">
 
     <!-- SECTION 1: Quick Entry -->
     <div class="modal-section-label">📋 Ride Info</div>
@@ -1240,15 +1453,10 @@ button,input,select,textarea{-webkit-appearance:none;font-family:inherit}
       </div>
     </div>
 
-      </div>
-
-      <div class="ride-email-pane">
-        <div class="email-review-wrap" id="email-review-wrap">
-          <div class="email-review-title">Original Pasted Email</div>
-          <div class="email-review-box" id="email-review-text"><span class="email-review-empty">Paste an email and the original message will stay here on the right so you can compare it with the form.</span></div>
-          <div class="email-review-note">Compare the parsed fields on the left with the original pasted email on the right before saving the ride.</div>
-        </div>
-      </div>
+    <div class="email-review-wrap" id="email-review-wrap">
+      <div class="email-review-title">Original Pasted Email</div>
+      <div class="email-review-box" id="email-review-text"></div>
+      <div class="email-review-note">Use this to compare the parsed fields before saving the ride.</div>
     </div>
 
     <div class="modal-actions">
@@ -3895,7 +4103,242 @@ function printInvoice(){
       body{font-family:Arial,sans-serif;margin:0;padding:0;}
       @media print{body{margin:0;}}
       @page{margin:15mm;}
-    </style>
+    
+/* ── ENHANCED MOBILE COMPONENT ── */
+@media (max-width: 700px){
+  body{background:#eef3f8;}
+
+  .topbar{
+    height:auto;
+    min-height:56px;
+    padding:10px 12px;
+  }
+  .topbar-right{gap:8px}
+  .online-pill{padding:4px 10px;font-size:10px}
+  .topbar-name{font-size:16px}
+  .topbar-sub{display:none}
+
+  .tabs{
+    padding:0 8px;
+    overflow-x:auto;
+    scrollbar-width:none;
+    -webkit-overflow-scrolling:touch;
+  }
+  .tabs::-webkit-scrollbar{display:none}
+  .tab{
+    padding:12px 10px;
+    font-size:11px;
+    gap:5px;
+    flex-shrink:0;
+  }
+
+  .screen{
+    max-width:none;
+    width:100%;
+    padding:12px;
+  }
+
+  .summary-row{
+    grid-template-columns:repeat(2,1fr);
+    gap:10px;
+  }
+  .sum-card{
+    padding:14px;
+    border-radius:16px;
+  }
+  .sum-card-num{font-size:24px}
+
+  .map-wrap,.dispatch-wrap,.drivers-wrap,.settings-section,.ts-driver-block,.hours-row,.report-row,.quote-row{
+    border-radius:16px;
+  }
+  #map{height:260px}
+  #dispatch-map{height:180px}
+
+  .dispatch-input-row,
+  .add-driver-row,
+  .settings-row,
+  .modal-actions,
+  .custom-range{
+    flex-direction:column;
+    align-items:stretch;
+  }
+  .find-btn,.add-btn,.settings-save-btn,.export-btn,.modal-save,.modal-cancel,.modal-delete{
+    width:100%;
+    justify-content:center;
+  }
+
+  /* Rides screen becomes phone-first */
+  #screen-rides{
+    display:block !important;
+    height:auto !important;
+    max-height:none !important;
+    overflow:visible !important;
+    padding:0 !important;
+  }
+  .rides-sidebar{
+    width:100% !important;
+    border-right:none;
+    border-bottom:none;
+    background:transparent;
+    overflow:visible !important;
+    padding:12px;
+    gap:12px;
+  }
+  .rides-main{
+    width:100%;
+    background:transparent;
+    overflow:visible !important;
+    min-height:0;
+  }
+
+  .mini-cal,
+  #unpaid-bar,
+  .rides-sidebar > div[style*="padding:0 12px"],
+  .rides-sidebar > div[style*="padding:12px;display:grid"]{
+    background:#fff;
+    border-radius:16px;
+    border:1px solid #e8eef4;
+    box-shadow:0 1px 6px rgba(0,0,0,0.05);
+  }
+  .rides-sidebar > div[style*="padding:0 12px"]{
+    padding:12px !important;
+  }
+
+  .sidebar-filter{
+    padding:10px 12px;
+    font-size:13px;
+    border-radius:10px;
+  }
+
+  .rides-sidebar > div[style*="padding:12px;display:grid"]{
+    grid-template-columns:1fr 1fr !important;
+    padding:12px !important;
+  }
+  .rides-sidebar .add-btn{
+    padding:12px 10px !important;
+    font-size:13px !important;
+    border-radius:12px;
+  }
+
+  .day-header{
+    margin:0 12px 10px;
+    background:#fff;
+    border:1px solid #e8eef4;
+    border-radius:16px;
+    padding:12px;
+    box-shadow:0 1px 6px rgba(0,0,0,0.05);
+    position:sticky;
+    top:66px;
+    z-index:50;
+  }
+  .day-title{
+    width:100%;
+    min-width:0;
+    font-size:15px;
+    order:1;
+  }
+  .day-header .cal-nav,
+  .day-header .cal-today-btn,
+  .day-header .optimize-btn,
+  .day-header .send-schedule-btn{
+    order:2;
+  }
+  .day-header .send-schedule-btn{
+    width:calc(50% - 4px) !important;
+    margin:0 !important;
+    padding:10px 12px !important;
+  }
+  .day-header .optimize-btn{
+    margin:0 !important;
+    padding:8px 12px !important;
+  }
+
+  .time-grid{
+    background:transparent;
+    overflow:visible !important;
+    padding:0 12px 12px;
+  }
+  .time-row{
+    display:block;
+    min-height:unset;
+    border-bottom:none;
+    margin-bottom:12px;
+  }
+  .time-label{
+    width:auto;
+    transform:none;
+    text-align:left;
+    padding:0 0 6px 4px;
+    font-size:12px;
+    color:#6b82a8;
+  }
+  .time-content{
+    border-left:none;
+    padding:0;
+    display:flex;
+    flex-direction:column;
+    gap:8px;
+  }
+  .ride-block{
+    width:100%;
+    max-width:none;
+    min-width:0;
+    border-radius:14px;
+    padding:12px;
+  }
+
+  /* Tables and report content */
+  #rep-content{
+    overflow-x:auto;
+    border-radius:16px;
+  }
+
+  /* Modal / email parser */
+  .modal-overlay{
+    align-items:flex-start;
+    padding:12px;
+    overflow:auto;
+  }
+  .modal-box{
+    width:100%;
+    max-width:100% !important;
+    margin-top:12px;
+    padding:18px 16px;
+    border-radius:18px;
+    max-height:none;
+  }
+  .modal-grid{
+    grid-template-columns:1fr !important;
+  }
+  .ride-modal-layout{
+    display:flex !important;
+    flex-direction:column !important;
+    gap:12px !important;
+  }
+  .ride-email-pane,
+  .ride-form-pane{
+    width:100%;
+  }
+  .ride-email-pane .email-review-box{
+    max-height:220px;
+    min-height:180px;
+  }
+
+  /* Quote and reports */
+  #screen-quote > div,
+  #screen-invoice > div,
+  #screen-reports > div{
+    max-width:none !important;
+  }
+
+  /* Driver rows */
+  .driver-row,.manage-row,.driver-pin-row,.fac-item{
+    padding:12px;
+    border-radius:14px;
+  }
+}
+
+</style>
   </head><body>${content.outerHTML}</body></html>`);
   win.document.close();
   win.focus();
@@ -3939,11 +4382,12 @@ function syncEmailReviewPanel(){
   const wrap = document.getElementById('email-review-wrap');
   const box = document.getElementById('email-review-text');
   if(!wrap || !box) return;
-  wrap.style.display = 'block';
   if(lastPastedEmail && lastPastedEmail.trim()){
     box.textContent = lastPastedEmail;
+    wrap.style.display = 'block';
   } else {
-    box.innerHTML = '<span class="email-review-empty">Paste an email and the original message will stay here on the right so you can compare it with the form.</span>';
+    box.textContent = '';
+    wrap.style.display = 'none';
   }
 }
 
