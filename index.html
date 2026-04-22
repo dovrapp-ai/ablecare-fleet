@@ -501,18 +501,6 @@ button,input,select,textarea{-webkit-appearance:none;font-family:inherit}
 .email-review-box{background:#f8fafc;border:1px solid #e8eef4;border-radius:12px;padding:12px;max-height:240px;overflow:auto;white-space:pre-wrap;font-size:12px;line-height:1.5;color:#334155}
 .email-review-note{font-size:11px;color:#6b82a8;margin-top:6px}
 
-.ride-modal-layout{display:grid;grid-template-columns:minmax(0,1fr) 360px;gap:18px;align-items:start}
-.ride-form-pane{min-width:0}
-.ride-email-pane{min-width:0}
-.ride-email-pane .email-review-wrap{display:block;border-top:none;padding-top:0;margin-top:0}
-.ride-email-pane .email-review-title{font-size:12px}
-.ride-email-pane .email-review-box{min-height:420px;max-height:62vh}
-.ride-email-empty{background:#f8fafc;border:1px dashed #dbe3ec;border-radius:12px;padding:18px;font-size:12px;color:#94a3b8;line-height:1.5}
-@media(max-width:900px){
-  .ride-modal-layout{grid-template-columns:1fr}
-  .ride-email-pane .email-review-box{min-height:220px;max-height:240px}
-}
-
 /* ── MOBILE IMPROVEMENTS ── */
 @media(max-width:700px){
   #screen-rides.active{height:auto !important;min-height:calc(100vh - 104px);}
@@ -1082,12 +1070,9 @@ button,input,select,textarea{-webkit-appearance:none;font-family:inherit}
 
 <!-- Ride Modal -->
 <div class="modal-overlay" id="ride-modal">
-  <div class="modal-box" style="max-width:1040px;max-height:90vh;overflow-y:auto">
+  <div class="modal-box" style="max-width:480px;max-height:90vh;overflow-y:auto">
     <div class="modal-title" id="ride-modal-title">Add Ride</div>
     <div class="modal-driver" id="ride-modal-status"></div>
-
-    <div class="ride-modal-layout">
-      <div class="ride-form-pane">
 
     <!-- SECTION 1: Quick Entry -->
     <div class="modal-section-label">📋 Ride Info</div>
@@ -1233,18 +1218,10 @@ button,input,select,textarea{-webkit-appearance:none;font-family:inherit}
       </div>
     </div>
 
-      </div>
-
-      <div class="ride-email-pane">
-        <div class="email-review-wrap" id="email-review-wrap">
-          <div class="email-review-title">Original Pasted Email</div>
-          <div class="email-review-box" id="email-review-text"></div>
-          <div class="email-review-note">Use this to compare the parsed fields before saving the ride.</div>
-        </div>
-        <div class="ride-email-empty" id="email-review-empty">
-          Paste and parse an email to keep the full original message visible here while you review the ride form on the left.
-        </div>
-      </div>
+    <div class="email-review-wrap" id="email-review-wrap">
+      <div class="email-review-title">Original Pasted Email</div>
+      <div class="email-review-box" id="email-review-text"></div>
+      <div class="email-review-note">Use this to compare the parsed fields before saving the ride.</div>
     </div>
 
     <div class="modal-actions">
@@ -3134,7 +3111,7 @@ async function logRideToReports(){
   });
 }
 
-function logAllRidesForDay(){
+async function logAllRidesForDay(){
   const ds = dateStr(selectedDate);
   const snap = await ridesRef().once('value');
   const all = snap.val()||{};
@@ -3930,16 +3907,13 @@ function closeEmailParser(){
 function syncEmailReviewPanel(){
   const wrap = document.getElementById('email-review-wrap');
   const box = document.getElementById('email-review-text');
-  const empty = document.getElementById('email-review-empty');
   if(!wrap || !box) return;
   if(lastPastedEmail && lastPastedEmail.trim()){
     box.textContent = lastPastedEmail;
     wrap.style.display = 'block';
-    if(empty) empty.style.display = 'none';
   } else {
     box.textContent = '';
     wrap.style.display = 'none';
-    if(empty) empty.style.display = 'block';
   }
 }
 
