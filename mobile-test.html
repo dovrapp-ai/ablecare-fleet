@@ -1,155 +1,268 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>AbleCare Mobile</title>
-
-<style>
-body {margin:0;font-family:Arial;background:#f3f4f6;}
-
-.header {
-  background:#0f172a;color:white;padding:20px;
-  border-bottom-left-radius:25px;border-bottom-right-radius:25px;
-}
-
-.top-row {
-  display:flex;justify-content:space-between;align-items:flex-start;
-}
-
-.actions-top {
-  display:flex;flex-direction:column;gap:8px;
-}
-
-.btn-big {
-  padding:12px 14px;
-  border-radius:12px;
-  border:none;
-  font-size:14px;
-  font-weight:bold;
-  width:140px;
-}
-
-.btn-primary {background:#06b6d4;color:white;}
-.btn-light {background:#e5e7eb;color:black;}
-
-.stats {display:flex;gap:10px;margin-top:10px;}
-.stat {
-  flex:1;background:rgba(255,255,255,0.1);
-  padding:10px;border-radius:10px;text-align:center;
-}
-
-.container {padding:15px;}
-
-.section-title {font-weight:bold;margin:15px 0 5px;}
-
-.card {
-  background:white;border-radius:15px;padding:15px;margin-bottom:10px;
-  box-shadow:0 2px 5px rgba(0,0,0,0.1);
-}
-
-.unassigned {background:#fef3c7;border:2px solid #f59e0b;}
-
-.time {color:#0ea5e9;font-weight:bold;font-size:16px;}
-
-.buttons {display:flex;gap:10px;margin-top:10px;}
-
-.btn {
-  flex:1;padding:10px;border-radius:10px;border:none;font-weight:bold;
-}
-
-.bottom-space {height:80px;}
-</style>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>AbleCare Mobile Test Dashboard</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: Arial, sans-serif; background: #dfe5ec; color: #0f172a; }
+    .phone-shell { max-width: 430px; min-height: 100vh; margin: 0 auto; background: #f8fafc; position: relative; overflow: hidden; box-shadow: 0 8px 28px rgba(15, 23, 42, 0.16); }
+    .header { background: #0f172a; color: white; padding: 20px 16px 18px; border-bottom-left-radius: 28px; border-bottom-right-radius: 28px; }
+    .header-top { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; }
+    .brand { font-size: 11px; letter-spacing: 2px; text-transform: uppercase; color: #94a3b8; margin-bottom: 6px; }
+    .title { font-size: 24px; font-weight: 800; line-height: 1.1; }
+    .date { margin-top: 6px; font-size: 14px; color: #cbd5e1; }
+    .header-actions { display: flex; flex-direction: column; gap: 8px; min-width: 145px; }
+    .top-btn { border: none; border-radius: 14px; padding: 12px 12px; font-size: 13px; font-weight: 800; cursor: pointer; }
+    .top-btn.primary { background: #06b6d4; color: white; }
+    .top-btn.light { background: #e2e8f0; color: #0f172a; }
+    .stats { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-top: 14px; }
+    .stat { border-radius: 16px; padding: 12px 10px; font-size: 11px; font-weight: 700; }
+    .stat .num { display: block; font-size: 22px; font-weight: 800; margin-top: 4px; }
+    .stat.total { background: rgba(255,255,255,0.1); color: #e2e8f0; }
+    .stat.assigned { background: rgba(16,185,129,0.16); color: #bbf7d0; }
+    .stat.open { background: rgba(245,158,11,0.16); color: #fde68a; }
+    .content { padding: 14px 14px 90px; }
+    .tabs { display: flex; gap: 8px; overflow-x: auto; padding-bottom: 8px; margin-bottom: 14px; scrollbar-width: none; }
+    .tabs::-webkit-scrollbar { display: none; }
+    .tab { border: 1px solid #e2e8f0; background: white; color: #475569; border-radius: 999px; padding: 10px 14px; font-size: 14px; font-weight: 800; white-space: nowrap; cursor: pointer; }
+    .tab.active { background: #06b6d4; border-color: #06b6d4; color: white; }
+    .panel { display: none; }
+    .panel.active { display: block; }
+    .card { background: white; border: 1px solid #e2e8f0; border-radius: 22px; padding: 15px; box-shadow: 0 2px 10px rgba(15, 23, 42, 0.05); margin-bottom: 12px; }
+    .section-title { font-size: 15px; font-weight: 800; margin: 18px 0 10px; }
+    .subtle { font-size: 12px; color: #64748b; margin-top: 3px; }
+    .quick-actions { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 12px; }
+    .soft-btn, .action-btn, .driver-open, .opt-btn { border: none; border-radius: 16px; font-weight: 800; cursor: pointer; }
+    .soft-btn { padding: 13px 10px; font-size: 14px; background: #f8fafc; color: #334155; border: 1px solid #e2e8f0; }
+    .ride-card.unassigned { background: #fffbeb; border-color: #fcd34d; }
+    .ride-top { display: flex; align-items: flex-start; justify-content: space-between; gap: 10px; }
+    .ride-time { color: #0891b2; font-size: 15px; font-weight: 800; margin-bottom: 4px; }
+    .ride-facility { font-size: 18px; font-weight: 800; color: #0f172a; }
+    .ride-client { margin-top: 2px; color: #475569; font-size: 14px; }
+    .status { border-radius: 999px; padding: 6px 10px; font-size: 11px; font-weight: 800; white-space: nowrap; }
+    .status.assigned { background: #dcfce7; color: #15803d; }
+    .status.unassigned { background: #fef3c7; color: #b45309; }
+    .ride-tags { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 12px; }
+    .tag { background: #f1f5f9; color: #334155; padding: 6px 10px; border-radius: 999px; font-size: 12px; font-weight: 700; }
+    .ride-actions { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 14px; }
+    .action-btn.dark { background: #0f172a; color: white; padding: 13px 10px; font-size: 14px; }
+    .action-btn.light { background: #e2e8f0; color: #334155; padding: 13px 10px; font-size: 14px; }
+    .driver-row { background: white; border: 1px solid #e2e8f0; border-radius: 18px; padding: 14px; display: flex; justify-content: space-between; align-items: center; gap: 10px; margin-bottom: 8px; }
+    .driver-name { font-size: 15px; font-weight: 800; }
+    .driver-detail { font-size: 12px; color: #64748b; margin-top: 3px; }
+    .driver-open { padding: 10px 12px; background: #f1f5f9; color: #334155; font-size: 12px; }
+    .opt-summary { background: #0f172a; color: white; border-radius: 22px; padding: 16px; margin-bottom: 12px; }
+    .opt-summary h3 { font-size: 17px; margin-bottom: 6px; }
+    .opt-warning { background: #fffbeb; border: 1px solid #fcd34d; color: #92400e; border-radius: 18px; padding: 14px; margin-bottom: 12px; font-size: 13px; line-height: 1.45; }
+    .opt-btn { width: 100%; padding: 14px 12px; background: #06b6d4; color: white; font-size: 15px; margin-top: 10px; }
+    .map-box, .hours-row, .settings-row { background: white; border: 1px solid #e2e8f0; border-radius: 18px; padding: 14px; margin-bottom: 10px; }
+    .map-demo { height: 210px; background: linear-gradient(135deg, #dbeafe, #cffafe); border-radius: 18px; border: 1px dashed #38bdf8; display: flex; align-items: center; justify-content: center; color: #0369a1; font-weight: 800; font-size: 16px; margin-top: 10px; }
+    .hours-grid { display: grid; grid-template-columns: 1fr auto; gap: 10px; align-items: center; }
+    .hours-big { font-size: 24px; font-weight: 800; color: #0f172a; }
+    .hours-small { font-size: 12px; color: #64748b; margin-top: 3px; }
+    .settings-label { font-size: 12px; color: #64748b; margin-bottom: 6px; font-weight: 700; text-transform: uppercase; }
+    .settings-value { font-size: 15px; font-weight: 800; color: #0f172a; }
+    .bottom-bar { position: sticky; bottom: 0; background: rgba(255,255,255,0.96); backdrop-filter: blur(10px); border-top: 1px solid #e2e8f0; padding: 12px 14px 14px; }
+    .bottom-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+    .bottom-primary, .bottom-secondary { border: none; border-radius: 18px; padding: 15px 10px; font-size: 15px; font-weight: 800; cursor: pointer; }
+    .bottom-primary { background: #06b6d4; color: white; }
+    .bottom-secondary { background: #0f172a; color: white; }
+  </style>
 </head>
-
 <body>
-
-<div class="header">
-
-  <div class="top-row">
-
-    <div>
-      <div style="font-size:12px;color:#94a3b8;">AbleCare Fleet</div>
-      <div style="font-size:22px;font-weight:bold;">Today’s Schedule</div>
-      <div style="margin-top:5px;">Wednesday, April 29</div>
+  <div class="phone-shell">
+    <div class="header">
+      <div class="header-top">
+        <div>
+          <div class="brand">AbleCare Fleet</div>
+          <div class="title">Today’s Schedule</div>
+          <div class="date">Wednesday, April 29</div>
+        </div>
+        <div class="header-actions">
+          <button class="top-btn primary">+ Add Ride</button>
+          <button class="top-btn light">📋 Paste Email</button>
+        </div>
+      </div>
+      <div class="stats">
+        <div class="stat total">Total<span class="num">9</span></div>
+        <div class="stat assigned">Assigned<span class="num">8</span></div>
+        <div class="stat open">Open<span class="num">1</span></div>
+      </div>
     </div>
 
-    <div class="actions-top">
-      <button class="btn-big btn-primary">+ Add Ride</button>
-      <button class="btn-big btn-light">📋 Paste Email</button>
+    <div class="content">
+      <div class="tabs">
+        <button class="tab active" data-panel="rides">Rides</button>
+        <button class="tab" data-panel="drivers">Drivers</button>
+        <button class="tab" data-panel="optimize">Optimize</button>
+        <button class="tab" data-panel="map">Map</button>
+        <button class="tab" data-panel="hours">Hours</button>
+        <button class="tab" data-panel="settings">Settings</button>
+      </div>
+
+      <div class="panel active" id="rides">
+        <div class="card">
+          <div style="display:flex;justify-content:space-between;align-items:center;gap:10px;">
+            <div>
+              <div style="font-size:15px;font-weight:800;">Quick Actions</div>
+              <div class="subtle">Simple phone layout</div>
+            </div>
+            <button class="top-btn primary" style="padding:10px 12px;">Optimize</button>
+          </div>
+          <div class="quick-actions">
+            <button class="soft-btn">Today</button>
+            <button class="soft-btn">Pick Date</button>
+          </div>
+        </div>
+
+        <div class="section-title">Needs attention</div>
+        <div class="card ride-card unassigned">
+          <div class="ride-top">
+            <div>
+              <div class="ride-time">8:30 AM</div>
+              <div class="ride-facility">Edenbridge PACE</div>
+              <div class="ride-client">Linda May</div>
+            </div>
+            <div class="status unassigned">Unassigned</div>
+          </div>
+          <div class="ride-tags"><div class="tag">♿ Wheelchair</div></div>
+          <div class="ride-actions">
+            <button class="action-btn dark">Assign</button>
+            <button class="action-btn light">Open</button>
+          </div>
+        </div>
+
+        <div class="section-title">Assigned rides</div>
+        <div class="card ride-card">
+          <div class="ride-top">
+            <div>
+              <div class="ride-time">5:45 AM</div>
+              <div class="ride-facility">WAAP</div>
+              <div class="ride-client">Kenneth Smith</div>
+            </div>
+            <div class="status assigned">Assigned</div>
+          </div>
+          <div class="ride-tags"><div class="tag">🛏 Stretcher</div><div class="tag">Raul / wife</div></div>
+          <div class="ride-actions">
+            <button class="action-btn dark">Open Ride</button>
+            <button class="action-btn light">Edit</button>
+          </div>
+        </div>
+
+        <div class="card ride-card">
+          <div class="ride-top">
+            <div>
+              <div class="ride-time">7:45 AM</div>
+              <div class="ride-facility">WAAP</div>
+              <div class="ride-client">Carolyn Myrtle</div>
+            </div>
+            <div class="status assigned">Assigned</div>
+          </div>
+          <div class="ride-tags"><div class="tag">♿ Wheelchair</div><div class="tag">Joel</div></div>
+          <div class="ride-actions">
+            <button class="action-btn dark">Open Ride</button>
+            <button class="action-btn light">Edit</button>
+          </div>
+        </div>
+
+        <div class="card ride-card">
+          <div class="ride-top">
+            <div>
+              <div class="ride-time">1:30 PM</div>
+              <div class="ride-facility">Chapel Hill</div>
+              <div class="ride-client">Dana Kelly</div>
+            </div>
+            <div class="status assigned">Assigned</div>
+          </div>
+          <div class="ride-tags"><div class="tag">♿ Wheelchair</div><div class="tag">Joel</div></div>
+          <div class="ride-actions">
+            <button class="action-btn dark">Open Ride</button>
+            <button class="action-btn light">Edit</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="panel" id="drivers">
+        <div class="section-title" style="margin-top:0;">Drivers</div>
+        <div class="driver-row"><div><div class="driver-name">Raul</div><div class="driver-detail">3 rides · 67.1 mi · stretcher priority</div></div><button class="driver-open">Open</button></div>
+        <div class="driver-row"><div><div class="driver-name">Joel</div><div class="driver-detail">3 rides · 50.3 mi · helper on 2nd stretcher</div></div><button class="driver-open">Open</button></div>
+        <div class="driver-row"><div><div class="driver-name">Gerson</div><div class="driver-detail">2 rides · 41.0 mi · helper with Joel</div></div><button class="driver-open">Open</button></div>
+      </div>
+
+      <div class="panel" id="optimize">
+        <div class="opt-summary">
+          <h3>AI Optimizer</h3>
+          <div style="font-size:13px;line-height:1.45;color:#cbd5e1;">9 total rides. 8 assigned. 1 unassigned. Estimated total fleet mileage: 158.3 miles.</div>
+          <button class="opt-btn">Run Optimize</button>
+        </div>
+        <div class="opt-warning"><strong>1 unassigned ride</strong><br>8:30 AM — Edenbridge PACE — Linda May<br>Reason: No driver fit this ride without conflict.</div>
+        <div class="card">
+          <div style="font-size:15px;font-weight:800;">Manual Override</div>
+          <div class="subtle">Mockup for phone controls</div>
+          <div class="quick-actions">
+            <button class="soft-btn">Add to Raul</button>
+            <button class="soft-btn">Add to Joel</button>
+            <button class="soft-btn">Add to Gerson</button>
+            <button class="soft-btn">Remove Ride</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="panel" id="map">
+        <div class="section-title" style="margin-top:0;">Live Map</div>
+        <div class="map-box">
+          <div style="font-size:15px;font-weight:800;">Driver Locations</div>
+          <div class="subtle">Simple map-first mobile view</div>
+          <div class="map-demo">Map Preview</div>
+        </div>
+        <div class="driver-row"><div><div class="driver-name">Raul</div><div class="driver-detail">On shift · GPS active</div></div><button class="driver-open">Locate</button></div>
+        <div class="driver-row"><div><div class="driver-name">Joel</div><div class="driver-detail">On shift · GPS active</div></div><button class="driver-open">Locate</button></div>
+      </div>
+
+      <div class="panel" id="hours">
+        <div class="section-title" style="margin-top:0;">Hours</div>
+        <div class="hours-row">
+          <div class="hours-grid">
+            <div><div class="hours-big">72.5</div><div class="hours-small">Total hours this pay period</div></div>
+            <button class="driver-open">Export</button>
+          </div>
+        </div>
+        <div class="hours-row"><div style="font-size:15px;font-weight:800;">Raul</div><div class="subtle">28.0 hrs · 12 shifts</div></div>
+        <div class="hours-row"><div style="font-size:15px;font-weight:800;">Joel</div><div class="subtle">24.5 hrs · 10 shifts</div></div>
+        <div class="hours-row"><div style="font-size:15px;font-weight:800;">Gerson</div><div class="subtle">20.0 hrs · 9 shifts</div></div>
+      </div>
+
+      <div class="panel" id="settings">
+        <div class="section-title" style="margin-top:0;">Settings</div>
+        <div class="settings-row"><div class="settings-label">Base Address</div><div class="settings-value">3404 Old Court Rd, Pikesville</div></div>
+        <div class="settings-row"><div class="settings-label">Owner PIN</div><div class="settings-value">••••</div></div>
+        <div class="settings-row"><div class="settings-label">Business Phone</div><div class="settings-value">(443) 819-1808</div></div>
+        <div class="settings-row"><div class="settings-label">Drivers</div><div class="settings-value">Raul, Joel, Gerson</div></div>
+      </div>
     </div>
 
-  </div>
-
-  <div class="stats">
-    <div class="stat">9 Total</div>
-    <div class="stat">8 Assigned</div>
-    <div class="stat">1 ⚠️</div>
-  </div>
-
-</div>
-
-<div class="container">
-
-  <div class="section-title">⚠️ Needs Attention</div>
-
-  <div class="card unassigned">
-    <div class="time">8:30 AM</div>
-    <div>Edenbridge PACE</div>
-    <div>Linda May</div>
-    <div>♿ Wheelchair</div>
-
-    <div class="buttons">
-      <button class="btn" style="background:#0f172a;color:white;">Assign</button>
-      <button class="btn" style="background:#e5e7eb;">Open</button>
+    <div class="bottom-bar">
+      <div class="bottom-grid">
+        <button class="bottom-primary">+ Add Ride</button>
+        <button class="bottom-secondary">🤖 Optimize</button>
+      </div>
     </div>
   </div>
 
-  <div class="section-title">Assigned Rides</div>
-
-  <div class="card">
-    <div class="time">5:45 AM</div>
-    <div>WAAP</div>
-    <div>Kenneth Smith</div>
-    <div>🛏 Stretcher — Raul/wife</div>
-
-    <div class="buttons">
-      <button class="btn" style="background:#0f172a;color:white;">Open</button>
-      <button class="btn" style="background:#e5e7eb;">Edit</button>
-    </div>
-  </div>
-
-  <div class="card">
-    <div class="time">7:45 AM</div>
-    <div>WAAP</div>
-    <div>Carolyn Myrtle</div>
-    <div>♿ Wheelchair — Joel</div>
-
-    <div class="buttons">
-      <button class="btn" style="background:#0f172a;color:white;">Open</button>
-      <button class="btn" style="background:#e5e7eb;">Edit</button>
-    </div>
-  </div>
-
-  <div class="card">
-    <div class="time">1:30 PM</div>
-    <div>Chapel Hill</div>
-    <div>Dana Kelly</div>
-    <div>♿ Wheelchair — Joel</div>
-
-    <div class="buttons">
-      <button class="btn" style="background:#0f172a;color:white;">Open</button>
-      <button class="btn" style="background:#e5e7eb;">Edit</button>
-    </div>
-  </div>
-
-  <div class="section-title">Drivers</div>
-  <div>Raul — 3 rides</div>
-  <div>Joel — 3 rides</div>
-  <div>Gerson — 2 rides</div>
-
-  <div class="bottom-space"></div>
-
-</div>
-
+  <script>
+    const tabs = document.querySelectorAll('.tab');
+    const panels = document.querySelectorAll('.panel');
+    tabs.forEach(tab => {
+      tab.addEventListener('click', () => {
+        const panelId = tab.dataset.panel;
+        tabs.forEach(t => t.classList.remove('active'));
+        panels.forEach(p => p.classList.remove('active'));
+        tab.classList.add('active');
+        document.getElementById(panelId).classList.add('active');
+      });
+    });
+  </script>
 </body>
 </html>
