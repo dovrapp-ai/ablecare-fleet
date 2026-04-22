@@ -20,6 +20,7 @@
       overflow: hidden;
       box-shadow: 0 8px 28px rgba(15, 23, 42, 0.16);
     }
+
     .header {
       background: #0f172a;
       color: white;
@@ -50,22 +51,27 @@
       font-size: 14px;
       color: #cbd5e1;
     }
+
     .header-actions {
-      display: flex;
-      flex-direction: column;
+      display: grid;
+      grid-template-columns: 1fr 1fr;
       gap: 8px;
-      min-width: 145px;
+      min-width: 170px;
     }
+
     .top-btn {
       border: none;
       border-radius: 14px;
-      padding: 12px 12px;
-      font-size: 13px;
+      padding: 11px 10px;
+      font-size: 12px;
       font-weight: 800;
       cursor: pointer;
+      text-align: center;
     }
     .top-btn.primary { background: #06b6d4; color: white; }
     .top-btn.light { background: #e2e8f0; color: #0f172a; }
+    .top-btn.dark { background: #1e293b; color: white; }
+    .top-btn.amber { background: #f59e0b; color: white; }
 
     .stats {
       display: grid;
@@ -102,6 +108,7 @@
       scrollbar-width: none;
     }
     .tabs::-webkit-scrollbar { display: none; }
+
     .tab {
       border: 1px solid #e2e8f0;
       background: white;
@@ -347,7 +354,7 @@
       margin-top: 3px;
     }
 
-    .settings-label {
+    .settings-label, .input-label {
       font-size: 12px;
       color: #64748b;
       margin-bottom: 6px;
@@ -359,14 +366,6 @@
       font-size: 15px;
       font-weight: 800;
       color: #0f172a;
-    }
-
-    .input-label {
-      font-size: 12px;
-      color: #64748b;
-      font-weight: 700;
-      margin-bottom: 6px;
-      text-transform: uppercase;
     }
 
     .input {
@@ -487,6 +486,8 @@
         <div class="header-actions">
           <button class="top-btn primary">+ Add Ride</button>
           <button class="top-btn light">📋 Paste Email</button>
+          <button class="top-btn dark">📤 Send Schedule</button>
+          <button class="top-btn amber">🧾 Log All</button>
         </div>
       </div>
 
@@ -763,6 +764,14 @@
         </div>
 
         <div class="report-row">
+          <div style="display:flex;justify-content:space-between;align-items:center;gap:10px;margin-bottom:10px;">
+            <div>
+              <div style="font-size:15px;font-weight:800;">Report Actions</div>
+              <div class="subtle">Mobile report controls</div>
+            </div>
+            <button class="top-btn primary" style="padding:10px 12px;">+ Add to Reports</button>
+          </div>
+
           <div class="input-label">Date Range</div>
           <select class="select">
             <option>This Week</option>
