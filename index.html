@@ -493,6 +493,26 @@ button,input,select,textarea{-webkit-appearance:none;font-family:inherit}
   .optimize-btn{padding:6px 10px;font-size:11px}
   .send-schedule-btn{padding:6px 10px;font-size:11px;width:auto !important}
 }
+
+
+/* ── EMAIL REVIEW PANEL ── */
+.email-review-wrap{display:none;border-top:2px dashed #e8eef4;padding-top:14px;margin-top:14px}
+.email-review-title{font-size:11px;font-weight:700;color:#00b4d8;text-transform:uppercase;letter-spacing:1px;margin-bottom:8px}
+.email-review-box{background:#f8fafc;border:1px solid #e8eef4;border-radius:12px;padding:12px;max-height:240px;overflow:auto;white-space:pre-wrap;font-size:12px;line-height:1.5;color:#334155}
+.email-review-note{font-size:11px;color:#6b82a8;margin-top:6px}
+
+/* ── MOBILE IMPROVEMENTS ── */
+@media(max-width:700px){
+  #screen-rides.active{height:auto !important;min-height:calc(100vh - 104px);}
+  .rides-sidebar{width:100%;border-right:none;border-bottom:1px solid #e8eef4;overflow:visible}
+  .rides-main{min-height:60vh}
+  .day-header{flex-wrap:wrap;gap:8px;padding:10px 12px}
+  .day-title{min-width:0;width:100%;order:1}
+  .day-header .cal-nav, .day-header .cal-today-btn, .day-header .optimize-btn, .day-header .send-schedule-btn{order:2}
+  .day-header .send-schedule-btn{width:calc(50% - 4px);margin-left:0 !important;justify-content:center}
+  .day-header .optimize-btn{margin-left:0}
+}
+
 </style>
 </head>
 <body>
@@ -960,9 +980,11 @@ button,input,select,textarea{-webkit-appearance:none;font-family:inherit}
       </div>
 
       <!-- Add ride button -->
-      <div style="padding:12px">
+      <div style="padding:12px;display:grid;grid-template-columns:1fr 1fr;gap:8px">
         <button class="add-btn" style="width:100%;padding:10px;font-size:13px" onclick="openRideModal(null)">+ Add Ride</button>
-        <button class="add-btn" style="width:100%;padding:10px;font-size:13px;margin-top:8px;background:#152338" onclick="openEmailParser()">📧 Paste Email</button>
+        <button class="add-btn" style="width:100%;padding:10px;font-size:13px;background:#152338" onclick="openEmailParser()">📧 Paste Email</button>
+        <button class="add-btn" style="width:100%;padding:10px;font-size:13px;background:#0d1b2a" onclick="sendTomorrowSchedule()">📤 Send Schedule</button>
+        <button class="add-btn" style="width:100%;padding:10px;font-size:13px;background:#1e3a5f" onclick="logAllRidesForDay()">📋 Log All</button>
       </div>
     </div>
 
@@ -1196,6 +1218,12 @@ button,input,select,textarea{-webkit-appearance:none;font-family:inherit}
       </div>
     </div>
 
+    <div class="email-review-wrap" id="email-review-wrap">
+      <div class="email-review-title">Original Pasted Email</div>
+      <div class="email-review-box" id="email-review-text"></div>
+      <div class="email-review-note">Use this to compare the parsed fields before saving the ride.</div>
+    </div>
+
     <div class="modal-actions">
       <button class="modal-save" onclick="saveRide()">Save Ride</button>
       <button class="modal-delete" id="ride-delete-btn" onclick="deleteRide()" style="display:none">Delete</button>
@@ -1403,6 +1431,7 @@ let db=null,firebaseReady=false;
 let map=null,mapMarkers={},dashInt=null;
 let dispatchMap=null;
 let pinBuf='';
+let lastPastedEmail='';
 let addrDebounce=null,selectedCoords=null,lastQuery='';
 let tsMode='pp',ppOffset=0;
 let editContext={driverName:null,shiftKey:null};
@@ -2985,8 +3014,9 @@ async function openRideModal(key,defaultDate){
   }
   updateRideToggles();showHideStretcherFields();
   document.getElementById('ride-modal').style.display='flex';
+  syncEmailReviewPanel();
 }
-function closeRideModal(){document.getElementById('ride-modal').style.display='none';rideEditKey=null;}
+function closeRideModal(){document.getElementById('ride-modal').style.display='none';rideEditKey=null;lastPastedEmail='';syncEmailReviewPanel();}
 async function saveRide(){
   const date=document.getElementById('r-date').value;
   const facility=document.getElementById('r-facility').value.trim();
@@ -3074,7 +3104,14 @@ async function logRideFromCalendar(rideKey){
   showToast('✓ Ride logged to Reports!');
 }
 
-async function logAllRidesForDay(){
+async function logRideToReports(){
+  openRideModal(null, dateStr(new Date())).then(()=>{
+    setToggle('paid','no');
+    document.getElementById('r-notes').value = (document.getElementById('r-notes').value||'') + '';
+  });
+}
+
+function logAllRidesForDay(){
   const ds = dateStr(selectedDate);
   const snap = await ridesRef().once('value');
   const all = snap.val()||{};
@@ -3857,6 +3894,7 @@ function resetInvoice(){
 
 // ── EMAIL PARSER ──
 function openEmailParser(){
+  lastPastedEmail='';
   document.getElementById('email-text').value='';
   document.getElementById('email-parse-error').style.display='none';
   document.getElementById('email-parse-loading').style.display='none';
@@ -3866,8 +3904,22 @@ function closeEmailParser(){
   document.getElementById('email-parser-modal').style.display='none';
 }
 
+function syncEmailReviewPanel(){
+  const wrap = document.getElementById('email-review-wrap');
+  const box = document.getElementById('email-review-text');
+  if(!wrap || !box) return;
+  if(lastPastedEmail && lastPastedEmail.trim()){
+    box.textContent = lastPastedEmail;
+    wrap.style.display = 'block';
+  } else {
+    box.textContent = '';
+    wrap.style.display = 'none';
+  }
+}
+
 async function parseEmailWithAI(){
   const emailText = document.getElementById('email-text').value.trim();
+  lastPastedEmail = emailText;
   if(!emailText){ alert('Please paste an email first.'); return; }
 
   document.getElementById('email-parse-loading').style.display='block';
@@ -3947,6 +3999,7 @@ Respond ONLY with valid JSON, no markdown, no explanation:
 
     // Wait for modal to fully render then fill fields
     setTimeout(()=>{
+      syncEmailReviewPanel();
       // Fill in extracted fields
       if(parsed.client) document.getElementById('r-client').value = parsed.client;
       if(parsed.notes) document.getElementById('r-notes').value = parsed.notes;
@@ -4024,8 +4077,10 @@ function fallbackParseEmail(text){
     triptype: lower.includes('one way') || lower.includes('1 way') ? '1way' : 'rt',
   };
 
+  lastPastedEmail = text;
   closeEmailParser();
   openRideModal(null, dateStr(new Date())).then(()=>{
+    syncEmailReviewPanel();
     rideToggles.ridetype = extracted.ridetype;
     rideToggles.triptype = extracted.triptype;
     updateRideToggles();
