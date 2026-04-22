@@ -3111,7 +3111,7 @@ async function logRideToReports(){
   });
 }
 
-function logAllRidesForDay(){
+async function logAllRidesForDay(){
   const ds = dateStr(selectedDate);
   const snap = await ridesRef().once('value');
   const all = snap.val()||{};
