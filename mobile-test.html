@@ -13,24 +13,30 @@ body {margin:0;font-family:Arial;background:#f3f4f6;}
 }
 
 .top-row {
-  display:flex;justify-content:space-between;align-items:center;
+  display:flex;justify-content:space-between;align-items:flex-start;
 }
 
 .actions-top {
-  display:flex;gap:8px;
+  display:flex;flex-direction:column;gap:8px;
 }
 
-.btn-small {
-  padding:8px 10px;border-radius:10px;border:none;
-  font-size:12px;font-weight:bold;
+.btn-big {
+  padding:12px 14px;
+  border-radius:12px;
+  border:none;
+  font-size:14px;
+  font-weight:bold;
+  width:140px;
 }
 
 .btn-primary {background:#06b6d4;color:white;}
-.btn-dark {background:#0f172a;color:white;}
-.btn-light {background:#e5e7eb;}
+.btn-light {background:#e5e7eb;color:black;}
 
 .stats {display:flex;gap:10px;margin-top:10px;}
-.stat {flex:1;background:rgba(255,255,255,0.1);padding:10px;border-radius:10px;text-align:center;}
+.stat {
+  flex:1;background:rgba(255,255,255,0.1);
+  padding:10px;border-radius:10px;text-align:center;
+}
 
 .container {padding:15px;}
 
@@ -60,18 +66,19 @@ body {margin:0;font-family:Arial;background:#f3f4f6;}
 <div class="header">
 
   <div class="top-row">
+
     <div>
       <div style="font-size:12px;color:#94a3b8;">AbleCare Fleet</div>
-      <div style="font-size:20px;font-weight:bold;">Today’s Schedule</div>
+      <div style="font-size:22px;font-weight:bold;">Today’s Schedule</div>
+      <div style="margin-top:5px;">Wednesday, April 29</div>
     </div>
 
     <div class="actions-top">
-      <button class="btn-small btn-primary">+ Ride</button>
-      <button class="btn-small btn-light">📋 Paste</button>
+      <button class="btn-big btn-primary">+ Add Ride</button>
+      <button class="btn-big btn-light">📋 Paste Email</button>
     </div>
-  </div>
 
-  <div>Wednesday, April 29</div>
+  </div>
 
   <div class="stats">
     <div class="stat">9 Total</div>
@@ -92,8 +99,8 @@ body {margin:0;font-family:Arial;background:#f3f4f6;}
     <div>♿ Wheelchair</div>
 
     <div class="buttons">
-      <button class="btn btn-dark">Assign</button>
-      <button class="btn btn-light">Open</button>
+      <button class="btn" style="background:#0f172a;color:white;">Assign</button>
+      <button class="btn" style="background:#e5e7eb;">Open</button>
     </div>
   </div>
 
@@ -106,8 +113,8 @@ body {margin:0;font-family:Arial;background:#f3f4f6;}
     <div>🛏 Stretcher — Raul/wife</div>
 
     <div class="buttons">
-      <button class="btn btn-dark">Open</button>
-      <button class="btn btn-light">Edit</button>
+      <button class="btn" style="background:#0f172a;color:white;">Open</button>
+      <button class="btn" style="background:#e5e7eb;">Edit</button>
     </div>
   </div>
 
@@ -118,8 +125,8 @@ body {margin:0;font-family:Arial;background:#f3f4f6;}
     <div>♿ Wheelchair — Joel</div>
 
     <div class="buttons">
-      <button class="btn btn-dark">Open</button>
-      <button class="btn btn-light">Edit</button>
+      <button class="btn" style="background:#0f172a;color:white;">Open</button>
+      <button class="btn" style="background:#e5e7eb;">Edit</button>
     </div>
   </div>
 
@@ -130,8 +137,8 @@ body {margin:0;font-family:Arial;background:#f3f4f6;}
     <div>♿ Wheelchair — Joel</div>
 
     <div class="buttons">
-      <button class="btn btn-dark">Open</button>
-      <button class="btn btn-light">Edit</button>
+      <button class="btn" style="background:#0f172a;color:white;">Open</button>
+      <button class="btn" style="background:#e5e7eb;">Edit</button>
     </div>
   </div>
 
