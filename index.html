@@ -1513,6 +1513,10 @@ function checkPin(){
   }
 }
 
+window.pinKey = pinKey;
+window.updatePinDots = updatePinDots;
+window.checkPin = checkPin;
+
 // ── TABS ──
 function switchTab(name){
   document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));
