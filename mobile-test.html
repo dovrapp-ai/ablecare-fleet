@@ -1,541 +1,148 @@
 <!DOCTYPE html>
-<html lang="en">
+<html>
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>AbleCare Mobile Test</title>
-  <style>
-    * {
-      box-sizing: border-box;
-      margin: 0;
-      padding: 0;
-    }
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AbleCare Mobile</title>
 
-    body {
-      font-family: Arial, sans-serif;
-      background: #e5e7eb;
-      color: #0f172a;
-    }
+<style>
+body {margin:0;font-family:Arial;background:#f3f4f6;}
 
-    .phone-shell {
-      max-width: 430px;
-      margin: 0 auto;
-      min-height: 100vh;
-      background: #f8fafc;
-      position: relative;
-      overflow-x: hidden;
-    }
+.header {
+  background:#0f172a;color:white;padding:20px;
+  border-bottom-left-radius:25px;border-bottom-right-radius:25px;
+}
 
-    .header {
-      background: #0f172a;
-      color: white;
-      padding: 22px 18px 18px;
-      border-bottom-left-radius: 28px;
-      border-bottom-right-radius: 28px;
-      box-shadow: 0 4px 20px rgba(0,0,0,0.15);
-    }
+.top-row {
+  display:flex;justify-content:space-between;align-items:center;
+}
 
-    .header-top {
-      display: flex;
-      justify-content: space-between;
-      align-items: flex-start;
-      gap: 12px;
-      margin-bottom: 14px;
-    }
+.actions-top {
+  display:flex;gap:8px;
+}
 
-    .brand {
-      font-size: 11px;
-      letter-spacing: 2px;
-      text-transform: uppercase;
-      color: #94a3b8;
-      margin-bottom: 6px;
-    }
+.btn-small {
+  padding:8px 10px;border-radius:10px;border:none;
+  font-size:12px;font-weight:bold;
+}
 
-    .title {
-      font-size: 28px;
-      font-weight: 800;
-      line-height: 1.1;
-    }
+.btn-primary {background:#06b6d4;color:white;}
+.btn-dark {background:#0f172a;color:white;}
+.btn-light {background:#e5e7eb;}
 
-    .date {
-      margin-top: 6px;
-      font-size: 14px;
-      color: #cbd5e1;
-    }
+.stats {display:flex;gap:10px;margin-top:10px;}
+.stat {flex:1;background:rgba(255,255,255,0.1);padding:10px;border-radius:10px;text-align:center;}
 
-    .header-pill {
-      background: rgba(6, 182, 212, 0.15);
-      color: #67e8f9;
-      border-radius: 16px;
-      padding: 10px 12px;
-      font-size: 14px;
-      font-weight: 700;
-      min-width: 52px;
-      text-align: center;
-    }
+.container {padding:15px;}
 
-    .stats {
-      display: grid;
-      grid-template-columns: repeat(3, 1fr);
-      gap: 8px;
-    }
+.section-title {font-weight:bold;margin:15px 0 5px;}
 
-    .stat {
-      border-radius: 16px;
-      padding: 12px;
-      font-size: 12px;
-      font-weight: 600;
-    }
+.card {
+  background:white;border-radius:15px;padding:15px;margin-bottom:10px;
+  box-shadow:0 2px 5px rgba(0,0,0,0.1);
+}
 
-    .stat .num {
-      display: block;
-      font-size: 22px;
-      font-weight: 800;
-      margin-top: 4px;
-    }
+.unassigned {background:#fef3c7;border:2px solid #f59e0b;}
 
-    .stat.total {
-      background: rgba(255,255,255,0.1);
-      color: #e2e8f0;
-    }
+.time {color:#0ea5e9;font-weight:bold;font-size:16px;}
 
-    .stat.assigned {
-      background: rgba(16,185,129,0.15);
-      color: #bbf7d0;
-    }
+.buttons {display:flex;gap:10px;margin-top:10px;}
 
-    .stat.open {
-      background: rgba(245,158,11,0.16);
-      color: #fde68a;
-    }
+.btn {
+  flex:1;padding:10px;border-radius:10px;border:none;font-weight:bold;
+}
 
-    .content {
-      padding: 16px 16px 92px;
-    }
-
-    .tabs {
-      display: flex;
-      gap: 8px;
-      overflow-x: auto;
-      padding-bottom: 6px;
-      margin-bottom: 16px;
-    }
-
-    .tabs::-webkit-scrollbar {
-      display: none;
-    }
-
-    .tab {
-      white-space: nowrap;
-      border: 1px solid #e2e8f0;
-      background: white;
-      color: #475569;
-      padding: 10px 14px;
-      border-radius: 999px;
-      font-size: 14px;
-      font-weight: 700;
-    }
-
-    .tab.active {
-      background: #06b6d4;
-      border-color: #06b6d4;
-      color: white;
-    }
-
-    .card {
-      background: white;
-      border: 1px solid #e2e8f0;
-      border-radius: 22px;
-      padding: 16px;
-      box-shadow: 0 2px 10px rgba(15,23,42,0.05);
-      margin-bottom: 12px;
-    }
-
-    .section-title {
-      font-size: 15px;
-      font-weight: 800;
-      margin: 18px 0 10px;
-    }
-
-    .quick-actions-header {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      gap: 10px;
-      margin-bottom: 12px;
-    }
-
-    .small-label {
-      font-size: 12px;
-      color: #64748b;
-      margin-top: 2px;
-    }
-
-    .optimize-btn {
-      background: #0f172a;
-      color: white;
-      border: none;
-      padding: 10px 14px;
-      border-radius: 14px;
-      font-weight: 700;
-      font-size: 14px;
-    }
-
-    .two-grid {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 8px;
-    }
-
-    .soft-btn {
-      border: 1px solid #e2e8f0;
-      background: #f8fafc;
-      color: #334155;
-      padding: 13px 10px;
-      border-radius: 16px;
-      font-size: 14px;
-      font-weight: 700;
-    }
-
-    .ride-card.unassigned {
-      background: #fffbeb;
-      border: 1px solid #fcd34d;
-    }
-
-    .ride-top {
-      display: flex;
-      justify-content: space-between;
-      align-items: flex-start;
-      gap: 12px;
-    }
-
-    .ride-time {
-      color: #0891b2;
-      font-weight: 800;
-      font-size: 15px;
-      margin-bottom: 4px;
-    }
-
-    .ride-facility {
-      font-size: 18px;
-      font-weight: 800;
-      color: #0f172a;
-    }
-
-    .ride-client {
-      font-size: 14px;
-      color: #475569;
-      margin-top: 2px;
-    }
-
-    .status-badge {
-      border-radius: 999px;
-      padding: 6px 10px;
-      font-size: 11px;
-      font-weight: 800;
-      white-space: nowrap;
-    }
-
-    .status-badge.assigned {
-      background: #dcfce7;
-      color: #15803d;
-    }
-
-    .status-badge.unassigned {
-      background: #fef3c7;
-      color: #b45309;
-    }
-
-    .ride-tags {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 6px;
-      margin-top: 12px;
-    }
-
-    .ride-tag {
-      background: #f1f5f9;
-      color: #334155;
-      padding: 6px 10px;
-      border-radius: 999px;
-      font-size: 12px;
-      font-weight: 700;
-    }
-
-    .ride-actions {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 8px;
-      margin-top: 14px;
-    }
-
-    .action-dark,
-    .action-light {
-      border-radius: 16px;
-      padding: 13px 10px;
-      font-size: 14px;
-      font-weight: 800;
-      border: none;
-    }
-
-    .action-dark {
-      background: #0f172a;
-      color: white;
-    }
-
-    .action-light {
-      background: #e2e8f0;
-      color: #334155;
-    }
-
-    .drivers-list {
-      display: flex;
-      flex-direction: column;
-      gap: 8px;
-    }
-
-    .driver-row {
-      background: white;
-      border: 1px solid #e2e8f0;
-      border-radius: 18px;
-      padding: 14px;
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      gap: 10px;
-    }
-
-    .driver-name {
-      font-size: 15px;
-      font-weight: 800;
-      color: #0f172a;
-    }
-
-    .driver-detail {
-      font-size: 12px;
-      color: #64748b;
-      margin-top: 3px;
-    }
-
-    .open-driver-btn {
-      background: #f1f5f9;
-      color: #334155;
-      border: none;
-      border-radius: 12px;
-      padding: 10px 12px;
-      font-size: 12px;
-      font-weight: 800;
-    }
-
-    .bottom-bar {
-      position: sticky;
-      bottom: 0;
-      background: rgba(255,255,255,0.96);
-      backdrop-filter: blur(10px);
-      border-top: 1px solid #e2e8f0;
-      padding: 12px 16px 14px;
-    }
-
-    .bottom-grid {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 8px;
-    }
-
-    .bottom-primary,
-    .bottom-secondary {
-      border: none;
-      border-radius: 18px;
-      padding: 15px 10px;
-      font-size: 15px;
-      font-weight: 800;
-    }
-
-    .bottom-primary {
-      background: #06b6d4;
-      color: white;
-    }
-
-    .bottom-secondary {
-      background: #0f172a;
-      color: white;
-    }
-  </style>
+.bottom-space {height:80px;}
+</style>
 </head>
+
 <body>
-  <div class="phone-shell">
-    <div class="header">
-      <div class="header-top">
-        <div>
-          <div class="brand">AbleCare Fleet</div>
-          <div class="title">Today’s Schedule</div>
-          <div class="date">Wednesday, April 29</div>
-        </div>
-        <div class="header-pill">9</div>
-      </div>
 
-      <div class="stats">
-        <div class="stat total">
-          Total
-          <span class="num">9</span>
-        </div>
-        <div class="stat assigned">
-          Assigned
-          <span class="num">8</span>
-        </div>
-        <div class="stat open">
-          Open
-          <span class="num">1</span>
-        </div>
-      </div>
+<div class="header">
+
+  <div class="top-row">
+    <div>
+      <div style="font-size:12px;color:#94a3b8;">AbleCare Fleet</div>
+      <div style="font-size:20px;font-weight:bold;">Today’s Schedule</div>
     </div>
 
-    <div class="content">
-      <div class="tabs">
-        <div class="tab active">Rides</div>
-        <div class="tab">Drivers</div>
-        <div class="tab">Optimize</div>
-        <div class="tab">Map</div>
-        <div class="tab">More</div>
-      </div>
-
-      <div class="card">
-        <div class="quick-actions-header">
-          <div>
-            <div style="font-size:15px;font-weight:800;">Quick Actions</div>
-            <div class="small-label">Simple phone layout</div>
-          </div>
-          <button class="optimize-btn">Optimize</button>
-        </div>
-
-        <div class="two-grid">
-          <button class="soft-btn">Today</button>
-          <button class="soft-btn">Pick Date</button>
-        </div>
-      </div>
-
-      <div class="section-title">Needs attention</div>
-
-      <div class="card ride-card unassigned">
-        <div class="ride-top">
-          <div>
-            <div class="ride-time">8:30 AM</div>
-            <div class="ride-facility">Edenbridge PACE</div>
-            <div class="ride-client">Linda May</div>
-          </div>
-          <div class="status-badge unassigned">Unassigned</div>
-        </div>
-
-        <div class="ride-tags">
-          <div class="ride-tag">♿ Wheelchair</div>
-        </div>
-
-        <div class="ride-actions">
-          <button class="action-dark">Assign</button>
-          <button class="action-light">Open</button>
-        </div>
-      </div>
-
-      <div class="section-title">Assigned rides</div>
-
-      <div class="card ride-card">
-        <div class="ride-top">
-          <div>
-            <div class="ride-time">5:45 AM</div>
-            <div class="ride-facility">WAAP</div>
-            <div class="ride-client">Kenneth Smith</div>
-          </div>
-          <div class="status-badge assigned">Assigned</div>
-        </div>
-
-        <div class="ride-tags">
-          <div class="ride-tag">🛏 Stretcher</div>
-          <div class="ride-tag">Raul / wife</div>
-        </div>
-
-        <div class="ride-actions">
-          <button class="action-dark">Open Ride</button>
-          <button class="action-light">Edit</button>
-        </div>
-      </div>
-
-      <div class="card ride-card">
-        <div class="ride-top">
-          <div>
-            <div class="ride-time">7:45 AM</div>
-            <div class="ride-facility">WAAP</div>
-            <div class="ride-client">Carolyn Myrtle</div>
-          </div>
-          <div class="status-badge assigned">Assigned</div>
-        </div>
-
-        <div class="ride-tags">
-          <div class="ride-tag">♿ Wheelchair</div>
-          <div class="ride-tag">Joel</div>
-        </div>
-
-        <div class="ride-actions">
-          <button class="action-dark">Open Ride</button>
-          <button class="action-light">Edit</button>
-        </div>
-      </div>
-
-      <div class="card ride-card">
-        <div class="ride-top">
-          <div>
-            <div class="ride-time">1:30 PM</div>
-            <div class="ride-facility">Chapel Hill</div>
-            <div class="ride-client">Dana Kelly</div>
-          </div>
-          <div class="status-badge assigned">Assigned</div>
-        </div>
-
-        <div class="ride-tags">
-          <div class="ride-tag">♿ Wheelchair</div>
-          <div class="ride-tag">Joel</div>
-        </div>
-
-        <div class="ride-actions">
-          <button class="action-dark">Open Ride</button>
-          <button class="action-light">Edit</button>
-        </div>
-      </div>
-
-      <div class="section-title">Drivers</div>
-
-      <div class="drivers-list">
-        <div class="driver-row">
-          <div>
-            <div class="driver-name">Raul</div>
-            <div class="driver-detail">3 rides · 67.1 mi</div>
-          </div>
-          <button class="open-driver-btn">Open</button>
-        </div>
-
-        <div class="driver-row">
-          <div>
-            <div class="driver-name">Joel</div>
-            <div class="driver-detail">3 rides · 50.3 mi</div>
-          </div>
-          <button class="open-driver-btn">Open</button>
-        </div>
-
-        <div class="driver-row">
-          <div>
-            <div class="driver-name">Gerson</div>
-            <div class="driver-detail">2 rides · 41.0 mi</div>
-          </div>
-          <button class="open-driver-btn">Open</button>
-        </div>
-      </div>
-    </div>
-
-    <div class="bottom-bar">
-      <div class="bottom-grid">
-        <button class="bottom-primary">+ Add Ride</button>
-        <button class="bottom-secondary">🤖 Optimize</button>
-      </div>
+    <div class="actions-top">
+      <button class="btn-small btn-primary">+ Ride</button>
+      <button class="btn-small btn-light">📋 Paste</button>
     </div>
   </div>
+
+  <div>Wednesday, April 29</div>
+
+  <div class="stats">
+    <div class="stat">9 Total</div>
+    <div class="stat">8 Assigned</div>
+    <div class="stat">1 ⚠️</div>
+  </div>
+
+</div>
+
+<div class="container">
+
+  <div class="section-title">⚠️ Needs Attention</div>
+
+  <div class="card unassigned">
+    <div class="time">8:30 AM</div>
+    <div>Edenbridge PACE</div>
+    <div>Linda May</div>
+    <div>♿ Wheelchair</div>
+
+    <div class="buttons">
+      <button class="btn btn-dark">Assign</button>
+      <button class="btn btn-light">Open</button>
+    </div>
+  </div>
+
+  <div class="section-title">Assigned Rides</div>
+
+  <div class="card">
+    <div class="time">5:45 AM</div>
+    <div>WAAP</div>
+    <div>Kenneth Smith</div>
+    <div>🛏 Stretcher — Raul/wife</div>
+
+    <div class="buttons">
+      <button class="btn btn-dark">Open</button>
+      <button class="btn btn-light">Edit</button>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="time">7:45 AM</div>
+    <div>WAAP</div>
+    <div>Carolyn Myrtle</div>
+    <div>♿ Wheelchair — Joel</div>
+
+    <div class="buttons">
+      <button class="btn btn-dark">Open</button>
+      <button class="btn btn-light">Edit</button>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="time">1:30 PM</div>
+    <div>Chapel Hill</div>
+    <div>Dana Kelly</div>
+    <div>♿ Wheelchair — Joel</div>
+
+    <div class="buttons">
+      <button class="btn btn-dark">Open</button>
+      <button class="btn btn-light">Edit</button>
+    </div>
+  </div>
+
+  <div class="section-title">Drivers</div>
+  <div>Raul — 3 rides</div>
+  <div>Joel — 3 rides</div>
+  <div>Gerson — 2 rides</div>
+
+  <div class="bottom-space"></div>
+
+</div>
+
 </body>
 </html>
