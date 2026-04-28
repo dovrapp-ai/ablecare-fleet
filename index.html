@@ -1542,6 +1542,22 @@ button,input,select,textarea{-webkit-appearance:none;font-family:inherit}
 
           <div class="mobile-panel" id="mobile-panel-reports">
             <div class="mobile-section-title" style="margin-top:0">Reports</div>
+            <div style="background:#fff;border:1px solid #e2e8f0;border-radius:18px;padding:14px;margin-bottom:10px">
+              <div style="display:flex;gap:10px;align-items:flex-end">
+                <div style="flex:1;min-width:0">
+                  <div class="mobile-input-label">From</div>
+                  <input class="mobile-input" id="mobile-rep-from" type="date" style="margin-bottom:0"/>
+                </div>
+                <div style="flex:1;min-width:0">
+                  <div class="mobile-input-label">To</div>
+                  <input class="mobile-input" id="mobile-rep-to" type="date" style="margin-bottom:0"/>
+                </div>
+              </div>
+              <div style="display:flex;gap:10px;margin-top:10px">
+                <button class="mobile-action-btn light" style="flex:1" onclick="mobileSetReportRangeThisMonth()">This Month</button>
+                <button class="mobile-action-btn dark" style="flex:1" onclick="mobileApplyReportRange()">Apply</button>
+              </div>
+            </div>
             <div class="mobile-report-summary-grid">
               <div class="mobile-report-stat">
                 <div class="mobile-report-stat-label">Revenue</div>
@@ -3656,6 +3672,8 @@ let mobileMapMarkers={};
 let mobileLocCache={};
 let mobileDriversCache=[];
 let mobileReportsShowAll=false;
+let mobileReportFrom='';
+let mobileReportTo='';
 
 function mobileSetText(id,value){
   const el=document.getElementById(id);
@@ -3696,6 +3714,49 @@ function mobileGoToday(){
 
 function toggleMobileReportsShowAll(){
   mobileReportsShowAll=!mobileReportsShowAll;
+  renderMobileDashboard();
+}
+
+function mobileEnsureReportRangeDefaults(){
+  const today=new Date();
+  const defaultFrom=dateStr(new Date(today.getFullYear(),today.getMonth(),1));
+  const defaultTo=dateStr(today);
+  if(!mobileReportFrom) mobileReportFrom=defaultFrom;
+  if(!mobileReportTo) mobileReportTo=defaultTo;
+}
+
+function mobileSetReportRangeThisMonth(){
+  const today=new Date();
+  mobileReportFrom=dateStr(new Date(today.getFullYear(),today.getMonth(),1));
+  mobileReportTo=dateStr(today);
+  const fromEl=document.getElementById('mobile-rep-from');
+  const toEl=document.getElementById('mobile-rep-to');
+  if(fromEl) fromEl.value=mobileReportFrom;
+  if(toEl) toEl.value=mobileReportTo;
+  renderMobileDashboard();
+}
+
+function mobileApplyReportRange(){
+  const fromEl=document.getElementById('mobile-rep-from');
+  const toEl=document.getElementById('mobile-rep-to');
+  const fromVal=fromEl ? String(fromEl.value||'').trim() : '';
+  const toVal=toEl ? String(toEl.value||'').trim() : '';
+
+  mobileReportFrom=fromVal;
+  mobileReportTo=toVal;
+
+  // Normalize empty / reversed ranges.
+  if(mobileReportFrom && !mobileReportTo) mobileReportTo=mobileReportFrom;
+  if(!mobileReportFrom && mobileReportTo) mobileReportFrom=mobileReportTo;
+  if(mobileReportFrom && mobileReportTo && mobileReportFrom>mobileReportTo){
+    const tmp=mobileReportFrom;
+    mobileReportFrom=mobileReportTo;
+    mobileReportTo=tmp;
+  }
+
+  if(fromEl) fromEl.value=mobileReportFrom||'';
+  if(toEl) toEl.value=mobileReportTo||'';
+
   renderMobileDashboard();
 }
 
@@ -3882,14 +3943,19 @@ async function renderMobileDashboard(){
     mobileSetText('mobile-hours-total',fmtHDecimal(totalMs));
     document.getElementById('mobile-hours-list').innerHTML=hourRows||mobileEmpty('No shifts found for this pay period.');
 
-    const today=new Date();
-    const monthStart=dateStr(new Date(today.getFullYear(),today.getMonth(),1));
-    const monthEnd=dateStr(today);
+    mobileEnsureReportRangeDefaults();
+    const rangeFrom=mobileReportFrom;
+    const rangeTo=mobileReportTo;
+
+    const fromEl=document.getElementById('mobile-rep-from');
+    const toEl=document.getElementById('mobile-rep-to');
+    if(fromEl && (!fromEl.value || fromEl.value!==rangeFrom)) fromEl.value=rangeFrom;
+    if(toEl && (!toEl.value || toEl.value!==rangeTo)) toEl.value=rangeTo;
 
     // Keep keys so we can open the same Edit popup you have on desktop.
     const reportRides=Object.entries(logs)
       .map(([k,v])=>({...v,_key:k}))
-      .filter(r=>r.date>=monthStart&&r.date<=monthEnd);
+      .filter(r=>(!rangeFrom||r.date>=rangeFrom)&&(!rangeTo||r.date<=rangeTo));
 
     const revenue=reportRides.reduce((sum,r)=>sum+(parseFloat(r.price)||0),0);
     const unpaidLogs=reportRides.filter(r=>r.price&&r.paid!=='yes');
@@ -3908,7 +3974,7 @@ async function renderMobileDashboard(){
     listEl.innerHTML=sorted.length
       ? `<div class="mobile-report-row">
           <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:10px">
-            <div style="font-size:15px;font-weight:900;color:#0f172a">Ride Log (This Month)</div>
+            <div style="font-size:15px;font-weight:900;color:#0f172a">Ride Log</div>
             <button class="mobile-driver-open" onclick="toggleMobileReportsShowAll()">${mobileReportsShowAll?'Show less':'Show all'}</button>
           </div>
           ${visible.map(r=>{
