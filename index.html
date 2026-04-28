@@ -5616,7 +5616,7 @@ function renderRideLog(){
         <th style="padding:10px 12px;text-align:left;font-weight:700">Invoice #</th>
         <th style="padding:10px 12px;text-align:left;font-weight:700">Notes</th>
         <th style="padding:10px 12px;text-align:center;font-weight:700">Status</th>
-        <th style="padding:10px 12px;text-align:center;font-weight:700">Edit</th>
+        <th style="padding:10px 12px;text-align:center;font-weight:700;position:sticky;right:0;background:#0d1b2a;z-index:2">Edit</th>
       </tr>
     </thead>
     <tbody id="ride-log-tbody">`;
@@ -5649,7 +5649,7 @@ function renderRideLog(){
       <td style="padding:9px 12px;color:#6b82a8">${r.invoice||'—'}</td>
       <td style="padding:9px 12px;color:#94a3b8;font-style:italic;font-size:11px">${r.notes||''}</td>
       <td style="padding:9px 12px;text-align:center">${statusBadgeTableHtml(r.status||'')}</td>
-      <td style="padding:9px 12px;text-align:center">
+      <td style="padding:9px 12px;text-align:center;position:sticky;right:0;background:${bg};box-shadow:-1px 0 0 #e8eef4;z-index:1">
         <button onclick="openLogEdit('${r._key||''}')" style="background:#f4f7fb;border:1px solid #e8eef4;border-radius:6px;padding:4px 10px;font-size:11px;font-weight:600;color:#6b82a8;cursor:pointer">✏️ Edit</button>
       </td>
     </tr>`;
