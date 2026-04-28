@@ -22,7 +22,9 @@ button,input,select,textarea{-webkit-appearance:none;font-family:inherit}
   position:sticky;top:0;z-index:1000;
 }
 .topbar-logo{display:flex;align-items:center;gap:10px}
-.topbar-icon{width:32px;height:32px;background:#00b4d8;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:16px}
+.topbar-icon{width:32px;height:32px;background:#00b4d8;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:16px;overflow:hidden}
+.topbar-icon[data-has-logo="true"]{background:#fff;padding:4px}
+.topbar-icon img{width:100%;height:100%;object-fit:contain;display:block}
 .topbar-name{font-size:18px;font-weight:800;color:#fff}
 .topbar-name span{color:#00b4d8}
 .topbar-sub{font-size:10px;color:#6b82a8;letter-spacing:2px;text-transform:uppercase}
@@ -910,8 +912,8 @@ button,input,select,textarea{-webkit-appearance:none;font-family:inherit}
 <!-- PIN SCREEN -->
 <div id="screen-pin" style="display:flex">
   <div class="pin-box">
-    <div class="pin-logo">Able<span>Care</span></div>
-    <div class="pin-sub">Fleet Dashboard</div>
+    <div class="pin-logo" id="pin-brand-name">Able<span>Care</span></div>
+    <div class="pin-sub" id="pin-brand-sub">Fleet Dashboard</div>
     <div class="pin-label">Enter owner PIN to access</div>
     <div class="pin-dots">
       <div class="pin-dot" id="pd0"></div>
@@ -943,10 +945,13 @@ button,input,select,textarea{-webkit-appearance:none;font-family:inherit}
   <!-- Top Bar -->
   <div class="topbar">
     <div class="topbar-logo">
-      <div class="topbar-icon">♿</div>
+      <div class="topbar-icon" id="brand-icon" aria-label="Brand logo">
+        <img id="brand-logo-img" alt="Logo" style="display:none"/>
+        <span id="brand-logo-fallback">♿</span>
+      </div>
       <div>
-        <div class="topbar-name">Able<span>Care</span> Fleet</div>
-        <div class="topbar-sub">Owner Dashboard</div>
+        <div class="topbar-name" id="brand-display-name">Able<span>Care</span> Fleet</div>
+        <div class="topbar-sub" id="brand-subtitle">Owner Dashboard</div>
       </div>
     </div>
     <div class="topbar-right">
@@ -1312,6 +1317,53 @@ button,input,select,textarea{-webkit-appearance:none;font-family:inherit}
       <div id="s-biz-msg" style="font-size:12px;margin-top:6px;display:none"></div>
     </div>
 
+    <!-- Branding / White Label -->
+    <div class="settings-section">
+      <div class="settings-section-title">✨ Branding (White Label)</div>
+      <div style="font-size:12px;color:#6b82a8;margin-bottom:12px">Use this to brand the dashboard header for demos or for another company deployment.</div>
+
+      <div class="settings-row">
+        <div class="settings-label">Dashboard Display Name</div>
+        <input type="text" id="s-brand-name" class="settings-input" style="flex:1" placeholder="AbleCare Fleet"/>
+      </div>
+      <div class="settings-row">
+        <div class="settings-label">Subtitle</div>
+        <input type="text" id="s-brand-subtitle" class="settings-input" style="flex:1" placeholder="Owner Dashboard"/>
+      </div>
+      <div class="settings-row">
+        <div class="settings-label">Logo URL (optional)</div>
+        <input type="text" id="s-brand-logo-url" class="settings-input" style="flex:1" placeholder="https://.../logo.png"/>
+      </div>
+      <div class="settings-row">
+        <div class="settings-label">Upload Logo (optional)</div>
+        <input type="file" id="s-brand-logo-file" class="settings-input" style="flex:1;padding:10px" accept="image/*" onchange="onBrandLogoFileChange(event)"/>
+      </div>
+      <div class="settings-row">
+        <div class="settings-label">Quick Logo From Website</div>
+        <div style="display:flex;gap:8px;align-items:center;flex:1">
+          <input type="text" id="s-brand-domain" class="settings-input" style="flex:1" placeholder="example.com"/>
+          <button class="settings-save-btn" onclick="useWebsiteFavicon()">Use Favicon</button>
+        </div>
+      </div>
+
+      <div class="settings-row" style="align-items:center">
+        <div class="settings-label">Preview</div>
+        <div style="display:flex;align-items:center;gap:10px;flex:1">
+          <div style="width:42px;height:42px;border-radius:10px;border:1px solid #e8eef4;background:#fff;display:flex;align-items:center;justify-content:center;overflow:hidden">
+            <img id="s-brand-preview" alt="Logo preview" style="width:100%;height:100%;object-fit:contain;display:none"/>
+            <span id="s-brand-preview-fallback" style="font-weight:900;color:#0d1b2a">A</span>
+          </div>
+          <div style="min-width:0">
+            <div id="s-brand-preview-name" style="font-size:14px;font-weight:900;color:#0d1b2a;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">AbleCare Fleet</div>
+            <div id="s-brand-preview-subtitle" style="font-size:11px;color:#6b82a8;letter-spacing:1px;text-transform:uppercase">Owner Dashboard</div>
+          </div>
+        </div>
+      </div>
+
+      <button class="settings-save-btn" style="margin-top:12px" onclick="saveBranding()">Save Branding</button>
+      <div id="s-brand-msg" style="font-size:12px;margin-top:6px;display:none"></div>
+    </div>
+
     <!-- Ride Statuses -->
     <div class="settings-section">
       <div class="settings-section-title">🏷️ Ride Statuses</div>
@@ -1418,7 +1470,7 @@ button,input,select,textarea{-webkit-appearance:none;font-family:inherit}
         <div class="mobile-header">
           <div class="mobile-header-top">
             <div>
-              <div class="mobile-brand">AbleCare Fleet</div>
+              <div class="mobile-brand" id="mobile-brand-name">AbleCare Fleet</div>
               <div class="mobile-title">Today's Schedule</div>
               <div class="mobile-date" id="mobile-dashboard-date">Loading...</div>
             </div>
@@ -2041,7 +2093,8 @@ button,input,select,textarea{-webkit-appearance:none;font-family:inherit}
 <script>
 // Wait for all scripts to be ready
 window.addEventListener('load', function() {
-  // Firebase is now guaranteed loaded
+  // Preload settings so the PIN + branding are updated before login.
+  tryAutoInit(true);
 });
 // ── CONFIG (loaded from Firebase settings, these are defaults) ──
 let OWNER_PIN='6622';
@@ -2049,6 +2102,8 @@ let PAY_PERIOD_DAYS=12;
 let PAY_PERIOD_REF_DATE='2026-04-13'; // Monday April 13
 const COLORS=['#00b4d8','#0096b7','#48cae4','#34d399','#f472b6'];
 const CHAPEL_HILL_PICKUP='Chapel Hill Nursing, 4511 Robosson Road, Randallstown, MD 21133';
+let BRANDING={displayName:'AbleCare Fleet',subtitle:'Owner Dashboard',logoUrl:'',logoDataUrl:'',domain:''};
+let pendingBrandLogoDataUrl='';
 
 // Default facilities — overridden by Firebase settings
 let FACILITIES=[
@@ -2164,6 +2219,220 @@ async function loadDrivers(){
   return drivers;
 }
 
+function normalizeBranding(raw){
+  raw = raw || {};
+  const displayName = String(raw.displayName || raw.name || 'AbleCare Fleet').trim();
+  const subtitle = String(raw.subtitle || 'Owner Dashboard').trim();
+  const logoUrl = String(raw.logoUrl || raw.logo || '').trim();
+  const logoDataUrl = String(raw.logoDataUrl || raw.logo_data_url || '').trim();
+  const domain = String(raw.domain || raw.website || '').trim();
+  return {
+    displayName: displayName || 'AbleCare Fleet',
+    subtitle: subtitle || 'Owner Dashboard',
+    logoUrl,
+    logoDataUrl,
+    domain
+  };
+}
+
+function updateBrandingPreviewFrom(branding){
+  const b = normalizeBranding(branding);
+  const name = b.displayName || 'AbleCare Fleet';
+  const subtitle = b.subtitle || 'Owner Dashboard';
+  const prevName = document.getElementById('s-brand-preview-name');
+  const prevSub = document.getElementById('s-brand-preview-subtitle');
+  if(prevName) prevName.textContent = name;
+  if(prevSub) prevSub.textContent = subtitle;
+
+  const img = document.getElementById('s-brand-preview');
+  const fallback = document.getElementById('s-brand-preview-fallback');
+  const url = b.logoDataUrl || b.logoUrl;
+  if(img && fallback){
+    if(url){
+      img.src = url;
+      img.style.display = 'block';
+      fallback.style.display = 'none';
+    }else{
+      img.removeAttribute('src');
+      img.style.display = 'none';
+      fallback.style.display = 'block';
+      fallback.textContent = (name.trim()[0] || 'A').toUpperCase();
+    }
+  }
+}
+
+function setBrandLogo(url){
+  const icon = document.getElementById('brand-icon');
+  const imgEl = document.getElementById('brand-logo-img');
+  const fallback = document.getElementById('brand-logo-fallback');
+  if(!icon || !imgEl || !fallback) return;
+  const src = String(url || '').trim();
+  if(src){
+    imgEl.src = src;
+    imgEl.style.display = 'block';
+    fallback.style.display = 'none';
+    icon.setAttribute('data-has-logo','true');
+  }else{
+    imgEl.removeAttribute('src');
+    imgEl.style.display = 'none';
+    fallback.style.display = 'block';
+    icon.removeAttribute('data-has-logo');
+  }
+}
+
+function applyBranding(branding){
+  const b = normalizeBranding(branding);
+  BRANDING = b;
+
+  const name = b.displayName || 'AbleCare Fleet';
+  const subtitle = b.subtitle || 'Owner Dashboard';
+
+  const topName = document.getElementById('brand-display-name');
+  if(topName) topName.textContent = name;
+  const topSub = document.getElementById('brand-subtitle');
+  if(topSub) topSub.textContent = subtitle;
+
+  const pinName = document.getElementById('pin-brand-name');
+  if(pinName) pinName.textContent = name;
+  // Keep the PIN subtitle more generic.
+  const pinSub = document.getElementById('pin-brand-sub');
+  if(pinSub) pinSub.textContent = 'Fleet Dashboard';
+
+  const mobileName = document.getElementById('mobile-brand-name');
+  if(mobileName) mobileName.textContent = name;
+
+  setBrandLogo(b.logoDataUrl || b.logoUrl);
+  updateBrandingPreviewFrom(b);
+
+  document.title = `${name} - Dashboard`;
+}
+
+let _brandingInputsWired=false;
+
+function normalizeDomainInput(raw){
+  const v = String(raw || '').trim();
+  if(!v) return '';
+  try{
+    const url = v.includes('://') ? new URL(v) : new URL('https://' + v);
+    return String(url.hostname || '').replace(/^www\./i,'').trim();
+  }catch(e){
+    return v.replace(/^https?:\/\//i,'').split('/')[0].replace(/^www\./i,'').trim();
+  }
+}
+
+function getBrandingDraftFromInputs(){
+  const name = (document.getElementById('s-brand-name')?.value || '').trim();
+  const subtitle = (document.getElementById('s-brand-subtitle')?.value || '').trim();
+  const logoUrl = (document.getElementById('s-brand-logo-url')?.value || '').trim();
+  const domainRaw = (document.getElementById('s-brand-domain')?.value || '').trim();
+  const domain = normalizeDomainInput(domainRaw);
+  return normalizeBranding({
+    displayName: name,
+    subtitle,
+    logoUrl,
+    logoDataUrl: pendingBrandLogoDataUrl,
+    domain
+  });
+}
+
+function refreshBrandingPreviewFromInputs(){
+  const b = getBrandingDraftFromInputs();
+  updateBrandingPreviewFrom(b);
+}
+
+function initBrandingSettingsUI(settingsBranding){
+  const b = normalizeBranding(settingsBranding || BRANDING);
+  const nameEl=document.getElementById('s-brand-name');
+  const subEl=document.getElementById('s-brand-subtitle');
+  const logoUrlEl=document.getElementById('s-brand-logo-url');
+  const domainEl=document.getElementById('s-brand-domain');
+
+  if(nameEl) nameEl.value = b.displayName || 'AbleCare Fleet';
+  if(subEl) subEl.value = b.subtitle || 'Owner Dashboard';
+  if(logoUrlEl) logoUrlEl.value = b.logoUrl || '';
+  if(domainEl) domainEl.value = b.domain || '';
+
+  pendingBrandLogoDataUrl = b.logoDataUrl || '';
+  updateBrandingPreviewFrom(b);
+
+  if(!_brandingInputsWired){
+    const ids=['s-brand-name','s-brand-subtitle','s-brand-logo-url','s-brand-domain'];
+    ids.forEach(id=>{
+      const el=document.getElementById(id);
+      if(!el) return;
+      el.addEventListener('input', refreshBrandingPreviewFromInputs);
+      el.addEventListener('change', refreshBrandingPreviewFromInputs);
+    });
+    _brandingInputsWired=true;
+  }
+}
+
+function showBrandMsg(text,isOk){
+  const msg=document.getElementById('s-brand-msg');
+  if(!msg) return;
+  msg.textContent = text;
+  msg.style.color = isOk ? '#16a34a' : '#ef4444';
+  msg.style.display='block';
+  clearTimeout(showBrandMsg._t);
+  showBrandMsg._t=setTimeout(()=>{msg.style.display='none';}, 3500);
+}
+
+function onBrandLogoFileChange(evt){
+  const file = evt?.target?.files?.[0];
+  if(!file){ pendingBrandLogoDataUrl=''; refreshBrandingPreviewFromInputs(); return; }
+  if(file.size > 1024*1024){
+    showBrandMsg('Logo file is too large. Please pick something under 1MB.', false);
+    evt.target.value='';
+    return;
+  }
+  const reader=new FileReader();
+  reader.onload=()=>{
+    pendingBrandLogoDataUrl = String(reader.result || '');
+    // Prefer the uploaded image over any URL.
+    const logoUrlEl=document.getElementById('s-brand-logo-url');
+    if(logoUrlEl) logoUrlEl.value='';
+    refreshBrandingPreviewFromInputs();
+    showBrandMsg('Logo loaded. Click Save Branding to apply it.', true);
+  };
+  reader.onerror=()=>{
+    pendingBrandLogoDataUrl='';
+    showBrandMsg('Could not read that image file.', false);
+  };
+  reader.readAsDataURL(file);
+}
+
+function useWebsiteFavicon(){
+  const domain = normalizeDomainInput(document.getElementById('s-brand-domain')?.value || '');
+  if(!domain){ showBrandMsg('Enter a website domain first (example: chapelhillnursing.com).', false); return; }
+
+  // Best-effort favicon lookup (no API keys; works in <img src>).
+  const url = `https://www.google.com/s2/favicons?sz=128&domain_url=${encodeURIComponent('https://' + domain)}`;
+  const logoUrlEl=document.getElementById('s-brand-logo-url');
+  if(logoUrlEl) logoUrlEl.value = url;
+  pendingBrandLogoDataUrl='';
+  refreshBrandingPreviewFromInputs();
+  showBrandMsg('Favicon applied. Click Save Branding to apply it.', true);
+}
+
+async function saveBranding(){
+  const b = getBrandingDraftFromInputs();
+  if(!firebaseReady || !db){
+    // Best-effort: allow applying locally even if Firebase is offline.
+    applyBranding(b);
+    showBrandMsg('Branding applied locally (Firebase not connected).', false);
+    return;
+  }
+
+  try{
+    await settingsRef().update({ branding: b });
+    applyBranding(b);
+    showBrandMsg('Branding saved!', true);
+  }catch(e){
+    console.error(e);
+    showBrandMsg('Could not save branding to Firebase.', false);
+  }
+}
+
 async function loadSettings(){
   try{
     const snap=await settingsRef().once('value');
@@ -2172,6 +2441,7 @@ async function loadSettings(){
     if(s.payPeriodDays) PAY_PERIOD_DAYS=s.payPeriodDays;
     if(s.payPeriodRef) PAY_PERIOD_REF_DATE=s.payPeriodRef;
     FACILITIES = normalizeFacilitySettings(s.facilities || FACILITIES);
+    if(s.branding) applyBranding(s.branding);
   }catch(e){}
 }
 
@@ -3360,6 +3630,9 @@ async function initSettings(){
   document.getElementById('s-company').value=s.company||'AbleCare Mobility LLC';
   document.getElementById('s-base-addr').value=s.baseAddress||'';
   document.getElementById('s-phone').value=s.phone||'(443) 819-1808';
+
+  // Branding / white label
+  initBrandingSettingsUI(s.branding||BRANDING);
 
   // Driver PINs
   renderDriverPins();
@@ -5049,6 +5322,48 @@ async function sendTomorrowSchedule(){
 }
 
 // ── LOG RIDES TO REPORTS ──
+function roundMiles1(value){
+  const n = parseFloat(value);
+  if(!Number.isFinite(n) || n <= 0) return 0;
+  return parseFloat(n.toFixed(1)) || 0;
+}
+
+function inferOneWayClientMilesFromRouteFields(ride){
+  const routeRaw = parseFloat(ride?.routeMiles);
+  const deadheadRaw = parseFloat(ride?.deadheadMiles);
+  if(!Number.isFinite(routeRaw) || routeRaw <= 0) return null;
+  if(!Number.isFinite(deadheadRaw) || deadheadRaw < 0) return null;
+  if(routeRaw < deadheadRaw) return null;
+  const inferred = routeRaw - deadheadRaw;
+  if(!Number.isFinite(inferred) || inferred <= 0) return null;
+  return roundMiles1(inferred);
+}
+
+async function computeOneWayClientMiles(ride){
+  // Prefer routeMiles - deadheadMiles when available, since this cancels out any deadhead errors
+  // and yields the true client miles (pickup -> dropoff) one-way.
+  const inferred = inferOneWayClientMilesFromRouteFields(ride);
+  if(inferred) return { miles: inferred, source: 'route_minus_deadhead' };
+
+  // Next, try live Google miles if we have endpoints.
+  const { pickup, dropoff } = getRideRouteEndpoints(ride || {});
+  if(pickup && dropoff && typeof google !== 'undefined'){
+    try{
+      const live = await getDrivingMiles(pickup, dropoff);
+      const oneWay = roundMiles1(live);
+      if(oneWay) return { miles: oneWay, source: 'google' };
+    }catch(e){
+      // fall through to stored values
+    }
+  }
+
+  // Fallback to stored estimatedMiles (assumed to be one-way client miles).
+  const stored = roundMiles1(ride?.estimatedMiles);
+  if(stored) return { miles: stored, source: 'estimatedMiles' };
+
+  return { miles: 0, source: 'unknown' };
+}
+
 async function logRideFromCalendar(rideKey){
   if(!rideKey) return;
   const snap = await ridesRef().child(rideKey).once('value');
@@ -5062,9 +5377,8 @@ async function logRideFromCalendar(rideKey){
     if(!confirm('This ride is already in your log. Add it again?')) return;
   }
 
-  const oneWayMilesRaw = parseFloat(r.estimatedMiles);
-  const oneWayMiles = Number.isFinite(oneWayMilesRaw) ? oneWayMilesRaw : 0;
   const triptype = r.triptype || 'rt';
+  const { miles: oneWayMiles, source: milesSource } = await computeOneWayClientMiles(r);
   const billableMiles = (triptype === 'rt' ? 2 : 1) * oneWayMiles;
 
   const logEntry = {
@@ -5082,10 +5396,13 @@ async function logRideFromCalendar(rideKey){
     paid: r.paid||'no',
     paymethod: r.paymethod||'cc',
     waitHours: r.waitHours||0,
+    pickup: r.pickup||'',
+    dropoff: r.dropoff||'',
     // One-way client miles (pickup -> dropoff). Kept for reference/back-compat.
     estimatedMiles: oneWayMiles,
     // Full trip miles you can bill the client (RT doubles).
     billableMiles: parseFloat(billableMiles.toFixed(1)) || 0,
+    milesSource: milesSource || '',
     // Optional: add billing math notes like "16.8 miles (600+168=768)".
     calcNotes: '',
     notes: r.notes||'',
@@ -5132,11 +5449,10 @@ async function logAllRidesForDay(){
 
   const updates = {};
   const needsCompletion = [];
-  newRides.forEach(([k,r])=>{
+  for(const [k,r] of newRides){
     const newKey = rideLogRef().push().key;
-    const oneWayRaw = parseFloat(r.estimatedMiles);
-    const oneWay = Number.isFinite(oneWayRaw) ? oneWayRaw : 0;
     const triptype = r.triptype || 'rt';
+    const { miles: oneWay, source: milesSource } = await computeOneWayClientMiles(r);
     const billableMiles = (triptype === 'rt' ? 2 : 1) * oneWay;
     updates[newKey] = {
       date: r.date||'', time: r.time||'', facility: r.facility||'',
@@ -5144,16 +5460,19 @@ async function logAllRidesForDay(){
       van: r.van||'', driver: r.driver||'', helper: r.helper||'',
       price: r.price||'', invoice: r.invoice||'', paid: r.paid||'no',
       paymethod: r.paymethod||'cc', waitHours: r.waitHours||0,
+      pickup: r.pickup||'',
+      dropoff: r.dropoff||'',
       // One-way client miles (pickup -> dropoff). Kept for reference/back-compat.
       estimatedMiles: oneWay,
       // Full trip miles you can bill the client (RT doubles).
       billableMiles: parseFloat(billableMiles.toFixed(1)) || 0,
+      milesSource: milesSource || '',
       calcNotes: '',
       notes: r.notes||'',
       calendarKey: k, createdAt: Date.now()
     };
     if(reportLogEntryNeedsCompletion(updates[newKey])) needsCompletion.push(newKey);
-  });
+  }
   await rideLogRef().update(updates);
   showToast(`✓ ${newRides.length} ride${newRides.length!==1?'s':''} logged to Reports!`);
   if(needsCompletion.length){
@@ -5284,6 +5603,7 @@ function renderRideLog(){
     <thead>
       <tr style="background:#0d1b2a;color:#fff">
         <th style="padding:10px 12px;text-align:left;font-weight:700;white-space:nowrap">Date</th>
+        <th style="padding:10px 12px;text-align:left;font-weight:700;white-space:nowrap">Time</th>
         <th style="padding:10px 12px;text-align:left;font-weight:700">Facility</th>
         <th style="padding:10px 12px;text-align:left;font-weight:700">Client</th>
         <th style="padding:10px 12px;text-align:left;font-weight:700">Type</th>
@@ -5302,11 +5622,12 @@ function renderRideLog(){
     <tbody id="ride-log-tbody">`;
 
   if(!repRides.length){
-    html += `<tr><td colspan="14" style="padding:40px;text-align:center;color:#6b82a8">No rides found — click + Add Row to add one</td></tr>`;
+    html += `<tr><td colspan="15" style="padding:40px;text-align:center;color:#6b82a8">No rides found — click + Add Row to add one</td></tr>`;
   }
 
   repRides.forEach((r,i)=>{
     const d = new Date(r.date+'T12:00:00');
+    const timeDisp = fmtTime12(r.time||'');
     const dateDisp = r.date?d.toLocaleDateString('en-US',{month:'2-digit',day:'2-digit',year:'numeric'}):'—';
     const isPaid = r.paid==='yes';
     const isUnpaid = r.price && !isPaid;
@@ -5315,6 +5636,7 @@ function renderRideLog(){
     const bg = i%2===0?'#fff':'#f8fafc';
     html += `<tr style="background:${bg};border-bottom:1px solid #f0f4f8" id="log-row-${r._key||i}">
       <td style="padding:9px 12px;white-space:nowrap;color:#0d1b2a;font-weight:600">${dateDisp}</td>
+      <td style="padding:9px 12px;white-space:nowrap;color:#64748b;font-weight:700">${timeDisp}</td>
       <td style="padding:9px 12px;font-weight:700;color:#0d1b2a">${r.facility||'—'}</td>
       <td style="padding:9px 12px;color:#0d1b2a">${r.client||'—'}</td>
       <td style="padding:9px 12px;white-space:nowrap;color:#6b82a8">${typeStr}</td>
@@ -5455,6 +5777,10 @@ async function openLogEdit(key){
       <div class="modal-field">
         <label>Miles (Full Trip)</label>
         <input type="number" id="le-billable-miles" min="0" step="0.1" value="${billableMilesValue||''}" placeholder="e.g. 10.0" style="width:100%;padding:9px 12px;border:2px solid #e8eef4;border-radius:10px;font-size:13px;outline:none;font-family:inherit"/>
+        <div style="display:flex;gap:10px;align-items:center;margin-top:8px">
+          <button class="add-btn" style="padding:8px 12px;font-size:12px" onclick="recalcLogMiles()">Recalculate from Ride</button>
+          <div id="le-mile-src" style="font-size:12px;color:#64748b"></div>
+        </div>
       </div>
       <div class="modal-field">
         <label>Calc Notes</label>
@@ -5504,6 +5830,46 @@ async function openLogEdit(key){
     paid: r.paid||'no',
     paymethod: r.paymethod||'cc'
   };
+  window._leMeta = {
+    calendarKey: r.calendarKey||'',
+    pickup: r.pickup||'',
+    dropoff: r.dropoff||''
+  };
+}
+
+async function recalcLogMiles(){
+  const srcEl = document.getElementById('le-mile-src');
+  const setSrc = (txt)=>{ if(srcEl) srcEl.textContent = txt || ''; };
+  try{
+    setSrc('Calculating...');
+    const triptype = window._leToggles?.triptype || 'rt';
+    const multiplier = triptype === 'rt' ? 2 : 1;
+
+    const calKey = window._leMeta?.calendarKey || '';
+    let rideForCalc = null;
+    if(calKey){
+      const snap = await ridesRef().child(calKey).once('value');
+      rideForCalc = snap.val();
+    }
+    // Fallback: use whatever the log already knows.
+    if(!rideForCalc){
+      rideForCalc = {
+        facility: document.getElementById('le-facility')?.value || '',
+        pickup: window._leMeta?.pickup || '',
+        dropoff: window._leMeta?.dropoff || '',
+        estimatedMiles: 0
+      };
+    }
+
+    const { miles: oneWay, source } = await computeOneWayClientMiles(rideForCalc);
+    const billable = roundMiles1(oneWay * multiplier);
+    const milesEl = document.getElementById('le-billable-miles');
+    if(milesEl) milesEl.value = billable ? String(billable) : '';
+    setSrc(billable ? `Recalculated (${source})` : 'Could not calculate miles');
+  }catch(e){
+    console.warn('Recalc miles failed', e);
+    setSrc('Could not calculate miles');
+  }
 }
 
 function leToggle(group, val){
