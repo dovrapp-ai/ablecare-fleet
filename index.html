@@ -53,10 +53,17 @@ button,input,select,textarea{-webkit-appearance:none;font-family:inherit}
 .tab.active{color:#00b4d8;border-bottom-color:#00b4d8}
 .tab-icon{font-size:16px}
 
-/* ── SCREENS ── */
-.screen{display:none;padding:24px;max-width:1100px;margin:0 auto}
-.screen.active{display:block}
-#screen-rides.active{display:flex}
+  /* ── SCREENS ── */
+  .screen{display:none;padding:24px;max-width:1100px;margin:0 auto}
+  .screen.active{display:block}
+  #screen-rides.active{display:flex}
+  /* Reports: allow more horizontal room on desktop so the Ride Log table fits without left/right scrolling. */
+  #screen-reports{max-width:1700px;padding:18px 14px}
+  .rep-table-wrap{width:100%;overflow-x:hidden}
+  #ride-log-table{width:100%;border-collapse:collapse;table-layout:fixed;font-size:12px !important}
+  #ride-log-table th{font-size:12px;padding:10px 10px !important}
+  #ride-log-table td{padding:8px 10px !important}
+  #ride-log-table th,#ride-log-table td{overflow-wrap:anywhere}
 
 /* ── PIN SCREEN ── */
 #screen-pin{
@@ -1192,7 +1199,7 @@ button,input,select,textarea{-webkit-appearance:none;font-family:inherit}
 
   <!-- REPORTS TAB -->
   <div class="screen" id="screen-reports">
-    <div style="max-width:1100px;margin:0 auto">
+    <div style="max-width:1600px;margin:0 auto;width:100%">
 
       <!-- Controls -->
       <div style="background:#fff;border-radius:16px;padding:20px;box-shadow:0 1px 6px rgba(0,0,0,0.05);margin-bottom:16px">
@@ -5598,8 +5605,24 @@ function renderRepView(){
 function renderRideLog(){
   const el = document.getElementById('rep-content');
 
-  let html = `<div style="overflow-x:auto">
+  let html = `<div class="rep-table-wrap">
   <table style="width:100%;border-collapse:collapse;font-size:13px" id="ride-log-table">
+    <colgroup>
+      <col style="width:7%"/>  <!-- Date -->
+      <col style="width:9%"/>  <!-- Facility -->
+      <col style="width:8%"/>  <!-- Client -->
+      <col style="width:6%"/>  <!-- Type -->
+      <col style="width:6%"/>  <!-- Miles -->
+      <col style="width:12%"/> <!-- Calc Notes -->
+      <col style="width:4%"/>  <!-- Van -->
+      <col style="width:8%"/>  <!-- Driver -->
+      <col style="width:6%"/>  <!-- Price -->
+      <col style="width:4%"/>  <!-- Paid -->
+      <col style="width:5%"/>  <!-- Invoice # -->
+      <col style="width:15%"/> <!-- Notes -->
+      <col style="width:6%"/>  <!-- Status -->
+      <col style="width:4%"/>  <!-- Edit -->
+    </colgroup>
     <thead>
       <tr style="background:#0d1b2a;color:#fff">
         <th style="padding:10px 12px;text-align:left;font-weight:700;white-space:nowrap">Date</th>
