@@ -5603,7 +5603,6 @@ function renderRideLog(){
     <thead>
       <tr style="background:#0d1b2a;color:#fff">
         <th style="padding:10px 12px;text-align:left;font-weight:700;white-space:nowrap">Date</th>
-        <th style="padding:10px 12px;text-align:left;font-weight:700;white-space:nowrap">Time</th>
         <th style="padding:10px 12px;text-align:left;font-weight:700">Facility</th>
         <th style="padding:10px 12px;text-align:left;font-weight:700">Client</th>
         <th style="padding:10px 12px;text-align:left;font-weight:700">Type</th>
@@ -5627,7 +5626,6 @@ function renderRideLog(){
 
   repRides.forEach((r,i)=>{
     const d = new Date(r.date+'T12:00:00');
-    const timeDisp = fmtTime12(r.time||'');
     const dateDisp = r.date?d.toLocaleDateString('en-US',{month:'2-digit',day:'2-digit',year:'numeric'}):'—';
     const isPaid = r.paid==='yes';
     const isUnpaid = r.price && !isPaid;
@@ -5636,7 +5634,6 @@ function renderRideLog(){
     const bg = i%2===0?'#fff':'#f8fafc';
     html += `<tr style="background:${bg};border-bottom:1px solid #f0f4f8" id="log-row-${r._key||i}">
       <td style="padding:9px 12px;white-space:nowrap;color:#0d1b2a;font-weight:600">${dateDisp}</td>
-      <td style="padding:9px 12px;white-space:nowrap;color:#64748b;font-weight:700">${timeDisp}</td>
       <td style="padding:9px 12px;font-weight:700;color:#0d1b2a">${r.facility||'—'}</td>
       <td style="padding:9px 12px;color:#0d1b2a">${r.client||'—'}</td>
       <td style="padding:9px 12px;white-space:nowrap;color:#6b82a8">${typeStr}</td>
