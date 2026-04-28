@@ -3919,7 +3919,8 @@ async function renderMobileDashboard(){
             const paidLabel=r.paid==='yes'?'Paid':'Unpaid';
             const priceLabel=r.price?('$'+String(r.price).replace(/[^0-9.]/g,'')):'—';
             const milesLabel=formatReportMilesLabel(r);
-            return `<div style="border-top:1px solid #eef2f7;padding-top:10px;margin-top:10px">
+            const editKey=mobileKey(r._key);
+            return `<div style="border-top:1px solid #eef2f7;padding-top:10px;margin-top:10px;cursor:pointer" onclick="openLogEdit('${editKey}')">
               <div style="display:flex;justify-content:space-between;gap:10px;align-items:flex-start">
                 <div style="min-width:0">
                   <div style="font-size:13px;font-weight:900;color:#0f172a;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${mobileEsc(r.date||'')} ${timeLabel?('• '+mobileEsc(timeLabel)):''}</div>
@@ -3927,7 +3928,7 @@ async function renderMobileDashboard(){
                   ${sub?`<div style="font-size:13px;color:#64748b;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${mobileEsc(sub)}</div>`:''}
                   <div style="font-size:12px;color:#64748b;margin-top:6px">${mobileEsc(typeLabel)} · ${mobileEsc(milesLabel)} · ${mobileEsc(paidLabel)} · ${mobileEsc(priceLabel)}</div>
                 </div>
-                <button class="mobile-driver-open" onclick="openLogEdit('${mobileKey(r._key)}')">Edit</button>
+                <button class="mobile-driver-open">Edit</button>
               </div>
             </div>`;
           }).join('')}
