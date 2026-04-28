@@ -57,13 +57,15 @@ button,input,select,textarea{-webkit-appearance:none;font-family:inherit}
   .screen{display:none;padding:24px;max-width:1100px;margin:0 auto}
   .screen.active{display:block}
   #screen-rides.active{display:flex}
-  /* Reports: allow more horizontal room on desktop so the Ride Log table fits without left/right scrolling. */
-  #screen-reports{max-width:1700px;padding:18px 14px}
+  /* Reports: make Ride Log fit on-screen (no left/right scroll) by clipping long text and keeping rows compact. */
+  #screen-reports{max-width:none;padding:18px 14px}
   .rep-table-wrap{width:100%;overflow-x:hidden}
   #ride-log-table{width:100%;border-collapse:collapse;table-layout:fixed;font-size:12px !important}
-  #ride-log-table th{font-size:12px;padding:10px 10px !important}
-  #ride-log-table td{padding:8px 10px !important}
+  #ride-log-table th{font-size:12px;line-height:1.2;padding:10px 10px !important;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  #ride-log-table td{line-height:1.2;padding:8px 10px !important;vertical-align:top;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
   #ride-log-table th,#ride-log-table td{overflow-wrap:anywhere}
+  /* Allow 2-line wrap for long text columns so the table can still fit without blowing up row height. */
+  #ride-log-table .rep-wrap{display:block;white-space:normal;line-height:1.25;max-height:2.6em;overflow:hidden}
 
 /* ── PIN SCREEN ── */
 #screen-pin{
@@ -5609,19 +5611,19 @@ function renderRideLog(){
   <table style="width:100%;border-collapse:collapse;font-size:13px" id="ride-log-table">
     <colgroup>
       <col style="width:7%"/>  <!-- Date -->
-      <col style="width:9%"/>  <!-- Facility -->
+      <col style="width:8%"/>  <!-- Facility -->
       <col style="width:8%"/>  <!-- Client -->
       <col style="width:6%"/>  <!-- Type -->
       <col style="width:6%"/>  <!-- Miles -->
-      <col style="width:12%"/> <!-- Calc Notes -->
+      <col style="width:9%"/>  <!-- Calc Notes -->
       <col style="width:4%"/>  <!-- Van -->
-      <col style="width:8%"/>  <!-- Driver -->
+      <col style="width:7%"/>  <!-- Driver -->
       <col style="width:6%"/>  <!-- Price -->
       <col style="width:4%"/>  <!-- Paid -->
       <col style="width:5%"/>  <!-- Invoice # -->
-      <col style="width:15%"/> <!-- Notes -->
-      <col style="width:6%"/>  <!-- Status -->
-      <col style="width:4%"/>  <!-- Edit -->
+      <col style="width:11%"/> <!-- Notes -->
+      <col style="width:13%"/> <!-- Status -->
+      <col style="width:6%"/>  <!-- Edit -->
     </colgroup>
     <thead>
       <tr style="background:#0d1b2a;color:#fff">
@@ -5638,7 +5640,7 @@ function renderRideLog(){
         <th style="padding:10px 12px;text-align:left;font-weight:700">Invoice #</th>
         <th style="padding:10px 12px;text-align:left;font-weight:700">Notes</th>
         <th style="padding:10px 12px;text-align:center;font-weight:700">Status</th>
-        <th style="padding:10px 12px;text-align:center;font-weight:700;position:sticky;right:0;background:#0d1b2a;z-index:2">Edit</th>
+        <th style="padding:10px 12px;text-align:center;font-weight:700">Edit</th>
       </tr>
     </thead>
     <tbody id="ride-log-tbody">`;
@@ -5661,16 +5663,16 @@ function renderRideLog(){
       <td style="padding:9px 12px;color:#0d1b2a">${r.client||'—'}</td>
       <td style="padding:9px 12px;white-space:nowrap;color:#6b82a8">${typeStr}</td>
       <td style="padding:9px 12px;text-align:right;white-space:nowrap;font-weight:800;color:#00a6c8">${milesStr}</td>
-      <td style="padding:9px 12px;color:#94a3b8;font-style:italic;font-size:11px">${r.calcNotes||''}</td>
+      <td style="padding:9px 12px;color:#94a3b8;font-style:italic;font-size:11px"><div class="rep-wrap">${r.calcNotes||''}</div></td>
       <td style="padding:9px 12px;color:#6b82a8">${r.van?'#'+r.van:'—'}</td>
       <td style="padding:9px 12px;color:#0d1b2a">${r.driver||'—'}${r.helper?' + '+r.helper:''}</td>
       <td style="padding:9px 12px;text-align:right;font-weight:800;color:${isUnpaid?'#f59e0b':'#0d1b2a'}">${r.price||'—'}</td>
       <td style="padding:9px 12px;text-align:center"><span style="font-size:11px;font-weight:700;padding:2px 8px;border-radius:6px;background:${isPaid?'#f0fdf4':'#fff7ed'};color:${isPaid?'#16a34a':'#f59e0b'}">${isPaid?'✓ Yes':'✗ No'}</span></td>
       <td style="padding:9px 12px;color:#6b82a8">${r.invoice||'—'}</td>
-      <td style="padding:9px 12px;color:#94a3b8;font-style:italic;font-size:11px">${r.notes||''}</td>
+      <td style="padding:9px 12px;color:#94a3b8;font-style:italic;font-size:11px"><div class="rep-wrap">${r.notes||''}</div></td>
       <td style="padding:9px 12px;text-align:center">${statusBadgeTableHtml(r.status||'')}</td>
-      <td style="padding:9px 12px;text-align:center;position:sticky;right:0;background:${bg};box-shadow:-1px 0 0 #e8eef4;z-index:1">
-        <button onclick="openLogEdit('${r._key||''}')" style="background:#f4f7fb;border:1px solid #e8eef4;border-radius:6px;padding:4px 10px;font-size:11px;font-weight:600;color:#6b82a8;cursor:pointer">✏️ Edit</button>
+      <td style="padding:9px 12px;text-align:center">
+        <button title="Edit" aria-label="Edit ride" onclick="openLogEdit('${r._key||''}')" style="background:#f4f7fb;border:1px solid #e8eef4;border-radius:6px;width:34px;height:28px;display:inline-flex;align-items:center;justify-content:center;font-size:12px;font-weight:800;color:#6b82a8;cursor:pointer">✏️</button>
       </td>
     </tr>`;
   });
