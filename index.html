@@ -67,9 +67,6 @@ button,input,select,textarea{-webkit-appearance:none;font-family:inherit}
   /* Allow 2-line wrap for long text columns so the table can still fit without blowing up row height. */
   #ride-log-table .rep-wrap{display:block;white-space:normal;line-height:1.25;max-height:2.6em;overflow:hidden}
 
-  /* Admin-only UI (used to hide Branding editor in customer builds). */
-  .admin-only{display:none !important}
-  body.admin-mode .admin-only{display:block !important}
 
 /* ── PIN SCREEN ── */
 #screen-pin{
@@ -1330,53 +1327,6 @@ button,input,select,textarea{-webkit-appearance:none;font-family:inherit}
       <div id="s-biz-msg" style="font-size:12px;margin-top:6px;display:none"></div>
     </div>
 
-    <!-- Branding / White Label -->
-    <div class="settings-section admin-only" id="settings-branding">
-      <div class="settings-section-title">✨ Branding (White Label)</div>
-      <div style="font-size:12px;color:#6b82a8;margin-bottom:12px">Use this to brand the dashboard header for demos or for another company deployment.</div>
-
-      <div class="settings-row">
-        <div class="settings-label">Dashboard Display Name</div>
-        <input type="text" id="s-brand-name" class="settings-input" style="flex:1" placeholder="AbleCare Fleet"/>
-      </div>
-      <div class="settings-row">
-        <div class="settings-label">Subtitle</div>
-        <input type="text" id="s-brand-subtitle" class="settings-input" style="flex:1" placeholder="Owner Dashboard"/>
-      </div>
-      <div class="settings-row">
-        <div class="settings-label">Logo URL (optional)</div>
-        <input type="text" id="s-brand-logo-url" class="settings-input" style="flex:1" placeholder="https://.../logo.png"/>
-      </div>
-      <div class="settings-row">
-        <div class="settings-label">Upload Logo (optional)</div>
-        <input type="file" id="s-brand-logo-file" class="settings-input" style="flex:1;padding:10px" accept="image/*" onchange="onBrandLogoFileChange(event)"/>
-      </div>
-      <div class="settings-row">
-        <div class="settings-label">Quick Logo From Website</div>
-        <div style="display:flex;gap:8px;align-items:center;flex:1">
-          <input type="text" id="s-brand-domain" class="settings-input" style="flex:1" placeholder="example.com"/>
-          <button class="settings-save-btn" onclick="useWebsiteFavicon()">Use Favicon</button>
-        </div>
-      </div>
-
-      <div class="settings-row" style="align-items:center">
-        <div class="settings-label">Preview</div>
-        <div style="display:flex;align-items:center;gap:10px;flex:1">
-          <div style="width:42px;height:42px;border-radius:10px;border:1px solid #e8eef4;background:#fff;display:flex;align-items:center;justify-content:center;overflow:hidden">
-            <img id="s-brand-preview" alt="Logo preview" style="width:100%;height:100%;object-fit:contain;display:none"/>
-            <span id="s-brand-preview-fallback" style="font-weight:900;color:#0d1b2a">A</span>
-          </div>
-          <div style="min-width:0">
-            <div id="s-brand-preview-name" style="font-size:14px;font-weight:900;color:#0d1b2a;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">AbleCare Fleet</div>
-            <div id="s-brand-preview-subtitle" style="font-size:11px;color:#6b82a8;letter-spacing:1px;text-transform:uppercase">Owner Dashboard</div>
-          </div>
-        </div>
-      </div>
-
-      <button class="settings-save-btn" style="margin-top:12px" onclick="saveBranding()">Save Branding</button>
-      <div id="s-brand-msg" style="font-size:12px;margin-top:6px;display:none"></div>
-    </div>
-
     <!-- Ride Statuses -->
     <div class="settings-section">
       <div class="settings-section-title">🏷️ Ride Statuses</div>
@@ -2106,10 +2056,6 @@ button,input,select,textarea{-webkit-appearance:none;font-family:inherit}
 <script>
 // Wait for all scripts to be ready
 window.addEventListener('load', function() {
-  // Admin mode gates certain settings sections (like Branding editor).
-  bootstrapAdminMode();
-  wireAdminModeGesture();
-
   // Preload settings so the PIN + branding are updated before login.
   tryAutoInit(true);
 });
@@ -2125,62 +2071,7 @@ let pendingBrandLogoDataUrl='';
 // —— ADMIN MODE ——
 // This is for "hide the branding editor from normal users" (especially customer deployments).
 // Note: this is not security. It's just UI gating.
-const ADMIN_MODE_STORAGE_KEY='ablecare_admin_mode_v1';
-let ADMIN_PIN=OWNER_PIN; // set to '' if you want admin mode with no PIN gate
-
-function bootstrapAdminMode(){
-  let on = false;
-  let requested = false;
-  try{
-    const qp = new URLSearchParams(window.location.search||'');
-    const q = (qp.get('admin')||'').toLowerCase();
-    if(q==='1'||q==='true'||q==='yes') requested = true;
-  }catch(e){}
-  if(requested){
-    // Require PIN even if admin mode was requested via URL.
-    if(ADMIN_PIN){
-      const entered = prompt('Admin PIN?')||'';
-      if(entered === ADMIN_PIN) on = true;
-    }else{
-      on = true;
-    }
-  }else{
-    try{ on = localStorage.getItem(ADMIN_MODE_STORAGE_KEY)==='1'; }catch(e){}
-  }
-  setAdminMode(on, false);
-}
-
-function setAdminMode(on, persist){
-  document.body.classList.toggle('admin-mode', !!on);
-  if(persist){
-    try{ localStorage.setItem(ADMIN_MODE_STORAGE_KEY, on?'1':'0'); }catch(e){}
-  }
-}
-
-function wireAdminModeGesture(){
-  // Hidden gesture: click the top-left logo 7 times to toggle admin mode.
-  // If ADMIN_PIN is set, we prompt for it.
-  const logo = document.querySelector('.topbar-icon');
-  if(!logo) return;
-  let clicks = 0;
-  let t = null;
-  logo.addEventListener('click', ()=>{
-    clicks++;
-    if(t) clearTimeout(t);
-    t = setTimeout(()=>{clicks=0;}, 1200);
-    if(clicks>=7){
-      clicks=0;
-      const wantOn = !document.body.classList.contains('admin-mode');
-      if(wantOn && ADMIN_PIN){
-        const entered = prompt('Admin PIN?')||'';
-        if(entered !== ADMIN_PIN) return;
-      }
-      setAdminMode(wantOn, true);
-      alert(wantOn?'Admin mode enabled':'Admin mode disabled');
-    }
-  });
-}
-
+// (Admin mode removed)
 // Default facilities — overridden by Firebase settings
 let FACILITIES=[
   {name:'Chapel Hill', pickup:CHAPEL_HILL_PICKUP, pickupNote:'Auto-filled', dropoff:'', dropoffNote:'Enter appointment location', notes:''},
@@ -2514,7 +2405,6 @@ async function loadSettings(){
     const snap=await settingsRef().once('value');
     const s=snap.val()||{};
     if(s.ownerPin) OWNER_PIN=s.ownerPin;
-    ADMIN_PIN = OWNER_PIN;
     if(s.payPeriodDays) PAY_PERIOD_DAYS=s.payPeriodDays;
     if(s.payPeriodRef) PAY_PERIOD_REF_DATE=s.payPeriodRef;
     FACILITIES = normalizeFacilitySettings(s.facilities || FACILITIES);
@@ -3708,8 +3598,9 @@ async function initSettings(){
   document.getElementById('s-base-addr').value=s.baseAddress||'';
   document.getElementById('s-phone').value=s.phone||'(443) 819-1808';
 
-  // Branding / white label
-  initBrandingSettingsUI(s.branding||BRANDING);
+  // Branding editor removed from this build.
+  // Still allow Firebase branding to apply to the header (applyBranding in loadSettings()).
+  if(document.getElementById('settings-branding')) initBrandingSettingsUI(s.branding||BRANDING);
 
   // Driver PINs
   renderDriverPins();
@@ -3771,7 +3662,6 @@ async function saveOwnerPin(){
   if(p1!==p2){msg.textContent='PINs do not match.';msg.style.color='#ef4444';msg.style.display='block';return;}
   await settingsRef().update({ownerPin:p1});
   OWNER_PIN=p1;
-  ADMIN_PIN=p1;
   document.getElementById('s-pin').value='';document.getElementById('s-pin2').value='';
   msg.textContent='✓ Owner PIN updated!';msg.style.color='#06d6a0';msg.style.display='block';
   setTimeout(()=>msg.style.display='none',3000);
