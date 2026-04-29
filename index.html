@@ -67,6 +67,10 @@ button,input,select,textarea{-webkit-appearance:none;font-family:inherit}
   /* Allow 2-line wrap for long text columns so the table can still fit without blowing up row height. */
   #ride-log-table .rep-wrap{display:block;white-space:normal;line-height:1.25;max-height:2.6em;overflow:hidden}
 
+  /* Admin-only UI (used to hide Branding editor in customer builds). */
+  .admin-only{display:none !important}
+  body.admin-mode .admin-only{display:block !important}
+
 /* ── PIN SCREEN ── */
 #screen-pin{
   display:flex;align-items:center;justify-content:center;
@@ -1327,7 +1331,7 @@ button,input,select,textarea{-webkit-appearance:none;font-family:inherit}
     </div>
 
     <!-- Branding / White Label -->
-    <div class="settings-section">
+    <div class="settings-section admin-only" id="settings-branding">
       <div class="settings-section-title">✨ Branding (White Label)</div>
       <div style="font-size:12px;color:#6b82a8;margin-bottom:12px">Use this to brand the dashboard header for demos or for another company deployment.</div>
 
@@ -2102,6 +2106,10 @@ button,input,select,textarea{-webkit-appearance:none;font-family:inherit}
 <script>
 // Wait for all scripts to be ready
 window.addEventListener('load', function() {
+  // Admin mode gates certain settings sections (like Branding editor).
+  bootstrapAdminMode();
+  wireAdminModeGesture();
+
   // Preload settings so the PIN + branding are updated before login.
   tryAutoInit(true);
 });
@@ -2113,6 +2121,65 @@ const COLORS=['#00b4d8','#0096b7','#48cae4','#34d399','#f472b6'];
 const CHAPEL_HILL_PICKUP='Chapel Hill Nursing, 4511 Robosson Road, Randallstown, MD 21133';
 let BRANDING={displayName:'AbleCare Fleet',subtitle:'Owner Dashboard',logoUrl:'',logoDataUrl:'',domain:''};
 let pendingBrandLogoDataUrl='';
+
+// —— ADMIN MODE ——
+// This is for "hide the branding editor from normal users" (especially customer deployments).
+// Note: this is not security. It's just UI gating.
+const ADMIN_MODE_STORAGE_KEY='ablecare_admin_mode_v1';
+let ADMIN_PIN=OWNER_PIN; // set to '' if you want admin mode with no PIN gate
+
+function bootstrapAdminMode(){
+  let on = false;
+  let requested = false;
+  try{
+    const qp = new URLSearchParams(window.location.search||'');
+    const q = (qp.get('admin')||'').toLowerCase();
+    if(q==='1'||q==='true'||q==='yes') requested = true;
+  }catch(e){}
+  if(requested){
+    // Require PIN even if admin mode was requested via URL.
+    if(ADMIN_PIN){
+      const entered = prompt('Admin PIN?')||'';
+      if(entered === ADMIN_PIN) on = true;
+    }else{
+      on = true;
+    }
+  }else{
+    try{ on = localStorage.getItem(ADMIN_MODE_STORAGE_KEY)==='1'; }catch(e){}
+  }
+  setAdminMode(on, false);
+}
+
+function setAdminMode(on, persist){
+  document.body.classList.toggle('admin-mode', !!on);
+  if(persist){
+    try{ localStorage.setItem(ADMIN_MODE_STORAGE_KEY, on?'1':'0'); }catch(e){}
+  }
+}
+
+function wireAdminModeGesture(){
+  // Hidden gesture: click the top-left logo 7 times to toggle admin mode.
+  // If ADMIN_PIN is set, we prompt for it.
+  const logo = document.querySelector('.topbar-icon');
+  if(!logo) return;
+  let clicks = 0;
+  let t = null;
+  logo.addEventListener('click', ()=>{
+    clicks++;
+    if(t) clearTimeout(t);
+    t = setTimeout(()=>{clicks=0;}, 1200);
+    if(clicks>=7){
+      clicks=0;
+      const wantOn = !document.body.classList.contains('admin-mode');
+      if(wantOn && ADMIN_PIN){
+        const entered = prompt('Admin PIN?')||'';
+        if(entered !== ADMIN_PIN) return;
+      }
+      setAdminMode(wantOn, true);
+      alert(wantOn?'Admin mode enabled':'Admin mode disabled');
+    }
+  });
+}
 
 // Default facilities — overridden by Firebase settings
 let FACILITIES=[
@@ -2447,6 +2514,7 @@ async function loadSettings(){
     const snap=await settingsRef().once('value');
     const s=snap.val()||{};
     if(s.ownerPin) OWNER_PIN=s.ownerPin;
+    ADMIN_PIN = OWNER_PIN;
     if(s.payPeriodDays) PAY_PERIOD_DAYS=s.payPeriodDays;
     if(s.payPeriodRef) PAY_PERIOD_REF_DATE=s.payPeriodRef;
     FACILITIES = normalizeFacilitySettings(s.facilities || FACILITIES);
@@ -3703,6 +3771,7 @@ async function saveOwnerPin(){
   if(p1!==p2){msg.textContent='PINs do not match.';msg.style.color='#ef4444';msg.style.display='block';return;}
   await settingsRef().update({ownerPin:p1});
   OWNER_PIN=p1;
+  ADMIN_PIN=p1;
   document.getElementById('s-pin').value='';document.getElementById('s-pin2').value='';
   msg.textContent='✓ Owner PIN updated!';msg.style.color='#06d6a0';msg.style.display='block';
   setTimeout(()=>msg.style.display='none',3000);
