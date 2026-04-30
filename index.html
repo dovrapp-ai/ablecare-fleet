@@ -5437,6 +5437,7 @@ async function logAllRidesForDay(){
       milesSource: milesSource || '',
       calcNotes: '',
       notes: r.notes||'',
+      status: r.status||'',
       calendarKey: k, createdAt: Date.now()
     };
     if(reportLogEntryNeedsCompletion(updates[newKey])) needsCompletion.push(newKey);
@@ -6195,6 +6196,18 @@ async function generateInvoice(){
   };
 
   const isInvoiceRide = (r)=>{
+    const status = String(r && r.status || '').toLowerCase().trim();
+    // Never invoice cancelled rides (but "cancelled at pickup" is still billable).
+    if(['cancelled','noshow'].includes(status)) return false;
+
+    // If the user explicitly set price to 0, treat as "do not invoice".
+    // (Blank/undefined is treated as "missing" and can be calculated.)
+    const rawPrice = (r && r.price);
+    if(rawPrice != null && String(rawPrice).trim() !== ''){
+      const explicitNum = parseFloat(normalizeCurrencyValue(rawPrice));
+      if(Number.isFinite(explicitNum) && explicitNum === 0) return false;
+    }
+
     const rawPay = String(r && r.paymethod || '').toLowerCase().trim();
     const paymethod = rawPay ? normalizePayMethod(rawPay) : '';
     const paid = normalizeYesNo(r && r.paid, 'no');
@@ -6217,7 +6230,16 @@ async function generateInvoice(){
   };
 
   const logRides = Object.entries(allLogs)
-    .map(([k,v])=>({...(v||{}), _key:k, _source:'report'}))
+    .map(([k,v])=>{
+      const r = { ...(v||{}), _key:k, _source:'report' };
+      // Backfill missing fields from the scheduled ride (by calendarKey) when available.
+      const ck = r.calendarKey;
+      const src = (ck && allRides && allRides[ck]) ? allRides[ck] : null;
+      if(src){
+        if(!r.status) r.status = src.status || '';
+      }
+      return r;
+    })
     .filter(r=>matchesFacility(r.facility) && r.date>=fromDate && r.date<=toDate && isInvoiceRide(r));
 
   const loggedCalendarKeys = new Set(logRides.map(r=>r.calendarKey).filter(Boolean));
@@ -6266,8 +6288,10 @@ function renderInvoicePreview(data){
     const triptype = normalizeTripType(r.triptype);
 
     // Price: prefer explicit ride price, otherwise calculate from mileage rules.
-    const explicitPriceNum = parseFloat(normalizeCurrencyValue(r.price));
-    let price = Number.isFinite(explicitPriceNum) ? explicitPriceNum : 0;
+    const rawPrice = (r && r.price);
+    const explicitPriceNum = parseFloat(normalizeCurrencyValue(rawPrice));
+    const hasExplicitPrice = (rawPrice != null && String(rawPrice).trim() !== '' && Number.isFinite(explicitPriceNum));
+    let price = hasExplicitPrice ? explicitPriceNum : 0;
 
     // One-way client miles (pickup -> dropoff). For logged rides we may only have full billable miles.
     let oneWayMiles = extractFirstNumber(r && r.estimatedMiles);
@@ -6280,7 +6304,7 @@ function renderInvoicePreview(data){
       }
     }
 
-    if(!(price > 0) && oneWayMiles > 0){
+    if(!hasExplicitPrice && oneWayMiles > 0){
       price = calcPrice(oneWayMiles, ridetype, triptype).total;
     }
 
