@@ -6172,22 +6172,76 @@ async function generateInvoice(){
 
   document.getElementById('inv-error').style.display='none';
 
-  // Load rides for this facility in date range — invoice type only
-  const snap = await ridesRef().once('value');
-  const all = snap.val()||{};
-  const rides = Object.values(all).filter(r=>
-    r.facility===facilityName &&
-    r.date>=fromDate && r.date<=toDate &&
-    r.paymethod==='invoice'
-  ).sort((a,b)=>a.date.localeCompare(b.date)||( a.time||'').localeCompare(b.time||''));
+  const fac = FACILITIES.find(f=>f.name===facilityName)||{};
+  const isInvoiceFacility = !!(fac.email || fac.contact);
+
+  // Pull from BOTH:
+  // 1) Reports (rideLog): contains final billable miles + pricing
+  // 2) Scheduled rides: in case rides haven't been logged yet
+  const [ridesSnap, logSnap] = await Promise.all([
+    ridesRef().once('value'),
+    rideLogRef().once('value')
+  ]);
+  const allRides = ridesSnap.val()||{};
+  const allLogs = logSnap.val()||{};
+
+  const matchesFacility = (value)=>{
+    const canon = canonicalizeFacilityName(value);
+    if(canon) return canon === facilityName;
+    const raw = String(value || '').toLowerCase().trim();
+    const want = String(facilityName || '').toLowerCase().trim();
+    if(!raw || !want) return false;
+    return raw === want || raw.includes(want) || want.includes(raw);
+  };
+
+  const isInvoiceRide = (r)=>{
+    const rawPay = String(r && r.paymethod || '').toLowerCase().trim();
+    const paymethod = rawPay ? normalizePayMethod(rawPay) : '';
+    const paid = normalizeYesNo(r && r.paid, 'no');
+
+    // Explicit invoice always counts.
+    if(paymethod === 'invoice') return true;
+
+    // If a facility has billing contacts, treat rides as invoice-billed unless clearly CC+paid.
+    if(isInvoiceFacility){
+      if(paymethod === 'cc' && paid === 'yes') return false;
+      return true;
+    }
+
+    // Back-compat: older rides sometimes have no paymethod; include if not already paid.
+    if(!rawPay){
+      return paid !== 'yes';
+    }
+
+    return false;
+  };
+
+  const logRides = Object.entries(allLogs)
+    .map(([k,v])=>({...(v||{}), _key:k, _source:'report'}))
+    .filter(r=>matchesFacility(r.facility) && r.date>=fromDate && r.date<=toDate && isInvoiceRide(r));
+
+  const loggedCalendarKeys = new Set(logRides.map(r=>r.calendarKey).filter(Boolean));
+
+  const scheduledRides = Object.entries(allRides)
+    .map(([k,v])=>({...(v||{}), _key:k, _source:'rides'}))
+    .filter(r=>
+      matchesFacility(r.facility) &&
+      r.date>=fromDate && r.date<=toDate &&
+      isInvoiceRide(r) &&
+      !loggedCalendarKeys.has(r._key)
+    );
+
+  const rides = [...logRides, ...scheduledRides]
+    .sort((a,b)=>String(a.date||'').localeCompare(String(b.date||'')) || String(a.time||'').localeCompare(String(b.time||'')));
 
   if(!rides.length){
-    document.getElementById('inv-error-msg').textContent = `No invoice-billed rides found for ${facilityName} between ${fromDate} and ${toDate}. Make sure rides are set to "Invoice" payment method.`;
+    document.getElementById('inv-error-msg').textContent =
+      `No invoice-billed rides found for ${facilityName} between ${fromDate} and ${toDate}. ` +
+      `Make sure rides are set to "Invoice" payment method (or add billing email/contact to the facility settings).`;
     document.getElementById('inv-error').style.display='block';
     return;
   }
 
-  const fac = FACILITIES.find(f=>f.name===facilityName)||{};
   currentInvoiceData = { facilityName, fromDate, toDate, invNumber, invDate, invNotes, rides, fac };
 
   renderInvoicePreview(currentInvoiceData);
@@ -6197,11 +6251,41 @@ async function generateInvoice(){
 function renderInvoicePreview(data){
   const { facilityName, fromDate, toDate, invNumber, invDate, invNotes, rides, fac } = data;
 
+  const extractFirstNumber = (value)=>{
+    if(value == null) return NaN;
+    if(typeof value === 'number') return value;
+    const s = String(value).replace(/,/g,'');
+    const m = s.match(/-?\d+(?:\.\d+)?/);
+    return m ? parseFloat(m[0]) : NaN;
+  };
+
   // Calculate totals
   let subtotal = 0;
   const rideRows = rides.map((r,i)=>{
-    const price = parseFloat(r.price)||0;
-    const waitCharge = calcWaitCharge(parseFloat(r.waitHours)||0, r.ridetype);
+    const ridetype = normalizeRideType(r.ridetype);
+    const triptype = normalizeTripType(r.triptype);
+
+    // Price: prefer explicit ride price, otherwise calculate from mileage rules.
+    const explicitPriceNum = parseFloat(normalizeCurrencyValue(r.price));
+    let price = Number.isFinite(explicitPriceNum) ? explicitPriceNum : 0;
+
+    // One-way client miles (pickup -> dropoff). For logged rides we may only have full billable miles.
+    let oneWayMiles = extractFirstNumber(r && r.estimatedMiles);
+    if(!Number.isFinite(oneWayMiles) || oneWayMiles <= 0){
+      const billable = extractFirstNumber(r && (r.billableMiles ?? r.tripMiles ?? r.miles));
+      if(Number.isFinite(billable) && billable > 0){
+        oneWayMiles = (triptype === 'rt') ? (billable / 2) : billable;
+      } else {
+        oneWayMiles = 0;
+      }
+    }
+
+    if(!(price > 0) && oneWayMiles > 0){
+      price = calcPrice(oneWayMiles, ridetype, triptype).total;
+    }
+
+    const waitHours = parseFloat(r && r.waitHours) || 0;
+    const waitCharge = calcWaitCharge(waitHours, ridetype);
     const lineTotal = price + waitCharge;
     subtotal += lineTotal;
 
