@@ -1,0 +1,453 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate"/>
+  <meta http-equiv="Pragma" content="no-cache"/>
+  <meta http-equiv="Expires" content="0"/>
+  <title>AbleCare Fleet - Ride Request</title>
+  <style>
+    *{box-sizing:border-box;margin:0;padding:0}
+    body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:#f4f7fb;color:#1a2a3a;min-height:100vh}
+    button,input,select,textarea{-webkit-appearance:none;font-family:inherit}
+    .topbar{background:#0d1b2a;height:60px;display:flex;align-items:center;justify-content:space-between;padding:0 18px;position:sticky;top:0;z-index:10}
+    .brand{display:flex;align-items:center;gap:10px}
+    .icon{width:32px;height:32px;border-radius:8px;background:#00b4d8;color:#fff;display:flex;align-items:center;justify-content:center;font-weight:900}
+    .name{font-size:16px;font-weight:900;color:#fff}
+    .name span{color:#00b4d8}
+    .sub{font-size:10px;color:#6b82a8;letter-spacing:2px;text-transform:uppercase}
+    .wrap{max-width:980px;margin:0 auto;padding:18px 14px}
+
+    .card{background:#fff;border-radius:14px;box-shadow:0 1px 6px rgba(0,0,0,0.06);padding:16px 16px}
+    .card + .card{margin-top:14px}
+    .h1{font-size:20px;font-weight:900;color:#0d1b2a;display:flex;align-items:center;gap:10px}
+    .hint{margin-top:6px;color:#6b82a8;font-size:12px;line-height:1.4}
+    .row{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:12px}
+    @media (max-width:720px){.row{grid-template-columns:1fr}}
+    .field label{display:block;font-size:12px;color:#6b82a8;font-weight:700;margin-bottom:6px}
+    .field input,.field select,.field textarea{
+      width:100%;padding:11px 12px;border:2px solid #e8eef4;border-radius:12px;
+      font-size:14px;color:#0d1b2a;outline:none;background:#fff
+    }
+    .field input:focus,.field select:focus,.field textarea:focus{border-color:#00b4d8}
+    .field textarea{min-height:130px;resize:vertical;line-height:1.45}
+    .btnrow{display:flex;gap:10px;flex-wrap:wrap;margin-top:12px}
+    .btn{border:none;border-radius:12px;padding:11px 14px;font-size:14px;font-weight:800;cursor:pointer}
+    .btn.primary{background:#00b4d8;color:#fff}
+    .btn.primary:hover{background:#0096b7}
+    .btn.ghost{background:#f4f7fb;color:#0d1b2a;border:2px solid #e8eef4}
+    .btn.ghost:hover{border-color:#00b4d8}
+    .pill{display:inline-flex;align-items:center;gap:6px;padding:6px 10px;border-radius:999px;font-weight:800;font-size:12px}
+    .pill.pending{background:#fff7ed;color:#c2410c;border:1px solid #fed7aa}
+    .pill.accepted{background:#ecfdf5;color:#047857;border:1px solid #bbf7d0}
+    .pill.declined{background:#fef2f2;color:#dc2626;border:1px solid #fecaca}
+
+    .reqlist{display:flex;flex-direction:column;gap:10px;margin-top:12px}
+    .reqitem{border:1px solid #e8eef4;border-radius:12px;padding:12px 12px;background:#fff}
+    .reqtop{display:flex;gap:10px;align-items:flex-start}
+    .reqtitle{font-weight:900;color:#0d1b2a;font-size:14px;flex:1}
+    .reqmeta{color:#6b82a8;font-size:12px;margin-top:2px}
+    .reqmsg{margin-top:8px;color:#0d1b2a;font-size:13px;line-height:1.35;white-space:pre-wrap}
+
+    .error{display:none;margin-top:10px;background:#fff7ed;border:1px solid #fed7aa;color:#c2410c;border-radius:12px;padding:10px 12px;font-size:13px}
+    .ok{display:none;margin-top:10px;background:#ecfeff;border:1px solid #a5f3fc;color:#0d3a52;border-radius:12px;padding:10px 12px;font-size:13px}
+    .muted{color:#94a3b8}
+  </style>
+</head>
+<body>
+  <div class="topbar">
+    <div class="brand">
+      <div class="icon">A</div>
+      <div>
+        <div class="name">Able<span>Care</span> Fleet</div>
+        <div class="sub">Ride Request</div>
+      </div>
+    </div>
+    <div class="sub" id="portal-facility-pill"></div>
+  </div>
+
+  <div class="wrap">
+    <div class="card">
+      <div class="h1">Request A Ride</div>
+      <div class="hint">
+        Use this form to request a ride. After you submit, you can track status here.
+        When we accept, you will see a confirmation (and we can also email you if configured).
+      </div>
+
+      <div class="error" id="portal-error"></div>
+      <div class="ok" id="portal-ok"></div>
+
+      <div class="row">
+        <div class="field">
+          <label>Facility</label>
+          <input id="f-facility" type="text" disabled />
+        </div>
+        <div class="field">
+          <label>Patient Name</label>
+          <input id="f-client" type="text" placeholder="e.g. Timothy Jacobs" />
+        </div>
+        <div class="field">
+          <label>Date</label>
+          <input id="f-date" type="date" />
+        </div>
+        <div class="field">
+          <label>Pickup Time</label>
+          <input id="f-time" type="time" step="900" />
+        </div>
+        <div class="field">
+          <label>Ride Type</label>
+          <select id="f-ridetype">
+            <option value="wc">Wheelchair</option>
+            <option value="str">Stretcher</option>
+          </select>
+        </div>
+        <div class="field">
+          <label>Trip Type</label>
+          <select id="f-triptype">
+            <option value="rt">Round Trip</option>
+            <option value="1way">One Way</option>
+          </select>
+        </div>
+        <div class="field">
+          <label>Pickup Address</label>
+          <input id="f-pickup" type="text" placeholder="Enter pickup address..." />
+        </div>
+        <div class="field">
+          <label>Dropoff Address</label>
+          <input id="f-dropoff" type="text" placeholder="Enter dropoff address..." />
+        </div>
+        <div class="field" style="grid-column:1 / -1">
+          <label>Contact Email (for confirmation)</label>
+          <input id="f-email" type="email" placeholder="name@facility.com" />
+        </div>
+        <div class="field" style="grid-column:1 / -1">
+          <label>Notes / Special Instructions</label>
+          <textarea id="f-notes" placeholder="Appointment time, phone numbers, return instructions, etc."></textarea>
+        </div>
+      </div>
+
+      <div class="btnrow">
+        <button class="btn primary" id="submit-btn" type="button" onclick="submitRideRequest()">Submit Request</button>
+        <button class="btn ghost" type="button" onclick="clearForm()">Clear</button>
+      </div>
+
+      <div class="hint" style="margin-top:10px">
+        <span class="muted">Tip:</span> This page is private via your link. Do not forward it outside your facility.
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="h1">Your Requests</div>
+      <div class="hint">Most recent requests submitted from this portal link.</div>
+      <div class="reqlist" id="req-list">
+        <div class="muted" style="padding:12px 2px">Loading...</div>
+      </div>
+    </div>
+  </div>
+
+  <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js"></script>
+  <script>
+    // AbleCare Fleet Firebase config (same project as index.html).
+    const FIREBASE_CONFIG = {
+      apiKey: 'AIzaSyBhVuubrvIg5iq_CWByHCn-LF6txhZG0Ig',
+      authDomain: 'ablecare-fleet.firebaseapp.com',
+      databaseURL: 'https://ablecare-fleet-default-rtdb.firebaseio.com',
+      projectId: 'ablecare-fleet',
+      storageBucket: 'ablecare-fleet.firebasestorage.app',
+      messagingSenderId: '429072390729',
+      appId: '1:429072390729:web:fb3bbb1561c376cf9ebd98'
+    };
+
+    // Reuse the same AI parser endpoint used by the main dashboard (optional).
+    const AI_PARSER_ENDPOINT = 'https://ablecare-ai.dovrapp.workers.dev';
+
+    let db = null;
+    let facilityName = '';
+    let portalKey = '';
+    let emailCfg = null;
+    let emailjsReady = false;
+
+    function showError(msg){
+      const el = document.getElementById('portal-error');
+      el.textContent = msg;
+      el.style.display = 'block';
+      document.getElementById('portal-ok').style.display = 'none';
+    }
+    function showOk(msg){
+      const el = document.getElementById('portal-ok');
+      el.textContent = msg;
+      el.style.display = 'block';
+      document.getElementById('portal-error').style.display = 'none';
+    }
+    function esc(value){
+      return String(value==null?'':value).replace(/[&<>"']/g, ch => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[ch]));
+    }
+    function dateStr(d){
+      return d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0') + '-' + String(d.getDate()).padStart(2,'0');
+    }
+    function safeText(v){
+      return String(v==null?'':v).trim();
+    }
+    function normalizeRideType(v){
+      const s = String(v||'').toLowerCase().trim();
+      return (s === 'str' || s === 'stretcher') ? 'str' : 'wc';
+    }
+    function normalizeTripType(v){
+      const s = String(v||'').toLowerCase().trim();
+      return (s === '1way' || s === 'ow' || s === 'oneway' || s === 'one way') ? '1way' : 'rt';
+    }
+
+    function parsePortalParams(){
+      const params = new URLSearchParams(window.location.search || '');
+      facilityName = safeText(params.get('fac'));
+      portalKey = safeText(params.get('key'));
+      document.getElementById('portal-facility-pill').textContent = facilityName ? facilityName : '';
+      document.getElementById('f-facility').value = facilityName || '';
+    }
+
+    async function init(){
+      parsePortalParams();
+      if(!facilityName || !portalKey){
+        showError('Invalid link. Missing facility or key.');
+        disableForm();
+        return;
+      }
+      try{
+        if(!firebase.apps.length) firebase.initializeApp(FIREBASE_CONFIG);
+        db = firebase.database();
+      }catch(e){
+        showError('Connection failed. Please refresh and try again.');
+        disableForm();
+        return;
+      }
+
+      // Load settings (to validate portal key + load optional email config).
+      try{
+        const snap = await db.ref('settings').once('value');
+        const settings = snap.val() || {};
+        const facilities = (settings.facilities || []);
+        const fac = facilities.find(f => String(f && f.name || '').trim().toLowerCase() === facilityName.toLowerCase());
+        const storedKey = fac && fac.portalKey ? String(fac.portalKey) : '';
+        if(!storedKey || storedKey !== portalKey){
+          showError('This portal link is not valid (key mismatch). Please request a new link.');
+          disableForm();
+          return;
+        }
+        emailCfg = settings.emailjs || null;
+        tryInitEmailjs(emailCfg);
+      }catch(e){
+        showError('Could not load portal settings. Please try again later.');
+        disableForm();
+        return;
+      }
+
+      watchRequests();
+    }
+
+    function disableForm(){
+      const btn = document.getElementById('submit-btn');
+      if(btn) btn.disabled = true;
+      const fields = ['f-client','f-date','f-time','f-ridetype','f-triptype','f-pickup','f-dropoff','f-email','f-notes'];
+      fields.forEach(id => {
+        const el = document.getElementById(id);
+        if(el) el.disabled = true;
+      });
+    }
+
+    function clearForm(){
+      document.getElementById('f-client').value = '';
+      document.getElementById('f-date').value = '';
+      document.getElementById('f-time').value = '';
+      document.getElementById('f-ridetype').value = 'wc';
+      document.getElementById('f-triptype').value = 'rt';
+      document.getElementById('f-pickup').value = '';
+      document.getElementById('f-dropoff').value = '';
+      document.getElementById('f-email').value = '';
+      document.getElementById('f-notes').value = '';
+      document.getElementById('portal-ok').style.display = 'none';
+      document.getElementById('portal-error').style.display = 'none';
+    }
+
+    function buildRawMessage(ride){
+      const rideTypeLabel = ride.ridetype === 'str' ? 'STRETCHER' : 'WHEELCHAIR';
+      const tripTypeLabel = ride.triptype === 'rt' ? 'ROUND TRIP' : 'ONE WAY';
+      const lines = [
+        `REQUESTING TRANSPORTATION`,
+        ``,
+        `Facility: ${ride.facility || ''}`,
+        `Patient: ${ride.client || ''}`,
+        `Date: ${ride.date || ''}`,
+        `Pickup time: ${ride.time || ''}`,
+        `Type: ${rideTypeLabel} / ${tripTypeLabel}`,
+        ``,
+        `Pickup: ${ride.pickup || ''}`,
+        `Dropoff: ${ride.dropoff || ''}`,
+        ride.requesterEmail ? `` : '',
+        ride.requesterEmail ? `Contact email: ${ride.requesterEmail}` : '',
+        ride.notes ? `` : '',
+        ride.notes ? `Notes: ${ride.notes}` : ''
+      ].filter(Boolean);
+      return lines.join('\n').trim();
+    }
+
+    function tryInitEmailjs(cfg){
+      cfg = cfg || {};
+      const publicKey = safeText(cfg.publicKey);
+      if(!publicKey) return;
+      if(typeof emailjs === 'undefined') return;
+      try{
+        emailjs.init({ publicKey });
+        emailjsReady = true;
+      }catch(e){
+        emailjsReady = false;
+      }
+    }
+
+    async function sendEmailIfConfigured(kind, payload){
+      // kind: 'request' (to dispatch) or 'update' (to requester)
+      const cfg = emailCfg || {};
+      const serviceId = safeText(cfg.serviceId);
+      const templateId = safeText(kind === 'request' ? cfg.templateRequestId : cfg.templateUpdateId);
+      const publicKey = safeText(cfg.publicKey);
+      if(!emailjsReady || !serviceId || !templateId || !publicKey) return false;
+      try{
+        await emailjs.send(serviceId, templateId, payload);
+        return true;
+      }catch(e){
+        return false;
+      }
+    }
+
+    async function submitRideRequest(){
+      if(!db) return;
+      const ride = {
+        facility: facilityName,
+        client: safeText(document.getElementById('f-client').value),
+        date: safeText(document.getElementById('f-date').value),
+        time: safeText(document.getElementById('f-time').value),
+        ridetype: normalizeRideType(document.getElementById('f-ridetype').value),
+        triptype: normalizeTripType(document.getElementById('f-triptype').value),
+        pickup: safeText(document.getElementById('f-pickup').value),
+        dropoff: safeText(document.getElementById('f-dropoff').value),
+        requesterEmail: safeText(document.getElementById('f-email').value),
+        notes: safeText(document.getElementById('f-notes').value)
+      };
+
+      if(!ride.date || !ride.time){
+        showError('Please enter a date and pickup time.');
+        return;
+      }
+      if(!ride.client){
+        showError('Please enter the patient name.');
+        return;
+      }
+      if(!ride.requesterEmail){
+        showError('Please enter a contact email.');
+        return;
+      }
+      if(!ride.pickup || !ride.dropoff){
+        showError('Please enter both pickup and dropoff addresses.');
+        return;
+      }
+
+      const rawMessage = buildRawMessage(ride);
+      const record = {
+        status: 'pending',
+        createdAt: Date.now(),
+        facility: facilityName,
+        portalKey: portalKey,
+        requesterEmail: ride.requesterEmail,
+        rawMessage,
+        ride: {
+          facility: ride.facility,
+          client: ride.client,
+          date: ride.date,
+          time: ride.time,
+          ridetype: ride.ridetype,
+          triptype: ride.triptype,
+          pickup: ride.pickup,
+          dropoff: ride.dropoff,
+          notes: ride.notes
+        }
+      };
+
+      try{
+        const ref = db.ref('rideRequests').push();
+        await ref.set(record);
+        showOk('Request submitted. You can track status below.');
+        clearForm();
+
+        // Email notify dispatch (optional). Uses EmailJS template variables.
+        // You can set your EmailJS template To field to {{to_email}}.
+        const dispatchEmail = safeText((emailCfg||{}).dispatchEmail);
+        if(dispatchEmail){
+          await sendEmailIfConfigured('request', {
+            to_email: dispatchEmail,
+            facility: record.facility,
+            client: record.ride.client,
+            date: record.ride.date,
+            time: record.ride.time,
+            ridetype: record.ride.ridetype,
+            triptype: record.ride.triptype,
+            pickup: record.ride.pickup,
+            dropoff: record.ride.dropoff,
+            requester_email: record.requesterEmail,
+            message: record.rawMessage,
+            request_id: ref.key
+          });
+        }
+      }catch(e){
+        showError('Could not submit request. Please try again.');
+      }
+    }
+
+    function statusPill(status){
+      if(status === 'accepted') return '<span class="pill accepted">Accepted</span>';
+      if(status === 'declined') return '<span class="pill declined">Declined</span>';
+      return '<span class="pill pending">Pending</span>';
+    }
+
+    function renderRequestList(items){
+      const el = document.getElementById('req-list');
+      if(!items.length){
+        el.innerHTML = '<div class="muted" style="padding:12px 2px">No requests yet.</div>';
+        return;
+      }
+      el.innerHTML = items.map(it => {
+        const ride = it.ride || {};
+        const meta = [ride.date, ride.time, ride.client].filter(Boolean).join(' | ');
+        const msg = it.responseMessage ? ('\n\nReply:\n' + it.responseMessage) : '';
+        return `
+          <div class="reqitem">
+            <div class="reqtop">
+              <div style="flex:1">
+                <div class="reqtitle">${esc(ride.client || 'Ride Request')}</div>
+                <div class="reqmeta">${esc(meta || '')}</div>
+              </div>
+              ${statusPill(it.status)}
+            </div>
+            <div class="reqmsg">${esc((it.rawMessage || '').trim() + msg)}</div>
+          </div>
+        `;
+      }).join('');
+    }
+
+    function watchRequests(){
+      const listRef = db.ref('rideRequests');
+      listRef.orderByChild('facility').equalTo(facilityName).limitToLast(30).on('value', snap => {
+        const raw = snap.val() || {};
+        const items = Object.entries(raw)
+          .map(([k,v]) => ({ _key: k, ...(v||{}) }))
+          .filter(v => String(v.portalKey||'') === portalKey)
+          .sort((a,b) => (b.createdAt||0) - (a.createdAt||0));
+        renderRequestList(items);
+      });
+    }
+
+    window.addEventListener('load', init);
+  </script>
+</body>
+</html>
