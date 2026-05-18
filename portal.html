@@ -92,8 +92,12 @@
           <input id="f-date" type="date" />
         </div>
         <div class="field">
-          <label>Pickup Time</label>
+          <label>Requested Pickup Time</label>
           <input id="f-time" type="time" step="900" />
+        </div>
+        <div class="field">
+          <label>Appointment Time</label>
+          <input id="f-appointment-time" type="time" step="900" />
         </div>
         <div class="field">
           <label>Ride Type</label>
@@ -110,6 +114,18 @@
           </select>
         </div>
         <div class="field">
+          <label>Return Time</label>
+          <input id="f-return-time" type="time" step="900" />
+        </div>
+        <div class="field">
+          <label>Return Status</label>
+          <select id="f-return-status">
+            <option value="">Set a return time if known</option>
+            <option value="will_call">Will call when ready</option>
+            <option value="no_return">No return needed</option>
+          </select>
+        </div>
+        <div class="field">
           <label>Pickup Address</label>
           <input id="f-pickup" type="text" placeholder="Enter pickup address..." />
         </div>
@@ -121,9 +137,17 @@
           <label>Contact Email (for confirmation)</label>
           <input id="f-email" type="email" placeholder="name@facility.com" />
         </div>
+        <div class="field">
+          <label>Contact Name</label>
+          <input id="f-contact-name" type="text" placeholder="e.g. Jane Smith" />
+        </div>
+        <div class="field">
+          <label>Contact Phone</label>
+          <input id="f-contact-phone" type="tel" placeholder="e.g. 443-555-1212" />
+        </div>
         <div class="field" style="grid-column:1 / -1">
           <label>Notes / Special Instructions</label>
-          <textarea id="f-notes" placeholder="Appointment time, phone numbers, return instructions, etc."></textarea>
+          <textarea id="f-notes" placeholder="Door code, oxygen, escort, appointment department, return instructions, etc."></textarea>
         </div>
       </div>
 
@@ -169,6 +193,7 @@
     let portalKey = '';
     let emailCfg = null;
     let emailjsReady = false;
+    let portalDefaults = { pickup: '', email: '', contact: '' };
 
     function showError(msg){
       const el = document.getElementById('portal-error');
@@ -238,6 +263,15 @@
         }
         emailCfg = settings.emailjs || null;
         tryInitEmailjs(emailCfg);
+        if(fac){
+          const pickup = safeText(fac.pickup || fac.address || fac.addr);
+          const email = safeText(fac.email);
+          const contact = safeText(fac.contact);
+          portalDefaults = { pickup, email, contact };
+          if(pickup) document.getElementById('f-pickup').value = pickup;
+          if(email) document.getElementById('f-email').value = email;
+          if(contact) document.getElementById('f-contact-name').value = contact;
+        }
       }catch(e){
         showError('Could not load portal settings. Please try again later.');
         disableForm();
@@ -250,7 +284,7 @@
     function disableForm(){
       const btn = document.getElementById('submit-btn');
       if(btn) btn.disabled = true;
-      const fields = ['f-client','f-date','f-time','f-ridetype','f-triptype','f-pickup','f-dropoff','f-email','f-notes'];
+      const fields = ['f-client','f-date','f-time','f-appointment-time','f-ridetype','f-triptype','f-return-time','f-return-status','f-pickup','f-dropoff','f-email','f-contact-name','f-contact-phone','f-notes'];
       fields.forEach(id => {
         const el = document.getElementById(id);
         if(el) el.disabled = true;
@@ -261,11 +295,16 @@
       document.getElementById('f-client').value = '';
       document.getElementById('f-date').value = '';
       document.getElementById('f-time').value = '';
+      document.getElementById('f-appointment-time').value = '';
       document.getElementById('f-ridetype').value = 'wc';
       document.getElementById('f-triptype').value = 'rt';
-      document.getElementById('f-pickup').value = '';
+      document.getElementById('f-return-time').value = '';
+      document.getElementById('f-return-status').value = '';
+      document.getElementById('f-pickup').value = portalDefaults.pickup || '';
       document.getElementById('f-dropoff').value = '';
-      document.getElementById('f-email').value = '';
+      document.getElementById('f-email').value = portalDefaults.email || '';
+      document.getElementById('f-contact-name').value = portalDefaults.contact || '';
+      document.getElementById('f-contact-phone').value = '';
       document.getElementById('f-notes').value = '';
       document.getElementById('portal-ok').style.display = 'none';
       document.getElementById('portal-error').style.display = 'none';
@@ -281,12 +320,18 @@
         `Patient: ${ride.client || ''}`,
         `Date: ${ride.date || ''}`,
         `Pickup time: ${ride.time || ''}`,
+        ride.appointmentTime ? `Appointment time: ${ride.appointmentTime}` : '',
         `Type: ${rideTypeLabel} / ${tripTypeLabel}`,
+        ride.returnTime ? `Return time: ${ride.returnTime}` : '',
+        ride.returnStatus === 'will_call' ? `Return: Will call when ready` : '',
+        ride.returnStatus === 'no_return' ? `Return: No return needed` : '',
         ``,
         `Pickup: ${ride.pickup || ''}`,
         `Dropoff: ${ride.dropoff || ''}`,
         ride.requesterEmail ? `` : '',
         ride.requesterEmail ? `Contact email: ${ride.requesterEmail}` : '',
+        ride.requesterName ? `Contact name: ${ride.requesterName}` : '',
+        ride.requesterPhone ? `Contact phone: ${ride.requesterPhone}` : '',
         ride.notes ? `` : '',
         ride.notes ? `Notes: ${ride.notes}` : ''
       ].filter(Boolean);
@@ -328,11 +373,16 @@
         client: safeText(document.getElementById('f-client').value),
         date: safeText(document.getElementById('f-date').value),
         time: safeText(document.getElementById('f-time').value),
+        appointmentTime: safeText(document.getElementById('f-appointment-time').value),
         ridetype: normalizeRideType(document.getElementById('f-ridetype').value),
         triptype: normalizeTripType(document.getElementById('f-triptype').value),
+        returnTime: safeText(document.getElementById('f-return-time').value),
+        returnStatus: safeText(document.getElementById('f-return-status').value),
         pickup: safeText(document.getElementById('f-pickup').value),
         dropoff: safeText(document.getElementById('f-dropoff').value),
         requesterEmail: safeText(document.getElementById('f-email').value),
+        requesterName: safeText(document.getElementById('f-contact-name').value),
+        requesterPhone: safeText(document.getElementById('f-contact-phone').value),
         notes: safeText(document.getElementById('f-notes').value)
       };
 
@@ -344,8 +394,8 @@
         showError('Please enter the patient name.');
         return;
       }
-      if(!ride.requesterEmail){
-        showError('Please enter a contact email.');
+      if(!ride.requesterEmail && !ride.requesterPhone){
+        showError('Please enter a contact email or phone number.');
         return;
       }
       if(!ride.pickup || !ride.dropoff){
@@ -360,16 +410,23 @@
         facility: facilityName,
         portalKey: portalKey,
         requesterEmail: ride.requesterEmail,
+        requesterName: ride.requesterName,
+        requesterPhone: ride.requesterPhone,
         rawMessage,
         ride: {
           facility: ride.facility,
           client: ride.client,
           date: ride.date,
           time: ride.time,
+          appointmentTime: ride.appointmentTime,
           ridetype: ride.ridetype,
           triptype: ride.triptype,
+          returnTime: ride.returnTime,
+          returnStatus: ride.returnStatus,
           pickup: ride.pickup,
           dropoff: ride.dropoff,
+          requesterName: ride.requesterName,
+          requesterPhone: ride.requesterPhone,
           notes: ride.notes
         }
       };
@@ -377,8 +434,8 @@
       try{
         const ref = db.ref('rideRequests').push();
         await ref.set(record);
-        showOk('Request submitted. You can track status below.');
         clearForm();
+        showOk('Request submitted. You can track status below.');
 
         // Email notify dispatch (optional). Uses EmailJS template variables.
         // You can set your EmailJS template To field to {{to_email}}.
@@ -394,7 +451,12 @@
             triptype: record.ride.triptype,
             pickup: record.ride.pickup,
             dropoff: record.ride.dropoff,
+            appointment_time: record.ride.appointmentTime || '',
+            return_time: record.ride.returnTime || '',
+            return_status: record.ride.returnStatus || '',
             requester_email: record.requesterEmail,
+            requester_name: record.requesterName || '',
+            requester_phone: record.requesterPhone || '',
             message: record.rawMessage,
             request_id: ref.key
           });
@@ -419,6 +481,13 @@
       el.innerHTML = items.map(it => {
         const ride = it.ride || {};
         const meta = [ride.date, ride.time, ride.client].filter(Boolean).join(' | ');
+        const returnInfo = ride.returnStatus === 'will_call'
+          ? 'Return: will call'
+          : ride.returnStatus === 'no_return'
+            ? 'Return: none'
+            : ride.returnTime
+              ? `Return: ${ride.returnTime}`
+              : '';
         const msg = it.responseMessage ? ('\n\nReply:\n' + it.responseMessage) : '';
         return `
           <div class="reqitem">
@@ -429,7 +498,7 @@
               </div>
               ${statusPill(it.status)}
             </div>
-            <div class="reqmsg">${esc((it.rawMessage || '').trim() + msg)}</div>
+            <div class="reqmsg">${esc([(it.rawMessage || '').trim(), returnInfo, msg.trim()].filter(Boolean).join('\n'))}</div>
           </div>
         `;
       }).join('');

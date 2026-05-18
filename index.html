@@ -382,6 +382,7 @@ button,input,select,textarea{-webkit-appearance:none;font-family:inherit}
 .ride-block.wc{background:#e0f7fc;border-left:4px solid #00b4d8;color:#0d3a52}
 .ride-block.str{background:#fff7ed;border-left:4px solid #f97316;color:#7c2d12}
 .ride-block.unpaid-block{background:#fff7ed;border-left:4px solid #f59e0b;color:#92400e}
+.ride-block.logged-block{background:#f0fdf4;border-left:4px solid #16a34a;color:#14532d}
 .ride-block-time{font-size:11px;font-weight:700;opacity:0.7;margin-bottom:2px;font-family:monospace}
 .ride-block-title{font-size:13px;font-weight:800;line-height:1.2}
 .ride-block-client{font-size:11px;opacity:0.75;margin-top:2px}
@@ -1308,6 +1309,34 @@ button,input,select,textarea{-webkit-appearance:none;font-family:inherit}
       <button class="add-btn" style="margin-top:12px" onclick="openFacilityModal(null)">+ Add Facility</button>
     </div>
 
+    <!-- Ride Request Portal -->
+    <div class="settings-section">
+      <div class="settings-section-title">📨 Ride Request Portal</div>
+      <div style="font-size:12px;color:#6b82a8;margin-bottom:12px">Facilities can request rides from a private link. Requests appear in Rides → Requests.</div>
+      <div class="settings-row">
+        <div class="settings-label">Dispatch notification email</div>
+        <input type="email" id="s-dispatch-email" class="settings-input" style="flex:1" placeholder="dispatch@yourcompany.com"/>
+      </div>
+      <div class="settings-row">
+        <div class="settings-label">EmailJS public key</div>
+        <input type="text" id="s-emailjs-public" class="settings-input" style="flex:1" placeholder="e.g. 9Zx..."/>
+      </div>
+      <div class="settings-row">
+        <div class="settings-label">EmailJS service id</div>
+        <input type="text" id="s-emailjs-service" class="settings-input" style="flex:1" placeholder="e.g. service_xxx"/>
+      </div>
+      <div class="settings-row">
+        <div class="settings-label">EmailJS template id (new request → dispatch)</div>
+        <input type="text" id="s-emailjs-template-request" class="settings-input" style="flex:1" placeholder="e.g. template_request"/>
+      </div>
+      <div class="settings-row">
+        <div class="settings-label">EmailJS template id (status update → requester)</div>
+        <input type="text" id="s-emailjs-template-update" class="settings-input" style="flex:1" placeholder="e.g. template_update"/>
+      </div>
+      <button class="settings-save-btn" style="margin-top:12px" onclick="saveEmailSettings()">Save Portal/Email Settings</button>
+      <div id="s-email-msg" style="font-size:12px;margin-top:6px;display:none"></div>
+    </div>
+
     <!-- Business Info -->
     <div class="settings-section">
       <div class="settings-section-title">🏢 Business Info</div>
@@ -1385,6 +1414,10 @@ button,input,select,textarea{-webkit-appearance:none;font-family:inherit}
         <button class="sidebar-filter active" id="filter-all" onclick="setRidesFilter('all')">All Rides</button>
         <button class="sidebar-filter" id="filter-unpaid" onclick="setRidesFilter('unpaid')">💰 Unpaid</button>
         <button class="sidebar-filter" id="filter-unassigned" onclick="setRidesFilter('unassigned')">👤 No Driver</button>
+      </div>
+
+      <div class="import-review-alert" id="request-review-alert" style="background:#ecfeff;border-color:#a5f3fc;color:#0d3a52" onclick="openRideRequestReviewModal()">
+        📨 <span id="pending-request-count">0</span> ride requests waiting
       </div>
 
       <div class="import-review-alert" id="import-review-alert" onclick="openImportReviewModal()">
@@ -1951,6 +1984,18 @@ button,input,select,textarea{-webkit-appearance:none;font-family:inherit}
       <label>👤 Billing Contact Name</label>
       <input type="text" id="fac-contact" placeholder="e.g. Jane Smith — Accounts Payable"/>
     </div>
+    <div class="modal-field">
+      <label>📨 Ride Request Portal (Private Link)</label>
+      <div style="display:flex;gap:8px;align-items:center">
+        <input type="text" id="fac-portal-link" placeholder="Generate a private link..." readonly style="flex:1"/>
+        <button class="modal-cancel" type="button" style="width:auto;padding:10px 12px" onclick="copyFacilityPortalLink()">Copy</button>
+      </div>
+      <div style="display:flex;gap:8px;align-items:center;margin-top:8px">
+        <button class="modal-cancel" type="button" style="width:auto;padding:10px 12px" onclick="generateFacilityPortalLink()">Generate New</button>
+        <input type="text" id="fac-portal-key" placeholder="Portal key..." readonly style="flex:1;opacity:0.82"/>
+      </div>
+      <div style="font-size:11px;color:#94a3b8;margin-top:6px;line-height:1.3">Give this link to the facility so they can request rides. Keep it private.</div>
+    </div>
     <div class="modal-actions">
       <button class="modal-save" onclick="saveFacility()">Save</button>
       <button class="modal-delete" id="fac-delete-btn" onclick="deleteFacility()" style="display:none">Delete</button>
@@ -2029,6 +2074,54 @@ button,input,select,textarea{-webkit-appearance:none;font-family:inherit}
   </div>
 </div>
 
+<div class="modal-overlay" id="request-review-modal">
+  <div class="modal-box" style="max-width:980px;width:min(980px,96vw);max-height:92vh;overflow-y:auto">
+    <div class="modal-title">📨 Ride Requests</div>
+    <div class="modal-driver">Review requests submitted by facilities. Accept to create a ride, or decline with a reply.</div>
+    <div id="request-review-list" class="import-review-list">
+      <div class="import-review-empty">Loading requests...</div>
+    </div>
+    <div class="modal-actions">
+      <button class="modal-cancel" onclick="closeRideRequestReviewModal()">Close</button>
+    </div>
+  </div>
+</div>
+
+<div class="modal-overlay" id="request-response-modal">
+  <div class="modal-box" style="max-width:520px;max-height:92vh;overflow-y:auto">
+    <div class="modal-title" id="req-resp-title">Respond To Request</div>
+    <div class="modal-driver" id="req-resp-subtitle"></div>
+
+    <div class="modal-field">
+      <label>Status</label>
+      <div style="display:flex;gap:8px;flex-wrap:wrap">
+        <button class="toggle-btn" id="req-status-accept" onclick="setReqRespStatus('accepted')">✅ Accept</button>
+        <button class="toggle-btn" id="req-status-decline" onclick="setReqRespStatus('declined')">❌ Decline</button>
+      </div>
+    </div>
+
+    <div class="modal-field">
+      <label>Date</label>
+      <input type="date" id="req-resp-date"/>
+    </div>
+
+    <div class="modal-field">
+      <label>Pickup Time</label>
+      <input type="time" id="req-resp-time" step="900"/>
+    </div>
+
+    <div class="modal-field">
+      <label>Reply Message (emailed back)</label>
+      <textarea id="req-resp-message" placeholder="Type your response..." style="width:100%;height:120px;padding:10px 14px;border:2px solid #e8eef4;border-radius:10px;font-size:13px;color:#0d1b2a;outline:none;font-family:inherit;resize:vertical;line-height:1.5"></textarea>
+    </div>
+
+    <div class="modal-actions">
+      <button class="modal-save" onclick="saveRideRequestResponse()">Save</button>
+      <button class="modal-cancel" onclick="closeRideRequestResponseModal()">Cancel</button>
+    </div>
+  </div>
+</div>
+
 
 <div class="modal-overlay" id="driver-rate-modal">
   <div class="modal-box" style="max-width:320px">
@@ -2053,6 +2146,7 @@ button,input,select,textarea{-webkit-appearance:none;font-family:inherit}
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js"></script>
 <script>
 // Wait for all scripts to be ready
 window.addEventListener('load', function() {
@@ -2102,12 +2196,20 @@ let selectedDate=new Date();
 let miniMonthOffset=0;
 let ridesFilter='all';
 let allRidesCache={};
+let allRideLogCache={};
 let facEditKey=null;
 let dpDriverName=null;
 let rideImportsCache={};
 let rideImportsWatchReady=false;
 let pendingImportReviewKey=null;
 let pendingImportReviewMeta=null;
+let rideRequestsCache={};
+let rideRequestsWatchReady=false;
+let pendingRideRequestKey=null;
+let pendingRideRequestRecord=null;
+let reqRespStatus='accepted';
+let EMAIL_CFG=null;
+let emailjsReady=false;
 
 // ── FIREBASE ──
 function tryAutoInit(){
@@ -2135,11 +2237,42 @@ const ridesRef=()=>db.ref('rides');
 const settingsRef=()=>db.ref('settings');
 const rideLogRef=()=>db.ref('rideLog');
 const rideImportsRef=()=>db.ref('rideImports');
+const rideRequestsRef=()=>db.ref('rideRequests');
 function safe(n){return n.replace(/[^a-zA-Z0-9_-]/g,'_');}
 function escHtml(value){
   return String(value==null?'':value).replace(/[&<>"']/g,ch=>({
     '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'
   }[ch]));
+}
+function textTrim(v){return String(v==null?'':v).trim();}
+
+function tryInitEmailjs(cfg){
+  cfg = cfg || {};
+  const publicKey = textTrim(cfg.publicKey);
+  if(!publicKey || typeof emailjs === 'undefined'){
+    emailjsReady = false;
+    return;
+  }
+  try{
+    emailjs.init({ publicKey });
+    emailjsReady = true;
+  }catch(e){
+    emailjsReady = false;
+  }
+}
+
+async function sendEmailViaEmailjs(kind, payload){
+  const cfg = EMAIL_CFG || {};
+  const serviceId = textTrim(cfg.serviceId);
+  const templateId = textTrim(kind === 'request' ? cfg.templateRequestId : cfg.templateUpdateId);
+  if(!emailjsReady || !serviceId || !templateId) return false;
+  try{
+    await emailjs.send(serviceId, templateId, payload);
+    return true;
+  }catch(e){
+    console.warn('EmailJS send failed:', e);
+    return false;
+  }
 }
 
 function normalizeFacilityPickupAddress(facilityName, pickupValue){
@@ -2175,7 +2308,13 @@ function normalizeFacilitySettings(list){
 }
 
 async function loadDrivers(){
-  const snap=await drvsRef().once('value');
+  let snap;
+  try{
+    snap=await drvsRef().once('value');
+  }catch(e){
+    console.error('Could not load drivers. Check Firebase Realtime Database rules for /drivers.', e);
+    throw e;
+  }
   let drivers=[];
   if(snap.val()) drivers=Object.values(snap.val()).filter(d=>d.active);
   if(!drivers.length){
@@ -2408,6 +2547,8 @@ async function loadSettings(){
     if(s.payPeriodDays) PAY_PERIOD_DAYS=s.payPeriodDays;
     if(s.payPeriodRef) PAY_PERIOD_REF_DATE=s.payPeriodRef;
     FACILITIES = normalizeFacilitySettings(s.facilities || FACILITIES);
+    EMAIL_CFG = s.emailjs || null;
+    tryInitEmailjs(EMAIL_CFG);
     if(s.branding) applyBranding(s.branding);
   }catch(e){}
 }
@@ -2422,6 +2563,18 @@ function watchRideImports(){
     }
   });
   rideImportsWatchReady = true;
+}
+
+function watchRideRequests(){
+  if(!firebaseReady || rideRequestsWatchReady) return;
+  rideRequestsRef().on('value', snap=>{
+    rideRequestsCache = snap.val() || {};
+    updateRideRequestAlert(getPendingRideRequests().length);
+    if(document.getElementById('request-review-modal')?.style.display === 'flex'){
+      renderRideRequestReviewList();
+    }
+  });
+  rideRequestsWatchReady = true;
 }
 
 function normalizeImportRecord(key, raw){
@@ -2466,6 +2619,39 @@ function getPendingRideImports(){
 function updateImportReviewAlert(count){
   const alertEl = document.getElementById('import-review-alert');
   const countEl = document.getElementById('pending-import-count');
+  if(countEl) countEl.textContent = count;
+  if(alertEl) alertEl.style.display = count > 0 ? 'block' : 'none';
+}
+
+function normalizeRideRequestRecord(key, raw){
+  raw = raw || {};
+  return {
+    _key: key,
+    status: raw.status || 'pending',
+    createdAt: raw.createdAt || raw.receivedAt || raw.importedAt || 0,
+    respondedAt: raw.respondedAt || raw.updatedAt || 0,
+    facility: raw.facility || raw.ride?.facility || '',
+    portalKey: raw.portalKey || '',
+    requesterEmail: raw.requesterEmail || raw.requester_email || raw.email || '',
+    requesterName: raw.requesterName || raw.requester_name || raw.contactName || raw.ride?.requesterName || '',
+    requesterPhone: raw.requesterPhone || raw.requester_phone || raw.phone || raw.ride?.requesterPhone || '',
+    rawMessage: raw.rawMessage || raw.message || raw.raw || '',
+    responseMessage: raw.responseMessage || raw.reply || raw.response || '',
+    acceptedRideKey: raw.acceptedRideKey || raw.accepted_ride_key || '',
+    ride: raw.ride || raw.requestedRide || raw.request || raw.data || {}
+  };
+}
+
+function getPendingRideRequests(){
+  return Object.entries(rideRequestsCache)
+    .map(([key, raw])=>normalizeRideRequestRecord(key, raw))
+    .filter(item=>item.status === 'pending')
+    .sort((a,b)=>(b.createdAt || 0) - (a.createdAt || 0));
+}
+
+function updateRideRequestAlert(count){
+  const alertEl = document.getElementById('request-review-alert');
+  const countEl = document.getElementById('pending-request-count');
   if(countEl) countEl.textContent = count;
   if(alertEl) alertEl.style.display = count > 0 ? 'block' : 'none';
 }
@@ -2646,6 +2832,8 @@ function getRideEntrySourceInfo(sourceOrRide){
       return { key: source, label: 'Email Paste', badgeStyle: 'background:#f5f3ff;color:#6d28d9', mobileStyle: 'background:#f5f3ff;color:#6d28d9' };
     case 'email_import':
       return { key: source, label: 'Email Import', badgeStyle: 'background:#fff7ed;color:#c2410c', mobileStyle: 'background:#fff7ed;color:#c2410c' };
+    case 'portal_request':
+      return { key: source, label: 'Facility Portal', badgeStyle: 'background:#ecfeff;color:#0d3a52', mobileStyle: 'background:#ecfeff;color:#0d3a52' };
     default:
       return { key: 'manual', label: 'Manual', badgeStyle: 'background:rgba(255,255,255,0.72);color:#475569', mobileStyle: 'background:#f8fafc;color:#475569' };
   }
@@ -2930,6 +3118,223 @@ async function openImportReviewModal(){
 
 function closeImportReviewModal(){
   document.getElementById('import-review-modal').style.display = 'none';
+}
+
+async function renderRideRequestReviewList(){
+  const listEl = document.getElementById('request-review-list');
+  if(!listEl) return;
+
+  const pending = getPendingRideRequests();
+  if(!pending.length){
+    listEl.innerHTML = '<div class="import-review-empty">No ride requests are waiting for review.</div>';
+    return;
+  }
+
+  listEl.innerHTML = pending.map(req=>{
+    const ride = req.ride || {};
+    const facility = ride.facility || req.facility || 'Facility';
+    const client = ride.client || 'Ride Request';
+    const appointment = ride.appointmentTime || ride.appointment_time || '';
+    const returnTime = ride.returnTime || ride.return_time || '';
+    const returnStatus = ride.returnStatus || ride.return_status || '';
+    const returnLabel = returnStatus === 'will_call'
+      ? 'Will call'
+      : returnStatus === 'no_return'
+        ? 'No return'
+        : returnTime || '';
+    const metaLine = [ride.date || '', ride.time || '', facility].filter(Boolean).join(' â€¢ ');
+    const notes = ride.notes || '';
+    const raw = req.rawMessage || '';
+    return `<div class="import-review-card">
+      <div class="import-review-top">
+        <div style="flex:1">
+          <div class="import-review-title">${escHtml(client)}</div>
+          <div class="import-review-meta">${escHtml(metaLine)}</div>
+          <div class="import-review-badges">
+            <span class="import-review-badge">${normalizeRideType(ride.ridetype) === 'str' ? 'Stretcher' : 'Wheelchair'}</span>
+            <span class="import-review-badge">${normalizeTripType(ride.triptype) === 'rt' ? 'RT' : '1 Way'}</span>
+            <span class="import-review-badge" style="background:#ecfeff;color:#0d3a52;border:1px solid #a5f3fc">Portal</span>
+          </div>
+        </div>
+      </div>
+      <div class="import-review-grid">
+        <div class="import-review-field"><strong>Facility</strong>${escHtml(facility)}</div>
+        <div class="import-review-field"><strong>Requester</strong>${escHtml(req.requesterEmail || 'â€”')}</div>
+        <div class="import-review-field"><strong>Contact</strong>${escHtml([req.requesterName, req.requesterPhone].filter(Boolean).join(' / ') || 'â€”')}</div>
+        <div class="import-review-field"><strong>Appointment</strong>${escHtml(appointment || 'â€”')}</div>
+        <div class="import-review-field"><strong>Return</strong>${escHtml(returnLabel || 'â€”')}</div>
+        <div class="import-review-field"><strong>Pickup</strong>${escHtml(ride.pickup || 'â€”')}</div>
+        <div class="import-review-field"><strong>Drop Off</strong>${escHtml(ride.dropoff || 'â€”')}</div>
+      </div>
+      ${notes ? `<div class="import-review-field" style="margin-bottom:10px"><strong>Notes</strong>${escHtml(notes)}</div>` : ''}
+      ${raw ? `<details style="margin-bottom:10px"><summary style="cursor:pointer;color:#64748b;font-size:12px">View original request</summary><div class="import-review-field" style="margin-top:8px;white-space:pre-wrap">${escHtml(raw)}</div></details>` : ''}
+      <div class="import-review-actions">
+        <button class="import-action approve" onclick="openRideRequestResponseModal('${req._key}','accepted')">Accept</button>
+        <button class="import-action reject" onclick="openRideRequestResponseModal('${req._key}','declined')">Decline</button>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+async function openRideRequestReviewModal(){
+  document.getElementById('request-review-modal').style.display = 'flex';
+  document.getElementById('request-review-list').innerHTML = '<div class="import-review-empty">Loading requests...</div>';
+  const snap = await rideRequestsRef().once('value');
+  rideRequestsCache = snap.val() || {};
+  updateRideRequestAlert(getPendingRideRequests().length);
+  renderRideRequestReviewList();
+}
+
+function closeRideRequestReviewModal(){
+  document.getElementById('request-review-modal').style.display = 'none';
+}
+
+function setReqRespStatus(status){
+  reqRespStatus = (status === 'declined') ? 'declined' : 'accepted';
+  const a = document.getElementById('req-status-accept');
+  const d = document.getElementById('req-status-decline');
+  if(a) a.classList.toggle('active', reqRespStatus === 'accepted');
+  if(d) d.classList.toggle('active', reqRespStatus === 'declined');
+}
+
+function openRideRequestResponseModal(requestKey, presetStatus){
+  const raw = rideRequestsCache ? rideRequestsCache[requestKey] : null;
+  const record = normalizeRideRequestRecord(requestKey, raw);
+  pendingRideRequestKey = requestKey;
+  pendingRideRequestRecord = record;
+
+  const ride = record.ride || {};
+  const facility = ride.facility || record.facility || '';
+  const client = ride.client || '';
+  document.getElementById('req-resp-title').textContent = `Respond: ${client || 'Ride Request'}`;
+  document.getElementById('req-resp-subtitle').textContent = `${facility}${record.requesterEmail ? ' â€¢ ' + record.requesterEmail : ''}`;
+
+  document.getElementById('req-resp-date').value = ride.date || '';
+  document.getElementById('req-resp-time').value = normalizeImportedTimeValue(ride.time || '');
+
+  setReqRespStatus(presetStatus || 'accepted');
+
+  const defaultMsg = reqRespStatus === 'accepted'
+    ? `Accepted. Pickup is scheduled for ${ride.date || ''} at ${ride.time || ''}.`
+    : `We do not have availability for ${ride.date || ''} at ${ride.time || ''}.`;
+  document.getElementById('req-resp-message').value = defaultMsg.trim();
+
+  document.getElementById('request-response-modal').style.display = 'flex';
+}
+
+function closeRideRequestResponseModal(){
+  document.getElementById('request-response-modal').style.display = 'none';
+  pendingRideRequestKey = null;
+  pendingRideRequestRecord = null;
+}
+
+function buildPortalAcceptedRideNotes(rideDraft, record){
+  const parts = [];
+  if(rideDraft.notes) parts.push(rideDraft.notes);
+  if(rideDraft.appointmentTime || rideDraft.appointment_time) parts.push('Appointment: ' + (rideDraft.appointmentTime || rideDraft.appointment_time));
+  if(rideDraft.returnStatus === 'will_call' || rideDraft.return_status === 'will_call') parts.push('Return: will call when ready');
+  else if(rideDraft.returnStatus === 'no_return' || rideDraft.return_status === 'no_return') parts.push('Return: no return needed');
+  else if(rideDraft.returnTime || rideDraft.return_time) parts.push('Return time: ' + (rideDraft.returnTime || rideDraft.return_time));
+  const contactBits = [];
+  if(record.requesterName) contactBits.push(record.requesterName);
+  if(record.requesterPhone) contactBits.push(record.requesterPhone);
+  if(record.requesterEmail) contactBits.push(record.requesterEmail);
+  if(contactBits.length) parts.push('Portal contact: ' + contactBits.join(' / '));
+  return parts.filter(Boolean).join(' | ');
+}
+
+async function saveRideRequestResponse(){
+  if(!pendingRideRequestKey || !pendingRideRequestRecord){
+    alert('No request selected.');
+    return;
+  }
+
+  const record = pendingRideRequestRecord;
+  const rideDraft = { ...(record.ride || {}) };
+  const date = textTrim(document.getElementById('req-resp-date')?.value);
+  const time = normalizeImportedTimeValue(textTrim(document.getElementById('req-resp-time')?.value));
+  const message = textTrim(document.getElementById('req-resp-message')?.value);
+
+  if(!date || !time){
+    alert('Please set a date and pickup time.');
+    return;
+  }
+
+  rideDraft.date = date;
+  rideDraft.time = time;
+
+  const updates = {
+    status: reqRespStatus,
+    respondedAt: Date.now(),
+    responseMessage: message,
+    ride: rideDraft
+  };
+
+  try{
+    if(reqRespStatus === 'accepted'){
+      const newRide = {
+        date: rideDraft.date || '',
+        time: rideDraft.time || '',
+        facility: rideDraft.facility || record.facility || '',
+        client: rideDraft.client || '',
+        pickup: normalizeFacilityPickupAddress(rideDraft.facility || record.facility || '', rideDraft.pickup || ''),
+        dropoff: rideDraft.dropoff || '',
+        ridetype: normalizeRideType(rideDraft.ridetype),
+        triptype: normalizeTripType(rideDraft.triptype),
+        van: '',
+        driver: '',
+        helper: '',
+        price: '',
+        invoice: '',
+        paid: 'no',
+        paymethod: 'invoice',
+        wait: 'no',
+        waitHours: 0,
+        appointmentTime: rideDraft.appointmentTime || rideDraft.appointment_time || '',
+        returnTime: rideDraft.returnTime || rideDraft.return_time || '',
+        returnStatus: rideDraft.returnStatus || rideDraft.return_status || '',
+        requesterName: record.requesterName || '',
+        requesterPhone: record.requesterPhone || '',
+        notes: buildPortalAcceptedRideNotes(rideDraft, record),
+        status: '',
+        createdAt: Date.now(),
+        updatedAt: Date.now(),
+        entrySource: 'portal_request',
+        sourceRequestKey: pendingRideRequestKey,
+        requesterEmail: record.requesterEmail || ''
+      };
+      const rideRef = ridesRef().push();
+      await rideRef.set(newRide);
+      updates.acceptedRideKey = rideRef.key;
+    }
+
+    await rideRequestsRef().child(pendingRideRequestKey).update(updates);
+
+    // Email the requester (optional).
+    if(record.requesterEmail){
+      await sendEmailViaEmailjs('update', {
+        to_email: record.requesterEmail,
+        facility: rideDraft.facility || record.facility || '',
+        client: rideDraft.client || '',
+        date: rideDraft.date || '',
+        time: rideDraft.time || '',
+        appointment_time: rideDraft.appointmentTime || rideDraft.appointment_time || '',
+        return_time: rideDraft.returnTime || rideDraft.return_time || '',
+        return_status: rideDraft.returnStatus || rideDraft.return_status || '',
+        status: reqRespStatus,
+        reply: message
+      });
+    }
+
+    closeRideRequestResponseModal();
+    renderRideRequestReviewList();
+    updateRideRequestAlert(getPendingRideRequests().length);
+    refreshImportedRideViews();
+    showToast(reqRespStatus === 'accepted' ? 'âœ“ Request accepted' : 'Request declined');
+  }catch(e){
+    console.error(e);
+    alert('Could not save response. Please try again.');
+  }
 }
 
 async function commitApprovedImportedRide(record){
@@ -3271,6 +3676,7 @@ function initDash(){
   updatePPDisplay();
   applyResponsiveDashboard();
   watchRideImports();
+  watchRideRequests();
   // Load custom statuses from Firebase
   if(firebaseReady){
     settingsRef().once('value').then(snap=>{
@@ -3493,8 +3899,14 @@ async function renderTimesheet(){
 // ── DRIVERS TAB ──
 async function renderManage(){
   if(!db)return;
-  const drivers=await loadDrivers();
   const list=document.getElementById('manage-list');list.innerHTML='';
+  let drivers=[];
+  try{
+    drivers=await loadDrivers();
+  }catch(e){
+    list.innerHTML='<div style="padding:24px;color:#ef4444;font-weight:800">Database access failed. Check Firebase Realtime Database rules for /drivers.</div>';
+    return;
+  }
   drivers.forEach((d,i)=>{
     const color=COLORS[i%COLORS.length];
     const row=document.createElement('div');row.className='manage-row';
@@ -3598,6 +4010,14 @@ async function initSettings(){
   document.getElementById('s-base-addr').value=s.baseAddress||'';
   document.getElementById('s-phone').value=s.phone||'(443) 819-1808';
 
+  // Ride request portal / EmailJS
+  const emailjsCfg = s.emailjs || {};
+  if(document.getElementById('s-dispatch-email')) document.getElementById('s-dispatch-email').value = emailjsCfg.dispatchEmail || '';
+  if(document.getElementById('s-emailjs-public')) document.getElementById('s-emailjs-public').value = emailjsCfg.publicKey || '';
+  if(document.getElementById('s-emailjs-service')) document.getElementById('s-emailjs-service').value = emailjsCfg.serviceId || '';
+  if(document.getElementById('s-emailjs-template-request')) document.getElementById('s-emailjs-template-request').value = emailjsCfg.templateRequestId || '';
+  if(document.getElementById('s-emailjs-template-update')) document.getElementById('s-emailjs-template-update').value = emailjsCfg.templateUpdateId || '';
+
   // Branding editor removed from this build.
   // Still allow Firebase branding to apply to the header (applyBranding in loadSettings()).
   if(document.getElementById('settings-branding')) initBrandingSettingsUI(s.branding||BRANDING);
@@ -3678,6 +4098,35 @@ async function savePPSettings(){
   alert('✓ Pay period settings saved!');
 }
 
+function showEmailSettingsMsg(text, ok){
+  const el = document.getElementById('s-email-msg');
+  if(!el) return;
+  el.textContent = text;
+  el.style.color = ok ? '#06d6a0' : '#ef4444';
+  el.style.display = 'block';
+  setTimeout(()=>{ el.style.display = 'none'; }, 3500);
+}
+
+async function saveEmailSettings(){
+  const dispatchEmail = textTrim(document.getElementById('s-dispatch-email')?.value);
+  const publicKey = textTrim(document.getElementById('s-emailjs-public')?.value);
+  const serviceId = textTrim(document.getElementById('s-emailjs-service')?.value);
+  const templateRequestId = textTrim(document.getElementById('s-emailjs-template-request')?.value);
+  const templateUpdateId = textTrim(document.getElementById('s-emailjs-template-update')?.value);
+
+  const cfg = { dispatchEmail, publicKey, serviceId, templateRequestId, templateUpdateId };
+
+  try{
+    await settingsRef().update({ emailjs: cfg });
+    EMAIL_CFG = cfg;
+    tryInitEmailjs(cfg);
+    showEmailSettingsMsg('âœ“ Portal/email settings saved!', true);
+  }catch(e){
+    console.error(e);
+    showEmailSettingsMsg('Could not save portal/email settings.', false);
+  }
+}
+
 async function saveBusinessInfo(){
   const company=document.getElementById('s-company').value.trim();
   const baseAddress=document.getElementById('s-base-addr').value.trim();
@@ -3755,6 +4204,61 @@ function renderFacilitiesList(){
   });
 }
 
+function getPortalBaseUrl(){
+  try{
+    const u = new URL(window.location.href);
+    u.pathname = u.pathname.replace(/[^/]*$/, 'portal.html');
+    u.search = '';
+    u.hash = '';
+    return u.toString();
+  }catch(e){
+    return 'portal.html';
+  }
+}
+
+function buildFacilityPortalLink(facilityName, portalKey){
+  return `${getPortalBaseUrl()}?fac=${encodeURIComponent(String(facilityName||''))}&key=${encodeURIComponent(String(portalKey||''))}`;
+}
+
+function generatePortalKey(){
+  try{
+    const cryptoObj = window.crypto || window.msCrypto;
+    if(!cryptoObj || !cryptoObj.getRandomValues) throw new Error('no crypto');
+    const bytes = new Uint8Array(16);
+    cryptoObj.getRandomValues(bytes);
+    return Array.from(bytes).map(b=>b.toString(16).padStart(2,'0')).join('');
+  }catch(e){
+    return (Math.random().toString(16).slice(2) + Math.random().toString(16).slice(2)).slice(0,32);
+  }
+}
+
+function generateFacilityPortalLink(){
+  const name = (document.getElementById('fac-name')?.value || '').trim();
+  if(!name){
+    alert('Enter the facility name first.');
+    return;
+  }
+  const key = generatePortalKey();
+  const keyEl = document.getElementById('fac-portal-key');
+  const linkEl = document.getElementById('fac-portal-link');
+  if(keyEl) keyEl.value = key;
+  if(linkEl) linkEl.value = buildFacilityPortalLink(name, key);
+}
+
+async function copyFacilityPortalLink(){
+  const link = String(document.getElementById('fac-portal-link')?.value || '').trim();
+  if(!link){
+    alert('Generate a portal link first.');
+    return;
+  }
+  try{
+    await navigator.clipboard.writeText(link);
+    showToast('Copied portal link');
+  }catch(e){
+    prompt('Copy this portal link:', link);
+  }
+}
+
 function openFacilityModal(idx){
   facEditKey=idx;
   const f=idx!==null?FACILITIES[idx]:null;
@@ -3765,6 +4269,14 @@ function openFacilityModal(idx){
   document.getElementById('fac-notes').value=f?f.notes:'';
   document.getElementById('fac-email').value=f?f.email||'':'';
   document.getElementById('fac-contact').value=f?f.contact||'':'';
+
+  // Portal link/key are derived from facility name + portalKey.
+  const portalKey = (f && f.portalKey) ? String(f.portalKey) : '';
+  const portalKeyEl = document.getElementById('fac-portal-key');
+  const portalLinkEl = document.getElementById('fac-portal-link');
+  if(portalKeyEl) portalKeyEl.value = portalKey;
+  if(portalLinkEl) portalLinkEl.value = (portalKey && f && f.name) ? buildFacilityPortalLink(f.name, portalKey) : '';
+
   document.getElementById('fac-delete-btn').style.display=f?'block':'none';
   document.getElementById('facility-modal').style.display='flex';
 }
@@ -3780,7 +4292,8 @@ async function saveFacility(){
     dropoffNote:document.getElementById('fac-dropoff').value.trim()?'Auto-filled':'Enter drop off address',
     notes:document.getElementById('fac-notes').value.trim(),
     email:document.getElementById('fac-email').value.trim(),
-    contact:document.getElementById('fac-contact').value.trim()
+    contact:document.getElementById('fac-contact').value.trim(),
+    portalKey: (document.getElementById('fac-portal-key')?.value || '').trim()
   };
   if(facEditKey!==null){FACILITIES[facEditKey]=fac;}
   else{FACILITIES.push(fac);}
@@ -3816,6 +4329,22 @@ function goToToday(){selectedDate=new Date();miniMonthOffset=0;renderDayView();r
 function shiftMonth(dir){miniMonthOffset+=dir;renderMiniCal();}
 function selectDay(ds){selectedDate=new Date(ds+'T12:00:00');renderDayView();renderMiniCal();}
 
+function getCalendarRideDates(){
+  const dates = [];
+  Object.values(allRidesCache||{}).forEach(r=>{ if(r&&r.date) dates.push(r.date); });
+  Object.values(allRideLogCache||{}).forEach(r=>{ if(r&&r.date) dates.push(r.date); });
+  return new Set(dates);
+}
+
+function buildCalendarRides(){
+  const scheduled = Object.entries(allRidesCache||{}).map(([k,v])=>({...v,_key:k,_source:'schedule'}));
+  const scheduledKeys = new Set(scheduled.map(r=>r._key));
+  const logged = Object.entries(allRideLogCache||{})
+    .filter(([,v])=>!v.calendarKey || !scheduledKeys.has(v.calendarKey))
+    .map(([k,v])=>({...v,_key:k,_source:'log'}));
+  return scheduled.concat(logged);
+}
+
 function renderMiniCal(){
   const now=new Date();
   const base=new Date(now.getFullYear(),now.getMonth()+miniMonthOffset,1);
@@ -3824,7 +4353,7 @@ function renderMiniCal(){
   const firstDow=base.getDay();
   const daysInMonth=new Date(base.getFullYear(),base.getMonth()+1,0).getDate();
   const todayStr=dateStr(now);const selStr=dateStr(selectedDate);
-  const rideDates=new Set(Object.values(allRidesCache).map(r=>r.date));
+  const rideDates=getCalendarRideDates();
   const container=document.getElementById('mini-cal-days');container.innerHTML='';
   for(let i=0;i<firstDow;i++){container.appendChild(document.createElement('div'));}
   for(let d=1;d<=daysInMonth;d++){
@@ -3843,9 +4372,20 @@ async function renderDayView(){
     return;
   }
   document.getElementById('time-grid').innerHTML='<div style="padding:40px;text-align:center;color:#6b82a8">Loading rides...</div>';
-  const snap=await ridesRef().once('value');
-  allRidesCache=snap.val()||{};
-  const allRides=Object.entries(allRidesCache).map(([k,v])=>({...v,_key:k}));
+  let allRides = [];
+  try{
+    const [ridesSnap, logSnap]=await Promise.all([
+      ridesRef().once('value'),
+      rideLogRef().once('value')
+    ]);
+    allRidesCache=ridesSnap.val()||{};
+    allRideLogCache=logSnap.val()||{};
+    allRides=buildCalendarRides();
+  }catch(e){
+    console.error('Could not load rides calendar data:', e);
+    document.getElementById('time-grid').innerHTML='<div style="padding:40px;text-align:center;color:#ef4444;font-weight:800">Database access failed. Check Firebase Realtime Database rules for drivers, rides, and rideLog.</div>';
+    return;
+  }
   const unpaid=allRides.filter(r=>r.price&&r.price!==''&&r.paid!=='yes');
   const unpaidBar=document.getElementById('unpaid-bar');
   if(unpaid.length>0){unpaidBar.style.display='block';document.getElementById('unpaid-count').textContent=unpaid.length;}
@@ -3871,9 +4411,12 @@ async function renderDayView(){
     rides.sort((a,b)=>(a.time||'').localeCompare(b.time||'')).forEach(r=>{
       const isUnpaid=r.price&&r.price!==''&&r.paid!=='yes';
       const isReturn=!!r.returnOf;
-      const cls=isReturn?'return-ride':(isUnpaid?'unpaid-block':(r.ridetype==='str'?'str':'wc'));
+      const isLogged=r._source==='log';
+      const cls=isLogged?'logged-block':(isReturn?'return-ride':(isUnpaid?'unpaid-block':(r.ridetype==='str'?'str':'wc')));
       const statusBadge = r.status ? statusBadgeHtml(r.status) : '';
-      html+=`<div class="ride-block ${cls}" onclick="event.stopPropagation();openRideModal('${r._key}')">
+      const editAction=isLogged?`openLogEdit('${r._key}')`:`openRideModal('${r._key}')`;
+      html+=`<div class="ride-block ${cls}" onclick="event.stopPropagation();${editAction}">
+        ${isLogged?`<div style="font-size:10px;font-weight:800;color:#16a34a;margin-bottom:4px">Logged in Reports</div>`:''}
         ${isReturn?`<div style="font-size:10px;font-weight:800;color:#16a34a;margin-bottom:4px">↩ RETURN RIDE — ${r.returnOfClient||r.client||''} ${r.returnOfTime?'(orig. '+fmtTime12(r.returnOfTime)+')':''}</div>`:''}
         ${statusBadge}
         <div class="ride-block-time">${r.time?fmtTime12(r.time):'Awaiting call...'}</div>
@@ -5513,7 +6056,15 @@ async function loadReports(){
   const driverFilter = document.getElementById('rep-driver').value;
   const paidFilter = document.getElementById('rep-paid').value;
 
-  const snap = await rideLogRef().once('value');
+  let snap;
+  try{
+    snap = await rideLogRef().once('value');
+  }catch(e){
+    console.error('Could not load reports. Check Firebase Realtime Database rules for /rideLog.', e);
+    document.getElementById('rep-summary-cards').innerHTML = '';
+    document.getElementById('rep-content').innerHTML = '<div style="padding:40px;text-align:center;color:#ef4444;font-weight:800">Database access failed. Check Firebase Realtime Database rules for /rideLog.</div>';
+    return;
+  }
   const all = snap.val()||{};
   let rides = Object.entries(all).map(([k,v])=>({...v,_key:k})).filter(r=>{
     if(from && r.date < from) return false;
