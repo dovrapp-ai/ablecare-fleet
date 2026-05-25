@@ -6080,6 +6080,11 @@ function applySquareReportDefaults(){
   if(paidEl) paidEl.value = 'yes';
 }
 
+function clearSquareReportFilters(){
+  const paidEl = document.getElementById('rep-paid');
+  if(paidEl && paidEl.value === 'yes') paidEl.value = '';
+}
+
 async function loadReports(){
   if(!db) return;
   const from = document.getElementById('rep-from').value;
@@ -6223,10 +6228,10 @@ function setRepView(v){
   });
   if(v === 'square'){
     applySquareReportDefaults();
-    loadReports();
-    return;
+  }else{
+    clearSquareReportFilters();
   }
-  renderRepView();
+  loadReports();
 }
 
 function renderRepView(){
