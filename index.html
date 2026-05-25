@@ -1233,8 +1233,22 @@ button,input,select,textarea{-webkit-appearance:none;font-family:inherit}
       <!-- Summary Cards -->
       <div id="rep-summary-cards" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:14px;margin-bottom:16px"></div>
 
+      <!-- Square Sales -->
+      <div id="square-sales-panel" style="display:none;background:#fff;border-radius:16px;padding:18px 20px;box-shadow:0 1px 6px rgba(0,0,0,0.05);margin-bottom:16px">
+        <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;margin-bottom:14px">
+          <div>
+            <div class="section-title" style="margin-bottom:4px">Square Sales</div>
+            <div id="square-sales-status" style="font-size:12px;color:#6b82a8">Loading Square sales...</div>
+          </div>
+          <button class="ts-mode-btn" style="padding:8px 14px" onclick="loadSquareSales()">Refresh</button>
+        </div>
+        <div id="square-sales-cards" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px"></div>
+        <div id="square-sales-recent" style="margin-top:14px"></div>
+      </div>
+
       <!-- View Toggle -->
       <div style="display:flex;gap:8px;margin-bottom:12px">
+        <button class="ts-mode-btn" id="rep-view-square" onclick="setRepView('square')">Square</button>
         <button class="ts-mode-btn active" id="rep-view-log" onclick="setRepView('log')">📋 Ride Log</button>
         <button class="ts-mode-btn" id="rep-view-facility" onclick="setRepView('facility')">🏥 By Facility</button>
         <button class="ts-mode-btn" id="rep-view-driver" onclick="setRepView('driver')">👤 By Driver</button>
@@ -6026,13 +6040,13 @@ function formatReportMilesLabel(r){
 }
 
 async function initReports(){
-  if(!db) return;
-
   // Set default date range — current month
   const now = new Date();
   const firstDay = new Date(now.getFullYear(), now.getMonth(), 1);
   document.getElementById('rep-from').value = dateStr(firstDay);
   document.getElementById('rep-to').value = dateStr(now);
+
+  if(!db) return;
 
   // Populate facility dropdown
   const facSel = document.getElementById('rep-facility');
@@ -6046,6 +6060,24 @@ async function initReports(){
     drivers.map(d=>`<option value="${d.name}">${d.name}</option>`).join('');
 
   await loadReports();
+}
+
+function isSquarePaidRide(r){
+  return normalizePayMethod(r && r.paymethod) === 'cc' && normalizeYesNo(r && r.paid, 'no') === 'yes';
+}
+
+function applySquareReportDefaults(){
+  const now = new Date();
+  const fromEl = document.getElementById('rep-from');
+  const toEl = document.getElementById('rep-to');
+  const facEl = document.getElementById('rep-facility');
+  const drvEl = document.getElementById('rep-driver');
+  const paidEl = document.getElementById('rep-paid');
+  if(fromEl) fromEl.value = `${now.getFullYear()}-01-01`;
+  if(toEl) toEl.value = dateStr(now);
+  if(facEl) facEl.value = '';
+  if(drvEl) drvEl.value = '';
+  if(paidEl) paidEl.value = 'yes';
 }
 
 async function loadReports(){
@@ -6067,13 +6099,15 @@ async function loadReports(){
   }
   const all = snap.val()||{};
   let rides = Object.entries(all).map(([k,v])=>({...v,_key:k})).filter(r=>{
+    if((from || to) && !r.date) return false;
     if(from && r.date < from) return false;
     if(to && r.date > to) return false;
     if(facilityFilter && r.facility !== facilityFilter) return false;
     if(driverFilter && r.driver !== driverFilter) return false;
     if(paidFilter && r.paid !== paidFilter) return false;
+    if(repView === 'square' && !isSquarePaidRide(r)) return false;
     return true;
-  }).sort((a,b)=>a.date.localeCompare(b.date)||(a.time||'').localeCompare(b.time||''));
+  }).sort((a,b)=>(a.date||'').localeCompare(b.date||'')||(a.time||'').localeCompare(b.time||''));
 
   repRides = rides;
   renderSummaryCards(rides);
@@ -6100,16 +6134,104 @@ function renderSummaryCards(rides){
   `;
 }
 
+function formatSquareMoney(value){
+  const amount = Number(value || 0);
+  return '$' + amount.toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2});
+}
+
+function formatSquareDate(value){
+  if(!value) return '';
+  const d = new Date(value);
+  if(Number.isNaN(d.getTime())) return '';
+  return d.toLocaleString('en-US',{month:'short',day:'numeric',hour:'numeric',minute:'2-digit'});
+}
+
+function renderSquareSales(data){
+  const status = document.getElementById('square-sales-status');
+  const cards = document.getElementById('square-sales-cards');
+  const recent = document.getElementById('square-sales-recent');
+  if(!status || !cards || !recent) return;
+
+  status.textContent = `${data.environment || 'sandbox'} sales for ${data.from} to ${data.to}`;
+  cards.innerHTML = `
+    <div class="sum-card"><div class="sum-card-num cyan">${formatSquareMoney(data.total)}</div><div class="sum-card-label">Square Gross</div></div>
+    <div class="sum-card"><div class="sum-card-num" style="color:#16a34a">${formatSquareMoney(data.net)}</div><div class="sum-card-label">Square Net</div></div>
+    <div class="sum-card"><div class="sum-card-num" style="color:#ef4444">${formatSquareMoney(data.refunded)}</div><div class="sum-card-label">Refunded</div></div>
+    <div class="sum-card"><div class="sum-card-num">${formatSquareMoney(data.fees)}</div><div class="sum-card-label">Processing Fees</div></div>
+    <div class="sum-card"><div class="sum-card-num">${data.count || 0}</div><div class="sum-card-label">Payments</div></div>
+  `;
+
+  if(!data.recent || !data.recent.length){
+    recent.innerHTML = '<div style="font-size:12px;color:#6b82a8;padding:4px 0">No Square payments found for this date range.</div>';
+    return;
+  }
+
+  recent.innerHTML = `<table style="width:100%;border-collapse:collapse;font-size:12px">
+    <thead><tr style="background:#f8fafc;color:#6b82a8">
+      <th style="text-align:left;padding:9px 10px;font-weight:800">Time</th>
+      <th style="text-align:left;padding:9px 10px;font-weight:800">Type</th>
+      <th style="text-align:left;padding:9px 10px;font-weight:800">Note</th>
+      <th style="text-align:right;padding:9px 10px;font-weight:800">Amount</th>
+    </tr></thead>
+    <tbody>
+      ${data.recent.map((payment,i)=>`<tr style="background:${i%2?'#fff':'#fbfdff'};border-bottom:1px solid #f0f4f8">
+        <td style="padding:9px 10px;color:#0d1b2a">${formatSquareDate(payment.createdAt)}</td>
+        <td style="padding:9px 10px;color:#6b82a8">${payment.sourceType || 'Payment'}</td>
+        <td style="padding:9px 10px;color:#6b82a8">${payment.note || ''}</td>
+        <td style="padding:9px 10px;text-align:right;font-weight:800;color:#0d1b2a">${formatSquareMoney(payment.amount)}</td>
+      </tr>`).join('')}
+    </tbody>
+  </table>`;
+}
+
+async function loadSquareSales(){
+  const status = document.getElementById('square-sales-status');
+  const cards = document.getElementById('square-sales-cards');
+  const recent = document.getElementById('square-sales-recent');
+  if(!status || !cards || !recent) return;
+
+  const from = document.getElementById('rep-from')?.value;
+  const to = document.getElementById('rep-to')?.value;
+  if(!from || !to){
+    status.textContent = 'Choose a report date range to load Square sales.';
+    cards.innerHTML = '';
+    recent.innerHTML = '';
+    return;
+  }
+
+  status.textContent = 'Loading Square sales...';
+  cards.innerHTML = '';
+  recent.innerHTML = '';
+
+  try{
+    const response = await fetch(`/api/square/sales-summary?from=${encodeURIComponent(from)}&to=${encodeURIComponent(to)}`);
+    const data = await response.json();
+    if(!response.ok || !data.ok) throw new Error(data.error || 'Square sales could not be loaded.');
+    renderSquareSales(data);
+  }catch(e){
+    status.textContent = 'Square sales unavailable. Start the local server with npm start, then open http://localhost:5173.';
+    cards.innerHTML = '';
+    recent.innerHTML = `<div style="font-size:12px;color:#ef4444;font-weight:700">${e.message || e}</div>`;
+  }
+}
+
 function setRepView(v){
   repView = v;
-  ['log','facility','driver','month'].forEach(x=>{
-    document.getElementById('rep-view-'+x).classList.toggle('active',x===v);
+  ['log','square','facility','driver','month'].forEach(x=>{
+    const btn = document.getElementById('rep-view-'+x);
+    if(btn) btn.classList.toggle('active',x===v);
   });
+  if(v === 'square'){
+    applySquareReportDefaults();
+    loadReports();
+    return;
+  }
   renderRepView();
 }
 
 function renderRepView(){
   if(repView==='log') renderRideLog();
+  else if(repView==='square') renderSquareRideLog();
   else if(repView==='facility') renderByFacility();
   else if(repView==='driver') renderByDriver();
   else if(repView==='month') renderByMonth();
@@ -6193,6 +6315,90 @@ function renderRideLog(){
     <button class="add-btn" style="padding:10px 20px;font-size:13px" onclick="openLogEdit(null)">+ Add Ride</button>
   </div>
   </div>`;
+  el.innerHTML = html;
+}
+
+function renderSquareRideLog(){
+  const el = document.getElementById('rep-content');
+  const from = document.getElementById('rep-from')?.value || '';
+  const to = document.getElementById('rep-to')?.value || '';
+  const totalRevenue = repRides.reduce((s,r)=>s+(parseFloat(r.price)||0),0);
+  const wcRides = repRides.filter(r=>r.ridetype!=='str').length;
+  const strRides = repRides.filter(r=>r.ridetype==='str').length;
+  const totalMiles = repRides.reduce((s,r)=>s+reportTripMiles(r),0);
+
+  let html = `<div style="padding:16px 18px;border-bottom:1px solid #e8eef4;background:#f8fafc;display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap">
+    <div>
+      <div style="font-size:14px;font-weight:900;color:#0d1b2a">Square credit card payments</div>
+      <div style="font-size:12px;color:#6b82a8;margin-top:3px">Paid credit-card rides from ${from || 'start'} to ${to || 'today'}</div>
+    </div>
+    <div style="display:flex;gap:14px;flex-wrap:wrap;font-size:12px;color:#6b82a8">
+      <span><b style="color:#0d1b2a">${repRides.length}</b> rides</span>
+      <span><b style="color:#0d1b2a">$${totalRevenue.toFixed(2)}</b> Square revenue</span>
+      <span><b style="color:#00a6c8">${totalMiles.toFixed(1)}</b> miles</span>
+      <span><b style="color:#0d1b2a">${wcRides}</b> wheelchair</span>
+      <span><b style="color:#0d1b2a">${strRides}</b> stretcher</span>
+    </div>
+  </div>
+  <div class="rep-table-wrap">
+  <table style="width:100%;border-collapse:collapse;font-size:13px" id="ride-log-table">
+    <colgroup>
+      <col style="width:8%"/>
+      <col style="width:10%"/>
+      <col style="width:12%"/>
+      <col style="width:8%"/>
+      <col style="width:7%"/>
+      <col style="width:5%"/>
+      <col style="width:10%"/>
+      <col style="width:8%"/>
+      <col style="width:8%"/>
+      <col style="width:16%"/>
+      <col style="width:8%"/>
+    </colgroup>
+    <thead>
+      <tr style="background:#0d1b2a;color:#fff">
+        <th style="padding:10px 12px;text-align:left;font-weight:700">Date</th>
+        <th style="padding:10px 12px;text-align:left;font-weight:700">Facility</th>
+        <th style="padding:10px 12px;text-align:left;font-weight:700">Client</th>
+        <th style="padding:10px 12px;text-align:left;font-weight:700">Ride Type</th>
+        <th style="padding:10px 12px;text-align:right;font-weight:700">Miles</th>
+        <th style="padding:10px 12px;text-align:left;font-weight:700">Van</th>
+        <th style="padding:10px 12px;text-align:left;font-weight:700">Driver</th>
+        <th style="padding:10px 12px;text-align:right;font-weight:700">Square Paid</th>
+        <th style="padding:10px 12px;text-align:left;font-weight:700">Invoice #</th>
+        <th style="padding:10px 12px;text-align:left;font-weight:700">Notes</th>
+        <th style="padding:10px 12px;text-align:center;font-weight:700">Edit</th>
+      </tr>
+    </thead>
+    <tbody>`;
+
+  if(!repRides.length){
+    html += `<tr><td colspan="11" style="padding:40px;text-align:center;color:#6b82a8">No paid credit-card rides found for this date range.</td></tr>`;
+  }
+
+  repRides.forEach((r,i)=>{
+    const d = new Date(r.date+'T12:00:00');
+    const dateDisp = r.date?d.toLocaleDateString('en-US',{month:'2-digit',day:'2-digit',year:'numeric'}):'';
+    const typeStr = `${r.ridetype==='str'?'Stretcher':'Wheelchair'} ${r.triptype==='rt'?'RT':'1 Way'}`;
+    const bg = i%2===0?'#fff':'#f8fafc';
+    html += `<tr style="background:${bg};border-bottom:1px solid #f0f4f8">
+      <td style="padding:9px 12px;white-space:nowrap;font-weight:700;color:#0d1b2a">${dateDisp}</td>
+      <td style="padding:9px 12px;font-weight:700;color:#0d1b2a">${r.facility||''}</td>
+      <td style="padding:9px 12px;color:#0d1b2a">${r.client||''}</td>
+      <td style="padding:9px 12px;color:#6b82a8;white-space:nowrap">${typeStr}</td>
+      <td style="padding:9px 12px;text-align:right;font-weight:800;color:#00a6c8">${formatReportMilesLabel(r)}</td>
+      <td style="padding:9px 12px;color:#6b82a8">${r.van?'#'+r.van:''}</td>
+      <td style="padding:9px 12px;color:#0d1b2a">${r.driver||''}${r.helper?' + '+r.helper:''}</td>
+      <td style="padding:9px 12px;text-align:right;font-weight:900;color:#0d1b2a">$${(parseFloat(r.price)||0).toFixed(2)}</td>
+      <td style="padding:9px 12px;color:#6b82a8">${r.invoice||''}</td>
+      <td style="padding:9px 12px;color:#94a3b8;font-style:italic;font-size:11px"><div class="rep-wrap">${r.notes||''}</div></td>
+      <td style="padding:9px 12px;text-align:center">
+        <button title="Edit" aria-label="Edit ride" onclick="openLogEdit('${r._key||''}')" style="background:#f4f7fb;border:1px solid #e8eef4;border-radius:6px;width:34px;height:28px;display:inline-flex;align-items:center;justify-content:center;font-size:12px;font-weight:800;color:#6b82a8;cursor:pointer">Edit</button>
+      </td>
+    </tr>`;
+  });
+
+  html += '</tbody></table></div>';
   el.innerHTML = html;
 }
 
