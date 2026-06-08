@@ -1226,6 +1226,7 @@ button,input,select,textarea{-webkit-appearance:none;font-family:inherit}
             <option value="no">Unpaid</option>
           </select>
           <button class="add-btn" style="padding:8px 16px;font-size:13px" onclick="loadReports()">Apply</button>
+          <button class="add-btn" style="padding:8px 16px;font-size:13px;background:#1e3a5f" onclick="logAllUnloggedPastRidesFromReports()">📋 Log All Unlogged</button>
           <button class="export-btn" onclick="exportReportsExcel()" style="margin-left:auto">📥 Export Excel</button>
         </div>
       </div>
@@ -1253,6 +1254,10 @@ button,input,select,textarea{-webkit-appearance:none;font-family:inherit}
         <button class="ts-mode-btn" id="rep-view-facility" onclick="setRepView('facility')">🏥 By Facility</button>
         <button class="ts-mode-btn" id="rep-view-driver" onclick="setRepView('driver')">👤 By Driver</button>
         <button class="ts-mode-btn" id="rep-view-month" onclick="setRepView('month')">📅 By Month</button>
+      </div>
+
+      <div style="display:flex;justify-content:flex-end;margin-bottom:12px">
+        <button class="add-btn" style="padding:10px 18px;font-size:14px;background:#1e3a5f" onclick="logAllUnloggedPastRidesFromReports()">📋 Log All Unlogged</button>
       </div>
 
       <!-- Content Area -->
@@ -5952,6 +5957,31 @@ async function logRideToReports(){
   });
 }
 
+async function buildRideLogEntryFromCalendarRide(rideKey, r){
+  const triptype = r.triptype || 'rt';
+  const { miles: oneWay, source: milesSource } = await computeOneWayClientMiles(r);
+  const billableMiles = (triptype === 'rt' ? 2 : 1) * oneWay;
+  return {
+    date: r.date||'', time: r.time||'', facility: r.facility||'',
+    client: r.client||'', ridetype: r.ridetype||'wc', triptype,
+    van: r.van||'', driver: r.driver||'', helper: r.helper||'',
+    price: r.price||'', invoice: r.invoice||'', paid: r.paid||'no',
+    paymethod: r.paymethod||'cc', waitHours: r.waitHours||0,
+    pickup: r.pickup||'',
+    dropoff: r.dropoff||'',
+    // One-way client miles (pickup -> dropoff). Kept for reference/back-compat.
+    estimatedMiles: oneWay,
+    // Full trip miles you can bill the client (RT doubles).
+    billableMiles: parseFloat(billableMiles.toFixed(1)) || 0,
+    milesSource: milesSource || '',
+    calcNotes: '',
+    notes: r.notes||'',
+    status: r.status||'',
+    calendarKey: rideKey,
+    createdAt: Date.now()
+  };
+}
+
 async function logAllRidesForDay(){
   const ds = dateStr(selectedDate);
   const snap = await ridesRef().once('value');
@@ -5976,31 +6006,59 @@ async function logAllRidesForDay(){
   const needsCompletion = [];
   for(const [k,r] of newRides){
     const newKey = rideLogRef().push().key;
-    const triptype = r.triptype || 'rt';
-    const { miles: oneWay, source: milesSource } = await computeOneWayClientMiles(r);
-    const billableMiles = (triptype === 'rt' ? 2 : 1) * oneWay;
-    updates[newKey] = {
-      date: r.date||'', time: r.time||'', facility: r.facility||'',
-      client: r.client||'', ridetype: r.ridetype||'wc', triptype,
-      van: r.van||'', driver: r.driver||'', helper: r.helper||'',
-      price: r.price||'', invoice: r.invoice||'', paid: r.paid||'no',
-      paymethod: r.paymethod||'cc', waitHours: r.waitHours||0,
-      pickup: r.pickup||'',
-      dropoff: r.dropoff||'',
-      // One-way client miles (pickup -> dropoff). Kept for reference/back-compat.
-      estimatedMiles: oneWay,
-      // Full trip miles you can bill the client (RT doubles).
-      billableMiles: parseFloat(billableMiles.toFixed(1)) || 0,
-      milesSource: milesSource || '',
-      calcNotes: '',
-      notes: r.notes||'',
-      status: r.status||'',
-      calendarKey: k, createdAt: Date.now()
-    };
+    updates[newKey] = await buildRideLogEntryFromCalendarRide(k, r);
     if(reportLogEntryNeedsCompletion(updates[newKey])) needsCompletion.push(newKey);
   }
   await rideLogRef().update(updates);
   showToast(`✓ ${newRides.length} ride${newRides.length!==1?'s':''} logged to Reports!`);
+  if(needsCompletion.length){
+    startReportCompletionWizard(needsCompletion);
+  }
+}
+
+async function logAllUnloggedPastRidesFromReports(){
+  if(!db) return;
+  const today = dateStr(new Date());
+  const [ridesSnap, logSnap] = await Promise.all([
+    ridesRef().once('value'),
+    rideLogRef().once('value')
+  ]);
+  const allRides = ridesSnap.val()||{};
+  const allLogs = logSnap.val()||{};
+
+  const loggedKeys = new Set();
+  Object.values(allLogs).forEach(r=>{ if(r && r.calendarKey) loggedKeys.add(r.calendarKey); });
+
+  const pastRides = Object.entries(allRides)
+    .filter(([k,r])=>r && r.date && r.date <= today && !r.returnOf);
+  const newRides = pastRides
+    .filter(([k])=>!loggedKeys.has(k))
+    .sort((a,b)=>String(a[1].date||'').localeCompare(String(b[1].date||'')) || String(a[1].time||'').localeCompare(String(b[1].time||'')));
+  const alreadyLogged = pastRides.length - newRides.length;
+
+  if(!newRides.length){
+    alert('All rides dated today or earlier are already in your Reports log.');
+    return;
+  }
+
+  const firstDate = newRides[0][1].date || 'unknown';
+  const lastDate = newRides[newRides.length-1][1].date || 'unknown';
+  let msg = `Log ${newRides.length} unlogged ride${newRides.length!==1?'s':''} from ${firstDate} through ${lastDate}?`;
+  msg += `\nOnly rides dated ${today} or earlier will be logged.`;
+  if(alreadyLogged>0) msg += `\n(${alreadyLogged} already logged ride${alreadyLogged!==1?'s':''} will be skipped.)`;
+  if(!confirm(msg)) return;
+
+  const updates = {};
+  const needsCompletion = [];
+  for(const [k,r] of newRides){
+    const newKey = rideLogRef().push().key;
+    updates[newKey] = await buildRideLogEntryFromCalendarRide(k, r);
+    if(reportLogEntryNeedsCompletion(updates[newKey])) needsCompletion.push(newKey);
+  }
+
+  await rideLogRef().update(updates);
+  showToast(`✓ ${newRides.length} unlogged ride${newRides.length!==1?'s':''} logged to Reports!`);
+  await loadReports();
   if(needsCompletion.length){
     startReportCompletionWizard(needsCompletion);
   }
