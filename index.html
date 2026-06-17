@@ -394,6 +394,28 @@ button,input,select,textarea{-webkit-appearance:none;font-family:inherit}
 .add-return-btn:hover{background:#16a34a;color:#fff}
 .no-rides-msg{text-align:center;padding:60px 24px;color:#94a3b8}
 .no-rides-msg div:first-child{font-size:36px;margin-bottom:12px}
+.schedule-sync-bar{display:none;background:#f8fafc;border-bottom:1px solid #e8eef4;padding:10px 16px;font-size:12px;color:#334155;gap:10px;align-items:center;justify-content:space-between;flex-wrap:wrap}
+.schedule-sync-bar.show{display:flex}
+.schedule-sync-title{font-weight:900;color:#0f172a}
+.schedule-sync-meta{color:#64748b;font-weight:700}
+.schedule-sync-pill{border-radius:999px;padding:5px 9px;font-size:10px;font-weight:900;background:#e0f2fe;color:#0369a1}
+.schedule-sync-pill.warn{background:#fff7ed;color:#c2410c}
+.schedule-sync-pill.ok{background:#dcfce7;color:#166534}
+.driver-activity-panel{display:none;background:#fff;border-bottom:1px solid #e8eef4;padding:12px 16px}
+.driver-activity-panel.show{display:block}
+.driver-activity-head{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:10px;flex-wrap:wrap}
+.driver-activity-title{font-size:12px;font-weight:900;color:#0f172a;text-transform:uppercase;letter-spacing:.5px}
+.driver-activity-note{font-size:11px;color:#64748b;font-weight:700}
+.driver-activity-list{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:8px}
+.driver-activity-card{border:1px solid #e8eef4;border-left:4px solid #94a3b8;border-radius:8px;padding:10px;background:#f8fafc;min-width:0}
+.driver-activity-card.enroute{border-left-color:#0369a1;background:#f0f9ff}
+.driver-activity-card.arrived{border-left-color:#7c3aed;background:#faf5ff}
+.driver-activity-card.onboard{border-left-color:#0f766e;background:#ecfdf5}
+.driver-activity-card.complete{border-left-color:#16a34a;background:#f0fdf4}
+.driver-activity-driver{font-size:13px;font-weight:900;color:#0f172a;margin-bottom:4px}
+.driver-activity-status{display:inline-flex;border-radius:999px;padding:4px 8px;font-size:10px;font-weight:900;background:#e2e8f0;color:#334155;margin-bottom:6px}
+.driver-activity-ride{font-size:12px;font-weight:800;color:#1e293b;line-height:1.25}
+.driver-activity-meta{font-size:11px;color:#64748b;margin-top:4px;line-height:1.35}
 .import-review-alert{display:none;background:#eff6ff;border:1px solid #bfdbfe;border-radius:10px;padding:10px 12px;margin:8px 12px;font-size:12px;color:#1d4ed8;font-weight:700;cursor:pointer}
 .import-review-list{display:grid;gap:12px}
 .import-review-card{background:#fff;border:1px solid #e2e8f0;border-radius:14px;padding:16px}
@@ -1226,7 +1248,6 @@ button,input,select,textarea{-webkit-appearance:none;font-family:inherit}
             <option value="no">Unpaid</option>
           </select>
           <button class="add-btn" style="padding:8px 16px;font-size:13px" onclick="loadReports()">Apply</button>
-          <button class="add-btn" style="padding:8px 16px;font-size:13px;background:#1e3a5f" onclick="logAllUnloggedPastRidesFromReports()">📋 Log All Unlogged</button>
           <button class="export-btn" onclick="exportReportsExcel()" style="margin-left:auto">📥 Export Excel</button>
         </div>
       </div>
@@ -1248,16 +1269,13 @@ button,input,select,textarea{-webkit-appearance:none;font-family:inherit}
       </div>
 
       <!-- View Toggle -->
-      <div style="display:flex;gap:8px;margin-bottom:12px">
+      <div style="display:flex;gap:8px;margin-bottom:12px;flex-wrap:wrap">
         <button class="ts-mode-btn" id="rep-view-square" onclick="setRepView('square')">Square</button>
         <button class="ts-mode-btn active" id="rep-view-log" onclick="setRepView('log')">📋 Ride Log</button>
         <button class="ts-mode-btn" id="rep-view-facility" onclick="setRepView('facility')">🏥 By Facility</button>
         <button class="ts-mode-btn" id="rep-view-driver" onclick="setRepView('driver')">👤 By Driver</button>
         <button class="ts-mode-btn" id="rep-view-month" onclick="setRepView('month')">📅 By Month</button>
-      </div>
-
-      <div style="display:flex;justify-content:flex-end;margin-bottom:12px">
-        <button class="add-btn" style="padding:10px 18px;font-size:14px;background:#1e3a5f" onclick="logAllUnloggedPastRidesFromReports()">📋 Log All Unlogged</button>
+        <button class="ts-mode-btn" id="rep-view-duplicates" onclick="setRepView('duplicates')" style="border-color:#f59e0b;color:#9a3412;background:#fff7ed">Duplicates</button>
       </div>
 
       <!-- Content Area -->
@@ -1451,7 +1469,7 @@ button,input,select,textarea{-webkit-appearance:none;font-family:inherit}
       <div style="padding:12px;display:grid;grid-template-columns:1fr 1fr;gap:8px">
         <button class="add-btn" style="width:100%;padding:10px;font-size:13px" onclick="openRideModal(null)">+ Add Ride</button>
         <button class="add-btn" style="width:100%;padding:10px;font-size:13px;background:#152338" onclick="openEmailParser()">📧 Paste Email</button>
-        <button class="add-btn" style="width:100%;padding:10px;font-size:13px;background:#0d1b2a" onclick="sendTomorrowSchedule()">📤 Send Schedule</button>
+        <button class="add-btn" style="width:100%;padding:10px;font-size:13px;background:#0d1b2a" onclick="sendSelectedSchedule()">Save & Send Day</button>
         <button class="add-btn" style="width:100%;padding:10px;font-size:13px;background:#1e3a5f" onclick="logAllRidesForDay()">📋 Log All</button>
       </div>
     </div>
@@ -1465,9 +1483,12 @@ button,input,select,textarea{-webkit-appearance:none;font-family:inherit}
         <button class="cal-nav" onclick="shiftDay(1)">›</button>
         <button class="cal-today-btn" onclick="goToToday()">Today</button>
         <button class="optimize-btn" onclick="openOptimizer()">🤖 Optimize</button>
-        <button class="send-schedule-btn" style="margin-left:4px;padding:8px 14px;font-size:12px;width:auto" onclick="sendTomorrowSchedule()">📤 Send Schedule</button>
+        <button class="send-schedule-btn" style="margin-left:4px;padding:8px 14px;font-size:12px;width:auto" onclick="sendSelectedSchedule()">Save & Send to Driver App</button>
         <button class="send-schedule-btn" style="margin-left:4px;padding:8px 14px;font-size:12px;width:auto;background:#1e3a5f" onclick="logAllRidesForDay()">📋 Log All</button>
       </div>
+
+      <div class="schedule-sync-bar" id="schedule-sync-bar"></div>
+      <div class="driver-activity-panel" id="driver-activity-panel"></div>
 
       <!-- Time grid -->
       <div class="time-grid" id="time-grid">
@@ -1492,7 +1513,7 @@ button,input,select,textarea{-webkit-appearance:none;font-family:inherit}
             <div class="mobile-header-actions">
               <button class="mobile-top-btn primary" onclick="openRideModal(null,dateStr(selectedDate))">+ Add Ride</button>
               <button class="mobile-top-btn light" onclick="openEmailParser()">Paste Email</button>
-              <button class="mobile-top-btn dark" onclick="sendTomorrowSchedule()">Send Schedule</button>
+              <button class="mobile-top-btn dark" onclick="sendSelectedSchedule()">Save & Send</button>
               <button class="mobile-top-btn amber" onclick="logAllRidesForDay()">Log All</button>
               <button class="mobile-top-btn light" onclick="openImportReviewModal()">Review Imports</button>
             </div>
@@ -1686,7 +1707,7 @@ button,input,select,textarea{-webkit-appearance:none;font-family:inherit}
         <div style="font-size:18px;font-weight:900;color:#fff">🤖 AI Route Optimizer</div>
         <div style="font-size:12px;color:#6b82a8;margin-top:2px" id="opt-date-label">Loading...</div>
       </div>
-      <button onclick="applyOptimizedSchedule()" style="background:#00b4d8;border:none;color:#fff;border-radius:8px;padding:8px 14px;font-size:13px;font-weight:700;cursor:pointer">Apply This Schedule</button>
+      <button onclick="applyOptimizedSchedule()" style="background:#00b4d8;border:none;color:#fff;border-radius:8px;padding:8px 14px;font-size:13px;font-weight:700;cursor:pointer">Save & Send to Driver App</button>
       <button onclick="closeOptimizer()" style="background:rgba(15,23,42,0.08);border:none;color:#0f172a;border-radius:8px;padding:8px 14px;font-size:13px;font-weight:700;cursor:pointer">Close</button>
     </div>
 
@@ -1722,7 +1743,7 @@ button,input,select,textarea{-webkit-appearance:none;font-family:inherit}
 
         <!-- Action buttons -->
         <div style="display:flex;gap:10px;margin-top:20px;flex-wrap:wrap">
-          <button class="add-btn" style="flex:1;padding:14px" onclick="applyOptimizedSchedule()">✓ Apply This Schedule</button>
+          <button class="add-btn" style="flex:1;padding:14px" onclick="applyOptimizedSchedule()">Save & Send to Driver App</button>
           <button class="ts-mode-btn" style="padding:14px" onclick="reOptimize()">🔄 Re-optimize</button>
           <button class="ts-mode-btn" style="padding:14px" onclick="closeOptimizer()">✕ Cancel</button>
         </div>
@@ -2203,6 +2224,7 @@ let FACILITIES=[
 let db=null,firebaseReady=false;
 let map=null,mapMarkers={},dashInt=null;
 let dispatchMap=null;
+let dispatchResultLayers=[];
 let pinBuf='';
 let lastPastedEmail='';
 let addrDebounce=null,selectedCoords=null,lastQuery='';
@@ -2649,6 +2671,7 @@ function normalizeRideRequestRecord(key, raw){
     status: raw.status || 'pending',
     createdAt: raw.createdAt || raw.receivedAt || raw.importedAt || 0,
     respondedAt: raw.respondedAt || raw.updatedAt || 0,
+    source: raw.source || raw.requestSource || raw.entrySource || '',
     facility: raw.facility || raw.ride?.facility || '',
     portalKey: raw.portalKey || '',
     requesterEmail: raw.requesterEmail || raw.requester_email || raw.email || '',
@@ -2657,6 +2680,7 @@ function normalizeRideRequestRecord(key, raw){
     rawMessage: raw.rawMessage || raw.message || raw.raw || '',
     responseMessage: raw.responseMessage || raw.reply || raw.response || '',
     acceptedRideKey: raw.acceptedRideKey || raw.accepted_ride_key || '',
+    ringCentral: raw.ringCentral || null,
     ride: raw.ride || raw.requestedRide || raw.request || raw.data || {}
   };
 }
@@ -3164,6 +3188,7 @@ async function renderRideRequestReviewList(){
     const metaLine = [ride.date || '', ride.time || '', facility].filter(Boolean).join(' â€¢ ');
     const notes = ride.notes || '';
     const raw = req.rawMessage || '';
+    const sourceLabel = String(req.source || '').toLowerCase().includes('ringcentral') ? 'Phone/Text' : 'Portal';
     return `<div class="import-review-card">
       <div class="import-review-top">
         <div style="flex:1">
@@ -3172,7 +3197,7 @@ async function renderRideRequestReviewList(){
           <div class="import-review-badges">
             <span class="import-review-badge">${normalizeRideType(ride.ridetype) === 'str' ? 'Stretcher' : 'Wheelchair'}</span>
             <span class="import-review-badge">${normalizeTripType(ride.triptype) === 'rt' ? 'RT' : '1 Way'}</span>
-            <span class="import-review-badge" style="background:#ecfeff;color:#0d3a52;border:1px solid #a5f3fc">Portal</span>
+            <span class="import-review-badge" style="background:#ecfeff;color:#0d3a52;border:1px solid #a5f3fc">${escHtml(sourceLabel)}</span>
           </div>
         </div>
       </div>
@@ -3258,8 +3283,25 @@ function buildPortalAcceptedRideNotes(rideDraft, record){
   if(record.requesterName) contactBits.push(record.requesterName);
   if(record.requesterPhone) contactBits.push(record.requesterPhone);
   if(record.requesterEmail) contactBits.push(record.requesterEmail);
-  if(contactBits.length) parts.push('Portal contact: ' + contactBits.join(' / '));
+  if(contactBits.length) parts.push('Request contact: ' + contactBits.join(' / '));
   return parts.filter(Boolean).join(' | ');
+}
+
+async function sendSmsViaRingCentral(to, text){
+  const cleanTo = String(to || '').trim();
+  const cleanText = String(text || '').trim();
+  if(!cleanTo || !cleanText) return { skipped: true };
+
+  const resp = await fetch('/api/ringcentral/sms', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ to: cleanTo, text: cleanText })
+  });
+  const data = await resp.json().catch(()=>({}));
+  if(!resp.ok || data.ok === false){
+    throw new Error(data.error || 'RingCentral SMS failed.');
+  }
+  return data;
 }
 
 async function saveRideRequestResponse(){
@@ -3318,7 +3360,7 @@ async function saveRideRequestResponse(){
         status: '',
         createdAt: Date.now(),
         updatedAt: Date.now(),
-        entrySource: 'portal_request',
+        entrySource: record.source === 'ringcentral' ? 'ringcentral_request' : 'portal_request',
         sourceRequestKey: pendingRideRequestKey,
         requesterEmail: record.requesterEmail || ''
       };
@@ -3343,6 +3385,10 @@ async function saveRideRequestResponse(){
         status: reqRespStatus,
         reply: message
       });
+    }
+    if(record.requesterPhone && String(record.source || '').toLowerCase().includes('ringcentral')){
+      await sendSmsViaRingCentral(record.requesterPhone, message);
+      updates.smsSentAt = Date.now();
     }
 
     closeRideRequestResponseModal();
@@ -3835,8 +3881,12 @@ function renderDispatchResults(results,pLat,pLng){
   });
   if(dispatchMap){
     document.getElementById('dispatch-map').style.display='block';dispatchMap.invalidateSize();
+    dispatchMap.eachLayer(layer=>{if(layer instanceof L.Marker) dispatchMap.removeLayer(layer);});
+    dispatchResultLayers.forEach(layer=>{if(dispatchMap.hasLayer(layer)) dispatchMap.removeLayer(layer);});
+    dispatchResultLayers=[];
     const bounds=[[pLat,pLng]];
-    L.marker([pLat,pLng],{icon:L.divIcon({html:'<div style="background:#ef4444;width:14px;height:14px;border-radius:50%;border:2px solid #fff;box-shadow:0 2px 6px rgba(0,0,0,0.3)"></div>',className:'',iconSize:[14,14],iconAnchor:[7,7]})}).addTo(dispatchMap);
+    const pickupMarker=L.marker([pLat,pLng],{icon:L.divIcon({html:'<div style="background:#ef4444;width:14px;height:14px;border-radius:50%;border:2px solid #fff;box-shadow:0 2px 6px rgba(0,0,0,0.3)"></div>',className:'',iconSize:[14,14],iconAnchor:[7,7]})}).addTo(dispatchMap);
+    dispatchResultLayers.push(pickupMarker);
     results.filter(d=>d.hasPos).forEach(d=>{
       L.marker([d.loc.lat,d.loc.lng],{icon:L.divIcon({html:`<div style="background:${d.color};width:28px;height:28px;border-radius:50%;border:2px solid #fff;display:flex;align-items:center;justify-content:center;color:#fff;font-weight:900;font-size:12px;box-shadow:0 2px 6px rgba(0,0,0,0.25)">${d.name[0]}</div>`,className:'',iconSize:[28,28],iconAnchor:[14,14]})}).addTo(dispatchMap).bindPopup(`<b>${d.name}</b> — ${d.distText}`);
       bounds.push([d.loc.lat,d.loc.lng]);
@@ -3993,6 +4043,10 @@ async function downloadExcel(){
 // ── SETTINGS TAB ──
 // ── STATUS HELPERS ──
 const DEFAULT_STATUSES = [
+  {value:'enroute',          label:'En route',             color:'#0369a1', bg:'#e0f2fe'},
+  {value:'arrived',          label:'Arrived',              color:'#7c3aed', bg:'#f5f3ff'},
+  {value:'onboard',          label:'Passenger onboard',    color:'#0f766e', bg:'#ccfbf1'},
+  {value:'complete',         label:'Done',                 color:'#16a34a', bg:'#f0fdf4'},
   {value:'completed',        label:'✅ Completed',            color:'#16a34a', bg:'#f0fdf4'},
   {value:'cancelled_pickup', label:'🚫 Cancelled at Pickup',  color:'#dc2626', bg:'#fef2f2'},
   {value:'cancelled',        label:'❌ Cancelled',             color:'#dc2626', bg:'#fef2f2'},
@@ -4000,6 +4054,10 @@ const DEFAULT_STATUSES = [
 ];
 function getStatuses(){
   return [...DEFAULT_STATUSES, ...(window._customStatuses||[])];
+}
+function statusLabelText(statusVal){
+  const s = getStatuses().find(x=>x.value===statusVal);
+  return s ? s.label : statusVal;
 }
 function statusBadgeHtml(statusVal){
   if(!statusVal) return '';
@@ -4012,6 +4070,109 @@ function statusBadgeTableHtml(statusVal){
   const s = getStatuses().find(x=>x.value===statusVal);
   if(!s) return `<span style="font-size:12px;font-weight:700;padding:2px 8px;border-radius:6px;background:#f0f4f8;color:#6b82a8">${statusVal}</span>`;
   return `<span style="font-size:12px;font-weight:700;padding:2px 8px;border-radius:6px;background:${s.bg};color:${s.color}">${s.label}</span>`;
+}
+
+function fmtScheduleStamp(ts){
+  if(!ts) return '';
+  return new Date(ts).toLocaleString('en-US',{month:'short',day:'numeric',hour:'numeric',minute:'2-digit'});
+}
+
+async function renderScheduleSyncBar(ds, dayRides){
+  const bar=document.getElementById('schedule-sync-bar');
+  if(!bar) return;
+  const rides=dayRides||[];
+  const assigned=rides.filter(r=>r.driver);
+  const unassigned=rides.filter(r=>!r.driver);
+  const statuses=rides.reduce((acc,r)=>{const k=r.status||'not_started';acc[k]=(acc[k]||0)+1;return acc;},{});
+  let sched={};
+  try{
+    const snap=await db.ref('schedules').child(ds).once('value');
+    sched=snap.val()||{};
+  }catch(e){
+    bar.className='schedule-sync-bar show';
+    bar.innerHTML='<div><div class="schedule-sync-title">Driver app schedule: unable to check sync status</div><div class="schedule-sync-meta">Refresh the dashboard and confirm Firebase is connected.</div></div>';
+    return;
+  }
+  const lastStamp=sched.sentAt||sched.appliedAt||null;
+  const statusText=sched.status==='sent-to-driver-app'
+    ? 'Marked sent'
+    : (sched.status==='applied-to-driver-app'?'Saved to app':'Not marked sent');
+  const okClass=unassigned.length?'warn':(lastStamp?'ok':'');
+  bar.className='schedule-sync-bar show';
+  bar.innerHTML=`
+    <div>
+      <div class="schedule-sync-title">Driver app schedule: ${statusText}</div>
+      <div class="schedule-sync-meta">${assigned.length}/${rides.length} assigned${lastStamp?' · '+fmtScheduleStamp(lastStamp):''}</div>
+    </div>
+    <div style="display:flex;gap:6px;flex-wrap:wrap">
+      <span class="schedule-sync-pill ${okClass}">${unassigned.length?unassigned.length+' unassigned':'All assigned'}</span>
+      <span class="schedule-sync-pill">Not started ${statuses.not_started||0}</span>
+      <span class="schedule-sync-pill">En route ${statuses.enroute||0}</span>
+      <span class="schedule-sync-pill">Arrived ${statuses.arrived||0}</span>
+      <span class="schedule-sync-pill">Done ${(statuses.complete||0)+(statuses.completed||0)}</span>
+    </div>`;
+}
+
+function driverActivityStatusLabel(statusVal){
+  if(!statusVal) return 'Not started';
+  if(statusVal==='complete'||statusVal==='completed') return 'Done';
+  return statusLabelText(statusVal);
+}
+
+function driverActivityStatusClass(statusVal){
+  if(statusVal==='complete'||statusVal==='completed') return 'complete';
+  if(['enroute','arrived','onboard'].includes(statusVal)) return statusVal;
+  return '';
+}
+
+function pickDriverCurrentRide(rides){
+  const ordered=[...rides].sort((a,b)=>(a.time||'99:99').localeCompare(b.time||'99:99'));
+  const activePriority=['onboard','arrived','enroute'];
+  for(const status of activePriority){
+    const match=ordered.find(r=>r.status===status);
+    if(match) return match;
+  }
+  const next=ordered.find(r=>!['complete','completed','cancelled','cancelled_pickup','noshow'].includes(r.status||''));
+  return next || ordered[ordered.length-1];
+}
+
+function renderDriverActivityPanel(ds, dayRides){
+  const panel=document.getElementById('driver-activity-panel');
+  if(!panel) return;
+  const assigned=(dayRides||[]).filter(r=>r.driver);
+  if(!assigned.length){
+    panel.className='driver-activity-panel show';
+    panel.innerHTML='<div class="driver-activity-head"><div class="driver-activity-title">Driver app activity</div><div class="driver-activity-note">No assigned driver rides for this view.</div></div>';
+    return;
+  }
+  const byDriver={};
+  assigned.forEach(r=>{
+    if(!byDriver[r.driver]) byDriver[r.driver]=[];
+    byDriver[r.driver].push(r);
+  });
+  const cards=Object.entries(byDriver).sort((a,b)=>a[0].localeCompare(b[0])).map(([driver,rides])=>{
+    const current=pickDriverCurrentRide(rides);
+    const status=current?.status||'';
+    const doneCount=rides.filter(r=>['complete','completed'].includes(r.status||'')).length;
+    const rideName=current ? (current.client||current.facility||'Ride') : 'No ride';
+    const facility=current?.facility&&current?.client ? current.facility : '';
+    const route=[current?.pickup,current?.dropoff].filter(Boolean).join(' to ');
+    return `<div class="driver-activity-card ${driverActivityStatusClass(status)}">
+      <div class="driver-activity-driver">${escHtml(driver)}</div>
+      <div class="driver-activity-status">${escHtml(driverActivityStatusLabel(status))}</div>
+      <div class="driver-activity-ride">${current?.time?escHtml(fmtTime12(current.time))+' - ':''}${escHtml(rideName)}</div>
+      ${facility?`<div class="driver-activity-meta">${escHtml(facility)}</div>`:''}
+      ${route?`<div class="driver-activity-meta">${escHtml(route)}</div>`:''}
+      <div class="driver-activity-meta">${doneCount}/${rides.length} rides done today</div>
+    </div>`;
+  }).join('');
+  panel.className='driver-activity-panel show';
+  panel.innerHTML=`
+    <div class="driver-activity-head">
+      <div class="driver-activity-title">Driver app activity</div>
+      <div class="driver-activity-note">Current status and ride from the driver app for ${escHtml(ds)}</div>
+    </div>
+    <div class="driver-activity-list">${cards}</div>`;
 }
 
 async function initSettings(){
@@ -4415,6 +4576,8 @@ async function renderDayView(){
   let dayRides=allRides.filter(r=>r.date===ds);
   if(ridesFilter==='unpaid') dayRides=dayRides.filter(r=>r.price&&r.price!==''&&r.paid!=='yes');
   if(ridesFilter==='unassigned') dayRides=dayRides.filter(r=>!r.driver);
+  await renderScheduleSyncBar(ds, dayRides);
+  renderDriverActivityPanel(ds, dayRides);
   const grid=document.getElementById('time-grid');
   if(!dayRides.length){grid.innerHTML=`<div class="no-rides-msg"><div>🚐</div><div style="font-size:15px;font-weight:700;color:#6b82a8;margin-bottom:8px">No rides scheduled</div><div style="font-size:13px">Click "+ Add Ride" or tap a time slot to add a ride</div></div>`;return;}
   const byHour={};
@@ -4447,6 +4610,7 @@ async function renderDayView(){
           <span class="ride-block-tag">${r.ridetype==='str'?'🛏 Str':'♿ WC'}</span>
           <span class="ride-block-tag">${r.triptype==='rt'?'RT':'1 Way'}</span>
           ${rideSourceTagHtml(r)}
+          ${r.status?`<span class="ride-block-tag" style="background:#e0f2fe;color:#0369a1;font-weight:800">App: ${statusLabelText(r.status)}</span>`:''}
           ${r.driver?`<span class="ride-block-tag">👤 ${r.driver}${r.helper?' + '+r.helper:''}</span>`:'<span class="ride-block-tag" style="color:#f59e0b">No driver yet</span>'}
           ${r.van?`<span class="ride-block-tag">Van #${r.van}</span>`:''}
           ${r.wait==='yes'?`<span class="ride-block-tag" style="background:#fff7ed;color:#c2410c">⏳ Wait</span>`:''}
@@ -5619,11 +5783,25 @@ async function applyOptimizedSchedule(){
   if(Object.keys(updates).length){
     await db.ref().update(updates);
   }
+  const ds = dateStr(selectedDate);
+  const driverCounts = {};
+  Object.entries(optimizedSchedule.schedules || {}).forEach(([driverName, sched])=>{
+    driverCounts[driverName] = (sched.rides || []).length;
+  });
+  await db.ref('schedules').child(ds).update({
+    appliedAt: Date.now(),
+    selectedDate: ds,
+    totalRides: optimizedSchedule.totalRideCount || 0,
+    assignedRides: optimizedSchedule.assignedRideCount || 0,
+    unassignedRides: optimizedSchedule.unassignedRideCount || 0,
+    driverCounts,
+    status: 'applied-to-driver-app'
+  });
   setOptProgress(100,'Done!');
   closeOptimizer();
   renderDayView();
   if(document.getElementById('screen-mobile')?.classList.contains('active')) renderMobileDashboard();
-  alert('✅ Schedule applied!');
+  alert('Schedule saved to driver app for '+ds+'! Drivers can refresh or reopen the app to see updates.');
 }
 function setOptProgress(pct, msg){
   document.getElementById('opt-progress-bar').style.width = pct+'%';
@@ -5835,6 +6013,36 @@ async function deleteRide(){
   await ridesRef().child(rideEditKey).remove();
   closeRideModal();renderDayView();if(document.getElementById('screen-mobile')?.classList.contains('active'))renderMobileDashboard();
 }
+async function sendSelectedSchedule(){
+  const ds=dateStr(selectedDate);
+  const ridesSnap=await ridesRef().once('value');
+  const rides=Object.values(ridesSnap.val()||{}).filter(r=>r.date===ds);
+  if(!rides.length){alert('No rides scheduled for the selected day.');return;}
+  const byDriver={};rides.forEach(r=>{if(!r.driver)return;if(!byDriver[r.driver])byDriver[r.driver]=[];byDriver[r.driver].push(r);});
+  const unassigned=rides.filter(r=>!r.driver);
+  const d=new Date(ds+'T12:00:00');
+  const label=d.toLocaleDateString('en-US',{weekday:'long',month:'short',day:'numeric'});
+  const driverCounts={};
+  Object.entries(byDriver).forEach(([dr,dRides])=>{driverCounts[dr]=dRides.length;});
+  await db.ref('schedules').child(ds).update({
+    sentAt:Date.now(),
+    label,
+    selectedDate:ds,
+    totalRides:rides.length,
+    assignedRides:rides.length-unassigned.length,
+    unassignedRides:unassigned.length,
+    driverCounts,
+    status:'sent-to-driver-app'
+  });
+  let msg=`Schedule marked sent for ${label}!\n\n`;
+  if(Object.keys(byDriver).length)msg+=Object.entries(byDriver).map(([dr,dRides])=>`${dr}: ${dRides.length} ride${dRides.length!==1?'s':''}`).join('\n');
+  if(unassigned.length)msg+=`\n\nWARNING: ${unassigned.length} ride${unassigned.length!==1?'s':''} still have no driver assigned!`;
+  msg+=`\n\nDrivers can refresh or reopen the app to see updates.`;
+  renderDayView();
+  if(document.getElementById('screen-mobile')?.classList.contains('active')) renderMobileDashboard();
+  alert(msg);
+}
+
 async function sendTomorrowSchedule(){
   const tomorrow=new Date();tomorrow.setDate(tomorrow.getDate()+1);
   const ds=dateStr(tomorrow);
@@ -5957,31 +6165,6 @@ async function logRideToReports(){
   });
 }
 
-async function buildRideLogEntryFromCalendarRide(rideKey, r){
-  const triptype = r.triptype || 'rt';
-  const { miles: oneWay, source: milesSource } = await computeOneWayClientMiles(r);
-  const billableMiles = (triptype === 'rt' ? 2 : 1) * oneWay;
-  return {
-    date: r.date||'', time: r.time||'', facility: r.facility||'',
-    client: r.client||'', ridetype: r.ridetype||'wc', triptype,
-    van: r.van||'', driver: r.driver||'', helper: r.helper||'',
-    price: r.price||'', invoice: r.invoice||'', paid: r.paid||'no',
-    paymethod: r.paymethod||'cc', waitHours: r.waitHours||0,
-    pickup: r.pickup||'',
-    dropoff: r.dropoff||'',
-    // One-way client miles (pickup -> dropoff). Kept for reference/back-compat.
-    estimatedMiles: oneWay,
-    // Full trip miles you can bill the client (RT doubles).
-    billableMiles: parseFloat(billableMiles.toFixed(1)) || 0,
-    milesSource: milesSource || '',
-    calcNotes: '',
-    notes: r.notes||'',
-    status: r.status||'',
-    calendarKey: rideKey,
-    createdAt: Date.now()
-  };
-}
-
 async function logAllRidesForDay(){
   const ds = dateStr(selectedDate);
   const snap = await ridesRef().once('value');
@@ -6006,59 +6189,31 @@ async function logAllRidesForDay(){
   const needsCompletion = [];
   for(const [k,r] of newRides){
     const newKey = rideLogRef().push().key;
-    updates[newKey] = await buildRideLogEntryFromCalendarRide(k, r);
+    const triptype = r.triptype || 'rt';
+    const { miles: oneWay, source: milesSource } = await computeOneWayClientMiles(r);
+    const billableMiles = (triptype === 'rt' ? 2 : 1) * oneWay;
+    updates[newKey] = {
+      date: r.date||'', time: r.time||'', facility: r.facility||'',
+      client: r.client||'', ridetype: r.ridetype||'wc', triptype,
+      van: r.van||'', driver: r.driver||'', helper: r.helper||'',
+      price: r.price||'', invoice: r.invoice||'', paid: r.paid||'no',
+      paymethod: r.paymethod||'cc', waitHours: r.waitHours||0,
+      pickup: r.pickup||'',
+      dropoff: r.dropoff||'',
+      // One-way client miles (pickup -> dropoff). Kept for reference/back-compat.
+      estimatedMiles: oneWay,
+      // Full trip miles you can bill the client (RT doubles).
+      billableMiles: parseFloat(billableMiles.toFixed(1)) || 0,
+      milesSource: milesSource || '',
+      calcNotes: '',
+      notes: r.notes||'',
+      status: r.status||'',
+      calendarKey: k, createdAt: Date.now()
+    };
     if(reportLogEntryNeedsCompletion(updates[newKey])) needsCompletion.push(newKey);
   }
   await rideLogRef().update(updates);
   showToast(`✓ ${newRides.length} ride${newRides.length!==1?'s':''} logged to Reports!`);
-  if(needsCompletion.length){
-    startReportCompletionWizard(needsCompletion);
-  }
-}
-
-async function logAllUnloggedPastRidesFromReports(){
-  if(!db) return;
-  const today = dateStr(new Date());
-  const [ridesSnap, logSnap] = await Promise.all([
-    ridesRef().once('value'),
-    rideLogRef().once('value')
-  ]);
-  const allRides = ridesSnap.val()||{};
-  const allLogs = logSnap.val()||{};
-
-  const loggedKeys = new Set();
-  Object.values(allLogs).forEach(r=>{ if(r && r.calendarKey) loggedKeys.add(r.calendarKey); });
-
-  const pastRides = Object.entries(allRides)
-    .filter(([k,r])=>r && r.date && r.date <= today && !r.returnOf);
-  const newRides = pastRides
-    .filter(([k])=>!loggedKeys.has(k))
-    .sort((a,b)=>String(a[1].date||'').localeCompare(String(b[1].date||'')) || String(a[1].time||'').localeCompare(String(b[1].time||'')));
-  const alreadyLogged = pastRides.length - newRides.length;
-
-  if(!newRides.length){
-    alert('All rides dated today or earlier are already in your Reports log.');
-    return;
-  }
-
-  const firstDate = newRides[0][1].date || 'unknown';
-  const lastDate = newRides[newRides.length-1][1].date || 'unknown';
-  let msg = `Log ${newRides.length} unlogged ride${newRides.length!==1?'s':''} from ${firstDate} through ${lastDate}?`;
-  msg += `\nOnly rides dated ${today} or earlier will be logged.`;
-  if(alreadyLogged>0) msg += `\n(${alreadyLogged} already logged ride${alreadyLogged!==1?'s':''} will be skipped.)`;
-  if(!confirm(msg)) return;
-
-  const updates = {};
-  const needsCompletion = [];
-  for(const [k,r] of newRides){
-    const newKey = rideLogRef().push().key;
-    updates[newKey] = await buildRideLogEntryFromCalendarRide(k, r);
-    if(reportLogEntryNeedsCompletion(updates[newKey])) needsCompletion.push(newKey);
-  }
-
-  await rideLogRef().update(updates);
-  showToast(`✓ ${newRides.length} unlogged ride${newRides.length!==1?'s':''} logged to Reports!`);
-  await loadReports();
   if(needsCompletion.length){
     startReportCompletionWizard(needsCompletion);
   }
@@ -6177,10 +6332,40 @@ async function loadReports(){
   renderRepView();
 }
 
+function reportMoneyValue(value){
+  if(value === null || value === undefined || value === '') return 0;
+  const num = parseFloat(String(value).replace(/[$,]/g,''));
+  return Number.isFinite(num) ? num : 0;
+}
+
+function reportOutstandingAmount(r, seenInvoices){
+  if(r.paid === 'yes') return 0;
+  if(r.qboArExcluded === true || String(r.qboArExcluded || '').toLowerCase() === 'true') return 0;
+
+  const invoice = String(r.invoice || '').trim();
+  if(!invoice) return 0;
+
+  const hasQbBalance = r.quickbooksBalance !== undefined && r.quickbooksBalance !== null && String(r.quickbooksBalance).trim() !== '';
+  if(hasQbBalance){
+    if(seenInvoices && invoice){
+      if(seenInvoices.has(invoice)) return 0;
+      seenInvoices.add(invoice);
+    }
+    return reportMoneyValue(r.quickbooksBalance);
+  }
+
+  return reportMoneyValue(r.price);
+}
+
+function reportOutstandingTotal(rides){
+  const seenInvoices = new Set();
+  return rides.reduce((sum,r)=>sum+reportOutstandingAmount(r, seenInvoices),0);
+}
+
 function renderSummaryCards(rides){
-  const totalRevenue = rides.reduce((s,r)=>s+(parseFloat(r.price)||0),0);
-  const paidRevenue = rides.filter(r=>r.paid==='yes').reduce((s,r)=>s+(parseFloat(r.price)||0),0);
-  const unpaidRevenue = rides.filter(r=>r.paid!=='yes'&&r.price).reduce((s,r)=>s+(parseFloat(r.price)||0),0);
+  const totalRevenue = rides.reduce((s,r)=>s+reportMoneyValue(r.price),0);
+  const paidRevenue = rides.filter(r=>r.paid==='yes').reduce((s,r)=>s+reportMoneyValue(r.price),0);
+  const unpaidRevenue = reportOutstandingTotal(rides);
   const totalRides = rides.length;
   const wcRides = rides.filter(r=>r.ridetype!=='str').length;
   const strRides = rides.filter(r=>r.ridetype==='str').length;
@@ -6280,7 +6465,7 @@ async function loadSquareSales(){
 
 function setRepView(v){
   repView = v;
-  ['log','square','facility','driver','month'].forEach(x=>{
+  ['log','square','facility','driver','month','duplicates'].forEach(x=>{
     const btn = document.getElementById('rep-view-'+x);
     if(btn) btn.classList.toggle('active',x===v);
   });
@@ -6298,6 +6483,7 @@ function renderRepView(){
   else if(repView==='facility') renderByFacility();
   else if(repView==='driver') renderByDriver();
   else if(repView==='month') renderByMonth();
+  else if(repView==='duplicates') renderReportDuplicates();
 }
 
 function renderRideLog(){
@@ -6766,6 +6952,121 @@ async function deleteLogRide(){
   await loadReports();
 }
 
+function normalizeDuplicateField(value){
+  return String(value||'').trim().replace(/\s+/g,' ').toLowerCase();
+}
+
+function reportDuplicateSignature(r){
+  return [
+    String(r.date||'').trim(),
+    String(r.time||'').trim(),
+    normalizeDuplicateField(r.client),
+    normalizeDuplicateField(r.facility),
+    normalizeDuplicateField(r.pickup),
+    normalizeDuplicateField(r.dropoff)
+  ].join('|');
+}
+
+function getReportDuplicateGroups(){
+  const groups=[];
+  const byCalendar={};
+  const bySignature={};
+
+  repRides.forEach(r=>{
+    const cal=String(r.calendarKey||'').trim();
+    if(cal){
+      if(!byCalendar[cal]) byCalendar[cal]=[];
+      byCalendar[cal].push(r);
+    }
+    const sig=reportDuplicateSignature(r);
+    if(r.date&&r.time&&(r.client||r.facility)){
+      if(!bySignature[sig]) bySignature[sig]=[];
+      bySignature[sig].push(r);
+    }
+  });
+
+  Object.entries(byCalendar).forEach(([id,rides])=>{
+    if(rides.length>1) groups.push({type:'Same calendar ride',id,rides});
+  });
+  Object.entries(bySignature).forEach(([id,rides])=>{
+    if(rides.length>1) groups.push({type:'Same date/time/client',id,rides});
+  });
+  return groups.sort((a,b)=>{
+    const ar=a.rides[0]||{}, br=b.rides[0]||{};
+    return (ar.date||'').localeCompare(br.date||'') || (ar.time||'').localeCompare(br.time||'') || (ar.client||'').localeCompare(br.client||'') || a.type.localeCompare(b.type);
+  });
+}
+
+async function deleteDuplicateReportRide(key){
+  if(!key) return;
+  const ride=repRides.find(r=>r._key===key);
+  const label=ride ? `${ride.date||''} ${ride.time||''} ${ride.client||ride.facility||'ride'}`.trim() : 'this report row';
+  if(!confirm(`Delete duplicate report row?\n\n${label}\n\nThis removes it from Reports only.`)) return;
+  await rideLogRef().child(key).remove();
+  await loadReports();
+}
+
+function renderReportDuplicates(){
+  const el=document.getElementById('rep-content');
+  const groups=getReportDuplicateGroups();
+  const uniqueExtraKeys=new Set();
+  groups.forEach(g=>{
+    g.rides.slice().sort((a,b)=>(a.createdAt||0)-(b.createdAt||0)).slice(1).forEach(r=>uniqueExtraKeys.add(r._key));
+  });
+
+  if(!groups.length){
+    el.innerHTML='<div style="padding:40px;text-align:center;color:#16a34a;font-weight:900">No duplicates found for this report filter.</div>';
+    return;
+  }
+
+  let html=`<div style="padding:14px 16px;background:#fff7ed;border-bottom:1px solid #fed7aa;color:#9a3412;font-size:13px;font-weight:800">
+    Found ${groups.length} duplicate groups in this filtered report view. Review before deleting. Estimated extra rows: ${uniqueExtraKeys.size}.
+  </div>`;
+
+  groups.forEach((group,idx)=>{
+    const sorted=group.rides.slice().sort((a,b)=>(a.createdAt||0)-(b.createdAt||0));
+    html+=`<div style="border-bottom:1px solid #e8eef4">
+      <div style="padding:12px 16px;background:${idx%2?'#fbfdff':'#f8fafc'};display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap">
+        <div>
+          <div style="font-size:13px;font-weight:900;color:#0d1b2a">${escHtml(group.type)} <span style="color:#f59e0b">(${sorted.length} rows)</span></div>
+          <div style="font-size:11px;color:#6b82a8;margin-top:2px">${escHtml(group.id)}</div>
+        </div>
+        <div style="font-size:11px;color:#64748b;font-weight:700">Keep the correct row, delete only true duplicates.</div>
+      </div>
+      <table style="width:100%;border-collapse:collapse;font-size:12px">
+        <thead><tr style="background:#0d1b2a;color:#fff">
+          <th style="padding:8px 10px;text-align:left">Action</th>
+          <th style="padding:8px 10px;text-align:left">Date</th>
+          <th style="padding:8px 10px;text-align:left">Client / Facility</th>
+          <th style="padding:8px 10px;text-align:left">Driver</th>
+          <th style="padding:8px 10px;text-align:right">Price</th>
+          <th style="padding:8px 10px;text-align:left">Invoice</th>
+          <th style="padding:8px 10px;text-align:left">Paid</th>
+          <th style="padding:8px 10px;text-align:left">Key</th>
+        </tr></thead><tbody>`;
+    sorted.forEach((r,i)=>{
+      const suggested=i===0?'KEEP':'REVIEW';
+      html+=`<tr style="border-bottom:1px solid #f0f4f8;background:${i===0?'#f0fdf4':'#fff'}">
+        <td style="padding:8px 10px;white-space:nowrap">
+          <span style="display:inline-block;font-size:10px;font-weight:900;border-radius:999px;padding:3px 7px;background:${i===0?'#dcfce7':'#fff7ed'};color:${i===0?'#166534':'#c2410c'}">${suggested}</span>
+          <button title="Edit" onclick="openLogEdit('${r._key||''}')" style="margin-left:6px;background:#f4f7fb;border:1px solid #e8eef4;border-radius:6px;padding:4px 7px;font-size:11px;font-weight:800;color:#6b82a8;cursor:pointer">Edit</button>
+          ${i>0?`<button title="Delete duplicate row" onclick="deleteDuplicateReportRide('${r._key||''}')" style="margin-left:4px;background:#fef2f2;border:1px solid #fecaca;border-radius:6px;padding:4px 7px;font-size:11px;font-weight:800;color:#dc2626;cursor:pointer">Delete</button>`:''}
+        </td>
+        <td style="padding:8px 10px;white-space:nowrap;color:#0d1b2a;font-weight:700">${escHtml(r.date||'')} ${escHtml(r.time||'')}</td>
+        <td style="padding:8px 10px;color:#0d1b2a"><strong>${escHtml(r.client||'')}</strong><div style="color:#64748b">${escHtml(r.facility||'')}</div></td>
+        <td style="padding:8px 10px;color:#64748b">${escHtml(r.driver||'')}</td>
+        <td style="padding:8px 10px;text-align:right;font-weight:800;color:#0d1b2a">${escHtml(r.price||'')}</td>
+        <td style="padding:8px 10px;color:#64748b">${escHtml(r.invoice||'')}</td>
+        <td style="padding:8px 10px;color:#64748b">${escHtml(r.paid||'')}</td>
+        <td style="padding:8px 10px;color:#94a3b8;font-family:monospace;font-size:10px">${escHtml(r._key||'')}</td>
+      </tr>`;
+    });
+    html+='</tbody></table></div>';
+  });
+
+  el.innerHTML=html;
+}
+
 function renderByFacility(){
   const el = document.getElementById('rep-content');
   const byFac = {};
@@ -6773,9 +7074,10 @@ function renderByFacility(){
     const f = r.facility||'Private';
     if(!byFac[f]) byFac[f]={rides:0,revenue:0,unpaid:0,wc:0,str:0,miles:0};
     byFac[f].rides++;
-    byFac[f].revenue += parseFloat(r.price)||0;
+    byFac[f].revenue += reportMoneyValue(r.price);
     byFac[f].miles += reportTripMiles(r);
-    if(r.paid!=='yes'&&r.price) byFac[f].unpaid += parseFloat(r.price)||0;
+    if(!byFac[f].seenInvoices) byFac[f].seenInvoices = new Set();
+    byFac[f].unpaid += reportOutstandingAmount(r, byFac[f].seenInvoices);
     if(r.ridetype==='str') byFac[f].str++; else byFac[f].wc++;
   });
 
@@ -6850,9 +7152,10 @@ function renderByMonth(){
     const m = r.date?r.date.substring(0,7):'Unknown';
     if(!byMonth[m]) byMonth[m]={rides:0,revenue:0,unpaid:0,miles:0};
     byMonth[m].rides++;
-    byMonth[m].revenue += parseFloat(r.price)||0;
+    byMonth[m].revenue += reportMoneyValue(r.price);
     byMonth[m].miles += reportTripMiles(r);
-    if(r.paid!=='yes'&&r.price) byMonth[m].unpaid += parseFloat(r.price)||0;
+    if(!byMonth[m].seenInvoices) byMonth[m].seenInvoices = new Set();
+    byMonth[m].unpaid += reportOutstandingAmount(r, byMonth[m].seenInvoices);
   });
 
   const sorted = Object.entries(byMonth).sort((a,b)=>a[0].localeCompare(b[0]));
@@ -6910,8 +7213,9 @@ function exportReportsExcel(){
   XLSX.utils.book_append_sheet(wb, ws, 'Ride Log');
 
   // Summary sheet
-  const totalRev = repRides.reduce((s,r)=>s+(parseFloat(r.price)||0),0);
-  const paidRev = repRides.filter(r=>r.paid==='yes').reduce((s,r)=>s+(parseFloat(r.price)||0),0);
+  const totalRev = repRides.reduce((s,r)=>s+reportMoneyValue(r.price),0);
+  const paidRev = repRides.filter(r=>r.paid==='yes').reduce((s,r)=>s+reportMoneyValue(r.price),0);
+  const outstandingRev = reportOutstandingTotal(repRides);
   const totalMiles = repRides.reduce((s,r)=>s+reportTripMiles(r),0);
   const summRows = [
     ['AbleCare Mobility — Ride Summary'],
@@ -6921,7 +7225,7 @@ function exportReportsExcel(){
     ['Trip Miles:', totalMiles.toFixed(1)],
     ['Total Revenue:', `$${totalRev.toFixed(2)}`],
     ['Collected:', `$${paidRev.toFixed(2)}`],
-    ['Outstanding:', `$${(totalRev-paidRev).toFixed(2)}`],
+    ['Outstanding:', `$${outstandingRev.toFixed(2)}`],
   ];
   const wsSumm = XLSX.utils.aoa_to_sheet(summRows);
   XLSX.utils.book_append_sheet(wb, wsSumm, 'Summary');
