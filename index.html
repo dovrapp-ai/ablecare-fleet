@@ -988,6 +988,7 @@ button,input,select,textarea{-webkit-appearance:none;font-family:inherit}
       </div>
     </div>
     <div class="topbar-right">
+      <div class="online-pill" style="background:#f8fafc;color:#334155"><span id="current-user-label">David (owner)</span></div>
       <div class="online-pill"><div class="online-dot"></div><span id="online-count">0 Online</span></div>
       <button id="mobile-menu-btn" onclick="toggleMobileMenu()" style="display:none;background:none;border:none;color:#fff;font-size:22px;cursor:pointer;padding:4px 8px">☰</button>
     </div>
@@ -1301,6 +1302,23 @@ button,input,select,textarea{-webkit-appearance:none;font-family:inherit}
       </div>
     </div>
 
+    <div class="settings-section">
+      <div class="settings-section-title">Dashboard Accounts</div>
+      <div id="dashboard-accounts-list"></div>
+      <div class="settings-row">
+        <div class="settings-label">Name</div>
+        <input type="text" id="acct-name" class="settings-input" style="width:150px" placeholder="Ozzy"/>
+        <div class="settings-label" style="min-width:40px">PIN</div>
+        <input type="password" id="acct-pin" maxlength="4" class="settings-input" style="width:90px" placeholder="4 digits"/>
+        <select id="acct-role" class="settings-input" style="width:130px">
+          <option value="manager">Manager</option>
+          <option value="owner">Owner</option>
+        </select>
+        <button class="settings-save-btn" onclick="saveDashboardAccount()">Save Account</button>
+      </div>
+      <div style="font-size:12px;color:#6b82a8;margin-top:8px">Managers can use Invoice, Rides, Hours, Dispatch, Map, and Quote. Reports hide revenue, collected, and outstanding totals.</div>
+    </div>
+
     <!-- Driver PINs -->
     <div class="settings-section">
       <div class="settings-section-title">👤 Driver PINs</div>
@@ -1529,13 +1547,11 @@ button,input,select,textarea{-webkit-appearance:none;font-family:inherit}
         <div class="mobile-content">
           <div class="mobile-tabs">
             <button class="mobile-tab active" onclick="switchMobilePanel('rides')" id="mobile-tab-rides">Rides</button>
-            <button class="mobile-tab" onclick="switchMobilePanel('drivers')" id="mobile-tab-drivers">Drivers</button>
-            <button class="mobile-tab" onclick="switchMobilePanel('optimize')" id="mobile-tab-optimize">Optimize</button>
-            <button class="mobile-tab" onclick="switchMobilePanel('map')" id="mobile-tab-map">Map</button>
-            <button class="mobile-tab" onclick="switchMobilePanel('hours')" id="mobile-tab-hours">Hours</button>
-            <button class="mobile-tab" onclick="switchMobilePanel('quote')" id="mobile-tab-quote">Quote</button>
             <button class="mobile-tab" onclick="switchMobilePanel('reports')" id="mobile-tab-reports">Reports</button>
-            <button class="mobile-tab" onclick="switchMobilePanel('settings')" id="mobile-tab-settings">Settings</button>
+            <button class="mobile-tab" onclick="switchMobilePanel('hours')" id="mobile-tab-hours">Hours</button>
+            <button class="mobile-tab" onclick="switchMobilePanel('dispatch')" id="mobile-tab-dispatch">Dispatch</button>
+            <button class="mobile-tab" onclick="switchMobilePanel('map')" id="mobile-tab-map">Live Map</button>
+            <button class="mobile-tab" onclick="switchMobilePanel('quote')" id="mobile-tab-quote">Quote</button>
           </div>
 
           <div class="mobile-panel active" id="mobile-panel-rides">
@@ -1565,6 +1581,16 @@ button,input,select,textarea{-webkit-appearance:none;font-family:inherit}
           <div class="mobile-panel" id="mobile-panel-drivers">
             <div class="mobile-section-title" style="margin-top:0">Drivers</div>
             <div id="mobile-drivers-list"></div>
+          </div>
+
+          <div class="mobile-panel" id="mobile-panel-dispatch">
+            <div class="mobile-section-title" style="margin-top:0">Dispatch</div>
+            <div class="mobile-quote-row">
+              <div class="mobile-input-label">Pickup Address</div>
+              <input class="mobile-input" id="mobile-dispatch-addr" placeholder="Enter pickup address" />
+              <button class="mobile-calc-btn" onclick="mobileFindClosestDriver()">Find Closest Driver</button>
+            </div>
+            <div id="mobile-dispatch-results"></div>
           </div>
 
           <div class="mobile-panel" id="mobile-panel-optimize">
@@ -2201,6 +2227,8 @@ const COLORS=['#00b4d8','#0096b7','#48cae4','#34d399','#f472b6'];
 const CHAPEL_HILL_PICKUP='Chapel Hill Nursing, 4511 Robosson Road, Randallstown, MD 21133';
 let BRANDING={displayName:'AbleCare Fleet',subtitle:'Owner Dashboard',logoUrl:'',logoDataUrl:'',domain:''};
 let pendingBrandLogoDataUrl='';
+let DASHBOARD_ACCOUNTS=[];
+let currentDashboardUser=null;
 
 // —— ADMIN MODE ——
 // This is for "hide the branding editor from normal users" (especially customer deployments).
@@ -2585,6 +2613,7 @@ async function loadSettings(){
     const snap=await settingsRef().once('value');
     const s=snap.val()||{};
     if(s.ownerPin) OWNER_PIN=s.ownerPin;
+    DASHBOARD_ACCOUNTS = Array.isArray(s.dashboardAccounts) ? s.dashboardAccounts : [];
     if(s.payPeriodDays) PAY_PERIOD_DAYS=s.payPeriodDays;
     if(s.payPeriodRef) PAY_PERIOD_REF_DATE=s.payPeriodRef;
     FACILITIES = normalizeFacilitySettings(s.facilities || FACILITIES);
@@ -3660,10 +3689,32 @@ function pinKey(k){
   updatePinDots();
 }
 function updatePinDots(){for(let i=0;i<4;i++) document.getElementById('pd'+i).classList.toggle('filled',i<pinBuf.length);}
+function dashboardUsers(){
+  const users=[{name:'David',pin:OWNER_PIN,role:'owner',active:true}];
+  (DASHBOARD_ACCOUNTS||[]).forEach(u=>{if(u&&u.active!==false&&u.pin)users.push(u);});
+  return users;
+}
+function currentUserName(){return currentDashboardUser?.name||'Unknown';}
+function currentUserRole(){return currentDashboardUser?.role||'owner';}
+function isOwnerUser(){return currentUserRole()==='owner';}
+function findDashboardUserByPin(pin){
+  return dashboardUsers().find(u=>String(u.pin||'')===String(pin||''))||null;
+}
+function applyUserPermissions(){
+  const user=currentDashboardUser||{name:'David',role:'owner'};
+  document.body.dataset.userRole=user.role||'owner';
+  const label=document.getElementById('current-user-label');
+  if(label) label.textContent=`${user.name} (${user.role||'owner'})`;
+  const squareBtn=document.getElementById('rep-view-square');
+  if(squareBtn) squareBtn.style.display=isOwnerUser()?'':'none';
+}
 function checkPin(){
-  if(pinBuf===OWNER_PIN){
+  const user=findDashboardUserByPin(pinBuf);
+  if(user){
+    currentDashboardUser={name:user.name||'User',role:user.role||'manager'};
     document.getElementById('screen-pin').style.display='none';
     document.getElementById('screen-dash').style.display='block';
+    applyUserPermissions();
     tryAutoInit();
   } else {
     document.getElementById('pin-error').textContent='Incorrect PIN. Try again.';
@@ -4202,6 +4253,8 @@ async function initSettings(){
   // Still allow Firebase branding to apply to the header (applyBranding in loadSettings()).
   if(document.getElementById('settings-branding')) initBrandingSettingsUI(s.branding||BRANDING);
 
+  renderDashboardAccounts();
+
   // Driver PINs
   renderDriverPins();
 
@@ -4265,6 +4318,60 @@ async function saveOwnerPin(){
   document.getElementById('s-pin').value='';document.getElementById('s-pin2').value='';
   msg.textContent='✓ Owner PIN updated!';msg.style.color='#06d6a0';msg.style.display='block';
   setTimeout(()=>msg.style.display='none',3000);
+}
+
+function renderDashboardAccounts(){
+  const list=document.getElementById('dashboard-accounts-list');
+  if(!list) return;
+  const accounts=DASHBOARD_ACCOUNTS||[];
+  if(!accounts.length){
+    list.innerHTML='<div style="font-size:12px;color:#6b82a8;margin-bottom:10px">No extra dashboard accounts yet. Add Ozzy or another manager below.</div>';
+    return;
+  }
+  list.innerHTML=accounts.map((u,i)=>`
+    <div class="driver-pin-row">
+      <div class="driver-pin-name">${escHtml(u.name||'User')}</div>
+      <div class="driver-pin-val">${escHtml(u.role||'manager')}</div>
+      <div class="driver-pin-val">PIN: ${u.pin?'••••':'Not set'}</div>
+      <button class="driver-pin-btn" onclick="editDashboardAccount(${i})">Edit</button>
+      <button class="driver-pin-btn" onclick="removeDashboardAccount(${i})">Remove</button>
+    </div>`).join('');
+}
+
+function editDashboardAccount(index){
+  const u=(DASHBOARD_ACCOUNTS||[])[index];
+  if(!u) return;
+  document.getElementById('acct-name').value=u.name||'';
+  document.getElementById('acct-pin').value=u.pin||'';
+  document.getElementById('acct-role').value=u.role||'manager';
+}
+
+async function saveDashboardAccount(){
+  const name=document.getElementById('acct-name').value.trim();
+  const pin=document.getElementById('acct-pin').value.trim();
+  const role=document.getElementById('acct-role').value||'manager';
+  if(!name){alert('Enter an account name.');return;}
+  if(pin.length!==4||!/^\d+$/.test(pin)){alert('PIN must be 4 digits.');return;}
+  const accounts=[...(DASHBOARD_ACCOUNTS||[])].filter(u=>String(u.name||'').toLowerCase()!==name.toLowerCase());
+  accounts.push({name,pin,role,active:true});
+  DASHBOARD_ACCOUNTS=accounts;
+  await settingsRef().update({dashboardAccounts:accounts});
+  document.getElementById('acct-name').value='';
+  document.getElementById('acct-pin').value='';
+  document.getElementById('acct-role').value='manager';
+  renderDashboardAccounts();
+  showToast('Account saved.');
+}
+
+async function removeDashboardAccount(index){
+  const accounts=[...(DASHBOARD_ACCOUNTS||[])];
+  const u=accounts[index];
+  if(!u) return;
+  if(!confirm(`Remove dashboard account for ${u.name}?`)) return;
+  accounts.splice(index,1);
+  DASHBOARD_ACCOUNTS=accounts;
+  await settingsRef().update({dashboardAccounts:accounts});
+  renderDashboardAccounts();
 }
 
 async function savePPSettings(){
@@ -4612,6 +4719,7 @@ async function renderDayView(){
           ${rideSourceTagHtml(r)}
           ${r.status?`<span class="ride-block-tag" style="background:#e0f2fe;color:#0369a1;font-weight:800">App: ${statusLabelText(r.status)}</span>`:''}
           ${r.driver?`<span class="ride-block-tag">👤 ${r.driver}${r.helper?' + '+r.helper:''}</span>`:'<span class="ride-block-tag" style="color:#f59e0b">No driver yet</span>'}
+          ${(r.updatedBy||r.createdBy)?`<span class="ride-block-tag" style="background:#f8fafc;color:#475569">By ${escHtml(r.updatedBy||r.createdBy)}</span>`:''}
           ${r.van?`<span class="ride-block-tag">Van #${r.van}</span>`:''}
           ${r.wait==='yes'?`<span class="ride-block-tag" style="background:#fff7ed;color:#c2410c">⏳ Wait</span>`:''}
           ${r.estimatedMiles!=null&&r.estimatedMiles!==''?`<span class="ride-block-tag" style="background:#f0fdf4;color:#16a34a;font-weight:800">🗺 Client ${r.estimatedMiles} mi</span>`:''}
@@ -4757,6 +4865,7 @@ function mobileRideCard(r){
       ${r.van?`<div class="mobile-tag">Van #${mobileEsc(r.van)}</div>`:''}
       ${unpaid?`<div class="mobile-tag" style="background:#fef3c7;color:#b45309">Unpaid</div>`:''}
       ${r.status?`<div class="mobile-tag">${mobileEsc(r.status)}</div>`:''}
+      ${(r.updatedBy||r.createdBy)?`<div class="mobile-tag">By ${mobileEsc(r.updatedBy||r.createdBy)}</div>`:''}
     </div>
     <div class="mobile-ride-actions">
       <button class="mobile-action-btn dark" onclick="openRideModal('${key}')">Open Ride</button>
@@ -4927,7 +5036,7 @@ async function renderMobileDashboard(){
     const revenue=reportRides.reduce((sum,r)=>sum+(parseFloat(r.price)||0),0);
     const unpaidLogs=reportRides.filter(r=>r.price&&r.paid!=='yes');
     const reportMiles=reportRides.reduce((sum,r)=>sum+reportTripMiles(r),0);
-    mobileSetText('mobile-report-revenue','$'+revenue.toFixed(0));
+    mobileSetText('mobile-report-revenue',isOwnerUser()?'$'+revenue.toFixed(0):'Hidden');
     mobileSetText('mobile-report-rides',reportRides.length);
     mobileSetText('mobile-report-unpaid',unpaidLogs.length);
     mobileSetText('mobile-report-miles',reportMiles.toFixed(1));
@@ -4996,6 +5105,27 @@ async function mobileCalculateQuote(){
       <div style="margin-top:10px;font-size:12px;color:#cbd5e1">Estimated mileage: ${miles.toFixed(1)} mi</div>`;
   }catch(e){
     resultEl.innerHTML=`<div style="font-size:13px;color:#fecaca;font-weight:800">Could not calculate quote: ${mobileEsc(e.message||e)}</div>`;
+  }
+}
+
+async function mobileFindClosestDriver(){
+  const input=document.getElementById('mobile-dispatch-addr');
+  const out=document.getElementById('mobile-dispatch-results');
+  const addr=input?input.value.trim():'';
+  if(!addr){alert('Please enter a pickup address.');return;}
+  out.innerHTML='<div class="mobile-card"><div class="mobile-subtle">Finding closest driver...</div></div>';
+  try{
+    initDispatchMap();
+    const desktopInput=document.getElementById('dispatch-addr');
+    if(desktopInput) desktopInput.value=addr;
+    selectedCoords=null;
+    await findClosest();
+    const desktopResults=document.getElementById('dispatch-results');
+    out.innerHTML=desktopResults&&desktopResults.innerHTML
+      ? `<div class="mobile-card"><div style="font-size:15px;font-weight:800;margin-bottom:10px">Closest drivers</div>${desktopResults.innerHTML}</div>`
+      : '<div class="mobile-card"><div class="mobile-subtle">No driver distances available yet.</div></div>';
+  }catch(e){
+    out.innerHTML=`<div class="mobile-card"><div style="font-size:13px;color:#ef4444;font-weight:800">Could not find closest driver: ${mobileEsc(e.message||e)}</div></div>`;
   }
 }
 
@@ -5977,6 +6107,8 @@ async function saveRide(){
       ? inferImportedEntrySource(pendingImportReviewMeta.source || '')
       : (rideEditKey ? rideSourceContext : (lastPastedEmail && lastPastedEmail.trim() ? 'email_paste' : 'manual')),
     updatedAt:Date.now(),
+    updatedBy:currentUserName(),
+    updatedByRole:currentUserRole(),
   };
   if(pendingImportReviewMeta){
     ride.importSource = pendingImportReviewMeta.source || 'claude-outlook';
@@ -5994,6 +6126,8 @@ async function saveRide(){
   }
   else{
     ride.createdAt=Date.now();
+    ride.createdBy=currentUserName();
+    ride.createdByRole=currentUserRole();
     const newRef = ridesRef().push();
     savedRideKey = newRef.key;
     await newRef.set(ride);
@@ -6370,11 +6504,14 @@ function renderSummaryCards(rides){
   const wcRides = rides.filter(r=>r.ridetype!=='str').length;
   const strRides = rides.filter(r=>r.ridetype==='str').length;
   const totalMiles = rides.reduce((s,r)=>s+reportTripMiles(r),0);
-
-  document.getElementById('rep-summary-cards').innerHTML = `
+  const moneyCards = isOwnerUser() ? `
     <div class="sum-card"><div class="sum-card-num cyan">$${totalRevenue.toFixed(2)}</div><div class="sum-card-label">Total Revenue</div></div>
     <div class="sum-card"><div class="sum-card-num" style="color:#16a34a">$${paidRevenue.toFixed(2)}</div><div class="sum-card-label">Collected</div></div>
     <div class="sum-card"><div class="sum-card-num" style="color:#f59e0b">$${unpaidRevenue.toFixed(2)}</div><div class="sum-card-label">Outstanding</div></div>
+  ` : '';
+
+  document.getElementById('rep-summary-cards').innerHTML = `
+    ${moneyCards}
     <div class="sum-card"><div class="sum-card-num">${totalMiles.toFixed(1)}</div><div class="sum-card-label">Trip Miles</div></div>
     <div class="sum-card"><div class="sum-card-num">${totalRides}</div><div class="sum-card-label">Total Rides</div></div>
     <div class="sum-card"><div class="sum-card-num">${wcRides}</div><div class="sum-card-label">Wheelchair</div></div>
@@ -6464,6 +6601,7 @@ async function loadSquareSales(){
 }
 
 function setRepView(v){
+  if(v==='square' && !isOwnerUser()) v='log';
   repView = v;
   ['log','square','facility','driver','month','duplicates'].forEach(x=>{
     const btn = document.getElementById('rep-view-'+x);
@@ -6922,13 +7060,17 @@ async function saveLogEdit(){
     paymethod: window._leToggles.paymethod||'cc',
     notes: document.getElementById('le-notes').value.trim(),
     status: document.getElementById('le-status').value||'',
-    updatedAt: Date.now()
+    updatedAt: Date.now(),
+    updatedBy: currentUserName(),
+    updatedByRole: currentUserRole()
   };
 
   if(logEditKey){
     await rideLogRef().child(logEditKey).update(ride);
   } else {
     ride.createdAt = Date.now();
+    ride.createdBy = currentUserName();
+    ride.createdByRole = currentUserRole();
     await rideLogRef().push(ride);
   }
 
