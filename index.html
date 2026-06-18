@@ -3707,6 +3707,8 @@ function applyUserPermissions(){
   if(label) label.textContent=`${user.name} (${user.role||'owner'})`;
   const squareBtn=document.getElementById('rep-view-square');
   if(squareBtn) squareBtn.style.display=isOwnerUser()?'':'none';
+  const invoiceTab=document.getElementById('tab-invoice');
+  if(invoiceTab) invoiceTab.style.display=isOwnerUser()?'':'none';
 }
 function checkPin(){
   const user=findDashboardUserByPin(pinBuf);
@@ -3736,6 +3738,7 @@ function isMobileDashboardViewport(){
 }
 
 function switchTab(name){
+  if(name==='invoice' && !isOwnerUser()) name='rides';
   if(name!=='mobile') desktopLastTab=name;
   document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));
   document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
