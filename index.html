@@ -1844,14 +1844,21 @@ body[data-user-role="manager"] .owner-only-setting{display:none !important}
     </div>
 
     <div class="modal-field">
+      <label>Client Phone</label>
+      <input type="tel" id="r-client-phone" placeholder="e.g. (443) 555-0123"/>
+    </div>
+
+    <div class="modal-field">
       <label>📍 Pickup Address</label>
-      <input type="text" id="r-pickup" placeholder="Pickup address..." style="width:100%;padding:10px 14px;border:2px solid #e8eef4;border-radius:10px;font-size:13px;color:#0d1b2a;outline:none;font-family:inherit"/>
+      <input type="text" id="r-pickup" placeholder="Pickup address..." oninput="onRideAddressInput('pickup')" autocomplete="off" style="width:100%;padding:10px 14px;border:2px solid #e8eef4;border-radius:10px;font-size:13px;color:#0d1b2a;outline:none;font-family:inherit"/>
+      <div class="suggestions"><div class="suggestions-list ride-address-suggestions" id="r-pickup-suggestions" style="display:none"></div></div>
       <div id="r-pickup-note" style="font-size:11px;color:#00b4d8;margin-top:4px;display:none"></div>
     </div>
 
     <div class="modal-field">
       <label>🏥 Drop Off Address</label>
-      <input type="text" id="r-dropoff" placeholder="Appointment / drop off location..." style="width:100%;padding:10px 14px;border:2px solid #e8eef4;border-radius:10px;font-size:13px;color:#0d1b2a;outline:none;font-family:inherit"/>
+      <input type="text" id="r-dropoff" placeholder="Appointment / drop off location..." oninput="onRideAddressInput('dropoff')" autocomplete="off" style="width:100%;padding:10px 14px;border:2px solid #e8eef4;border-radius:10px;font-size:13px;color:#0d1b2a;outline:none;font-family:inherit"/>
+      <div class="suggestions"><div class="suggestions-list ride-address-suggestions" id="r-dropoff-suggestions" style="display:none"></div></div>
       <div id="r-dropoff-note" style="font-size:11px;color:#00b4d8;margin-top:4px;display:none"></div>
     </div>
 
@@ -2075,6 +2082,10 @@ body[data-user-role="manager"] .owner-only-setting{display:none !important}
       <input type="text" id="fac-contact" placeholder="e.g. Jane Smith — Accounts Payable"/>
     </div>
     <div class="modal-field">
+      <label>Facility Phone</label>
+      <input type="tel" id="fac-phone" placeholder="e.g. (410) 555-0123"/>
+    </div>
+    <div class="modal-field">
       <label>📨 Ride Request Portal (Private Link)</label>
       <div style="display:flex;gap:8px;align-items:center">
         <input type="text" id="fac-portal-link" placeholder="Generate a private link..." readonly style="flex:1"/>
@@ -2279,7 +2290,7 @@ let dispatchMap=null;
 let dispatchResultLayers=[];
 let pinBuf='';
 let lastPastedEmail='';
-let addrDebounce=null,selectedCoords=null,lastQuery='';
+let addrDebounce=null,selectedCoords=null,lastQuery='',rideAddrDebounce=null,lastRideAddrQuery='';
 let tsMode='pp',ppOffset=0;
 let editContext={driverName:null,shiftKey:null};
 let rideEditKey=null;
@@ -2385,6 +2396,21 @@ function normalizeFacilityPickupAddress(facilityName, pickupValue){
     }
   }
   return pickup;
+}
+
+function normalizePhoneValue(value){
+  return String(value || '').trim();
+}
+
+function findFacilityByName(facilityName){
+  const name = String(facilityName || '').toLowerCase().trim();
+  if(!name) return null;
+  return FACILITIES.find(f=>String(f?.name || '').toLowerCase().trim() === name) || null;
+}
+
+function facilityPhoneForRide(facilityName){
+  const fac = findFacilityByName(facilityName);
+  return normalizePhoneValue(fac?.phone || fac?.facilityPhone || fac?.contactPhone || '');
 }
 
 function normalizeFacilitySettings(list){
@@ -3122,6 +3148,8 @@ function buildApprovedRideFromImport(rideDraft, record){
     time: rideDraft.time || '',
     facility,
     client: rideDraft.client || '',
+    clientPhone: normalizePhoneValue(rideDraft.clientPhone || rideDraft.client_phone || rideDraft.phone || ''),
+    facilityPhone: normalizePhoneValue(rideDraft.facilityPhone || rideDraft.facility_phone || record?.requesterPhone || facilityPhoneForRide(facility)),
     pickup: normalizeFacilityPickupAddress(facility, rideDraft.pickup || ''),
     dropoff: rideDraft.dropoff || '',
     ridetype: normalizeRideType(rideDraft.ridetype),
@@ -3391,6 +3419,8 @@ async function saveRideRequestResponse(){
         time: rideDraft.time || '',
         facility: rideDraft.facility || record.facility || '',
         client: rideDraft.client || '',
+        clientPhone: normalizePhoneValue(rideDraft.clientPhone || rideDraft.client_phone || ''),
+        facilityPhone: normalizePhoneValue(rideDraft.facilityPhone || rideDraft.facility_phone || record.requesterPhone || facilityPhoneForRide(rideDraft.facility || record.facility || '')),
         pickup: normalizeFacilityPickupAddress(rideDraft.facility || record.facility || '', rideDraft.pickup || ''),
         dropoff: rideDraft.dropoff || '',
         ridetype: normalizeRideType(rideDraft.ridetype),
@@ -3684,6 +3714,7 @@ function fillRideModalFromImport(rideDraft){
   document.getElementById('r-date').value = rideDraft.date || dateStr(new Date());
   document.getElementById('r-time').value = rideDraft.time || '';
   document.getElementById('r-client').value = rideDraft.client || '';
+  document.getElementById('r-client-phone').value = rideDraft.clientPhone || rideDraft.client_phone || rideDraft.phone || '';
   document.getElementById('r-pickup').value = rideDraft.pickup || '';
   document.getElementById('r-dropoff').value = rideDraft.dropoff || '';
   document.getElementById('r-price').value = rideDraft.price || '';
@@ -3940,6 +3971,41 @@ function selectSuggestion(label,lat,lng){
   document.getElementById('dispatch-addr').value=label;
   selectedCoords={lat:parseFloat(lat),lng:parseFloat(lng),label};
   document.getElementById('addr-suggestions').style.display='none';
+}
+
+function onRideAddressInput(kind){
+  const inputId=kind==='dropoff'?'r-dropoff':'r-pickup';
+  const listId=kind==='dropoff'?'r-dropoff-suggestions':'r-pickup-suggestions';
+  const q=document.getElementById(inputId).value.trim();
+  if(rideAddrDebounce) clearTimeout(rideAddrDebounce);
+  if(q.length>2) rideAddrDebounce=setTimeout(()=>fetchRideAddressSuggestions(kind,q),350);
+  else document.getElementById(listId).style.display='none';
+}
+
+async function fetchRideAddressSuggestions(kind,q){
+  const listId=kind==='dropoff'?'r-dropoff-suggestions':'r-pickup-suggestions';
+  const cacheKey=kind+'|'+q;
+  if(cacheKey===lastRideAddrQuery)return;
+  lastRideAddrQuery=cacheKey;
+  try{
+    const searchText=/\\b(md|maryland|baltimore|pikesville|towson|catonsville|randallstown|lutherville)\\b/i.test(q) ? q : q + ' Maryland';
+    const res=await fetch(`https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(searchText)}&format=json&limit=5&countrycodes=us&addressdetails=1`,{headers:{'Accept-Language':'en'}});
+    const data=await res.json();
+    const el=document.getElementById(listId);
+    if(!data.length){el.style.display='none';return;}
+    el.innerHTML=data.map(r=>{
+      const label=String(r.display_name||'').replace(/'/g,"\\'").replace(/"/g,'&quot;');
+      return `<div class="suggestion-item" onclick="selectRideAddressSuggestion('${kind}','${label}')">${escHtml(r.display_name||'')}</div>`;
+    }).join('');
+    el.style.display='block';
+  }catch(e){}
+}
+
+function selectRideAddressSuggestion(kind,label){
+  const inputId=kind==='dropoff'?'r-dropoff':'r-pickup';
+  const listId=kind==='dropoff'?'r-dropoff-suggestions':'r-pickup-suggestions';
+  document.getElementById(inputId).value=label;
+  document.getElementById(listId).style.display='none';
 }
 async function findClosest(){
   document.getElementById('addr-suggestions').style.display='none';
@@ -4559,6 +4625,7 @@ function renderFacilitiesList(){
       <div class="fac-item-addr">${f.pickup?'📍 Pickup: '+f.pickup:'📍 Pickup: varies — enter manually'}${f.dropoff?'<br>🏥 Drop off: '+f.dropoff:''}${f.email?'<br>📧 '+f.email:''}</div>
       ${f.notes?`<div style="font-size:11px;color:#94a3b8;margin-top:3px">📝 ${f.notes}</div>`:''}
     </div>
+      ${f.phone?`<div style="font-size:12px;color:#6b82a8;margin-top:3px">Phone: ${f.phone}</div>`:''}
     <button class="fac-edit-btn" onclick="openFacilityModal(${i})">Edit</button>`;
     list.appendChild(div);
   });
@@ -4629,6 +4696,7 @@ function openFacilityModal(idx){
   document.getElementById('fac-notes').value=f?f.notes:'';
   document.getElementById('fac-email').value=f?f.email||'':'';
   document.getElementById('fac-contact').value=f?f.contact||'':'';
+  document.getElementById('fac-phone').value=f?f.phone||f.facilityPhone||f.contactPhone||'':'';
 
   // Portal link/key are derived from facility name + portalKey.
   const portalKey = (f && f.portalKey) ? String(f.portalKey) : '';
@@ -4653,6 +4721,7 @@ async function saveFacility(){
     notes:document.getElementById('fac-notes').value.trim(),
     email:document.getElementById('fac-email').value.trim(),
     contact:document.getElementById('fac-contact').value.trim(),
+    phone:document.getElementById('fac-phone').value.trim(),
     portalKey: (document.getElementById('fac-portal-key')?.value || '').trim()
   };
   if(facEditKey!==null){FACILITIES[facEditKey]=fac;}
@@ -5987,6 +6056,7 @@ async function applyOptimizedSchedule(){
     await db.ref().update(updates);
   }
   const ds = dateStr(selectedDate);
+  await backfillRidePhonesForDate(ds);
   const driverCounts = {};
   Object.entries(optimizedSchedule.schedules || {}).forEach(([driverName, sched])=>{
     driverCounts[driverName] = (sched.rides || []).length;
@@ -6095,7 +6165,7 @@ async function openRideModal(key,defaultDate){
   sel.innerHTML='<option value="">Assign later...</option>'+drivers.map(d=>`<option value="${d.name}">${d.name}</option>`).join('');
   const fbEl=document.getElementById('facility-btns');
   fbEl.innerHTML=FACILITIES.map(f=>`<button class="facility-btn" onclick="selectFacility('${f.name.replace(/'/g,"\\'")}')">${f.name}</button>`).join('');
-  const clearAddressNotes=()=>{['r-pickup-note','r-dropoff-note'].forEach(id=>{const el=document.getElementById(id);if(el)el.style.display='none';});['r-pickup','r-dropoff'].forEach(id=>{const el=document.getElementById(id);if(el)el.style.background='';});};
+  const clearAddressNotes=()=>{['r-pickup-note','r-dropoff-note','r-pickup-suggestions','r-dropoff-suggestions'].forEach(id=>{const el=document.getElementById(id);if(el)el.style.display='none';});['r-pickup','r-dropoff'].forEach(id=>{const el=document.getElementById(id);if(el)el.style.background='';});};
   if(key){
     const snap=await ridesRef().child(key).once('value');const r=snap.val();if(!r)return;
     rideSourceContext = inferRideEntrySource(r);
@@ -6105,6 +6175,7 @@ async function openRideModal(key,defaultDate){
     document.getElementById('r-time').value=r.time||'';
     document.getElementById('r-facility').value=r.facility||'';
     document.getElementById('r-client').value=r.client||'';
+    document.getElementById('r-client-phone').value=r.clientPhone||r.phone||'';
     document.getElementById('r-pickup').value=r.pickup||'';
     document.getElementById('r-dropoff').value=r.dropoff||'';
     document.getElementById('r-price').value=r.price||'';
@@ -6128,6 +6199,7 @@ async function openRideModal(key,defaultDate){
     document.getElementById('r-time').value='';
     document.getElementById('r-facility').value='';
     document.getElementById('r-client').value='';
+    document.getElementById('r-client-phone').value='';
     document.getElementById('r-pickup').value='';
     document.getElementById('r-dropoff').value='';
     document.getElementById('r-price').value='';
@@ -6162,6 +6234,8 @@ async function saveRide(){
   const ride={
     date,time:document.getElementById('r-time').value||'',
     facility,client:document.getElementById('r-client').value.trim(),
+    clientPhone:normalizePhoneValue(document.getElementById('r-client-phone').value),
+    facilityPhone:facilityPhoneForRide(facility),
     pickup:document.getElementById('r-pickup').value.trim(),
     dropoff:document.getElementById('r-dropoff').value.trim(),
     ridetype:rideToggles.ridetype,triptype:rideToggles.triptype,
@@ -6220,8 +6294,24 @@ async function deleteRide(){
   await ridesRef().child(rideEditKey).remove();
   closeRideModal();renderDayView();if(document.getElementById('screen-mobile')?.classList.contains('active'))renderMobileDashboard();
 }
+
+async function backfillRidePhonesForDate(ds){
+  const snap=await ridesRef().once('value');
+  const updates={};
+  Object.entries(snap.val()||{}).forEach(([key,r])=>{
+    if(!r||r.date!==ds)return;
+    const facilityPhone=facilityPhoneForRide(r.facility);
+    const existingFacilityPhone=normalizePhoneValue(r.facilityPhone || r.facility_phone || '');
+    const existingClientPhone=normalizePhoneValue(r.clientPhone || r.client_phone || r.phone || '');
+    if(facilityPhone && !existingFacilityPhone) updates[`rides/${key}/facilityPhone`]=facilityPhone;
+    if(existingClientPhone && !r.clientPhone) updates[`rides/${key}/clientPhone`]=existingClientPhone;
+  });
+  if(Object.keys(updates).length) await db.ref().update(updates);
+}
+
 async function sendSelectedSchedule(){
   const ds=dateStr(selectedDate);
+  await backfillRidePhonesForDate(ds);
   const ridesSnap=await ridesRef().once('value');
   const rides=Object.values(ridesSnap.val()||{}).filter(r=>r.date===ds);
   if(!rides.length){alert('No rides scheduled for the selected day.');return;}
@@ -6253,6 +6343,7 @@ async function sendSelectedSchedule(){
 async function sendTomorrowSchedule(){
   const tomorrow=new Date();tomorrow.setDate(tomorrow.getDate()+1);
   const ds=dateStr(tomorrow);
+  await backfillRidePhonesForDate(ds);
   const rides=Object.values(allRidesCache).filter(r=>r.date===ds);
   if(!rides.length){alert('No rides scheduled for tomorrow.');return;}
   const byDriver={};rides.forEach(r=>{if(!r.driver)return;if(!byDriver[r.driver])byDriver[r.driver]=[];byDriver[r.driver].push(r);});
@@ -7852,6 +7943,7 @@ ${emailText}
 
 IMPORTANT EXTRACTION RULES:
 - "client" = the PATIENT name only. If no name is given, return empty string. A phone number is NOT a client name.
+- "clientPhone" = the patient/client phone number if given. If the phone number belongs to the facility/requester instead of the patient, leave clientPhone empty and keep that number in notes.
 - "facility" = ONLY return a facility name if the text EXPLICITLY mentions the known facility name (e.g. "Meadow Park", "Chapel Hill", "WAAP"). NEVER match a facility based on street address similarity or partial word matches. These are ALWAYS private home addresses, never facilities: "6518 Meadowridge" (not Meadow Park), "Eldridge" (a street, not a facility), any address with a house number like "2507 Cherry Tree Rd". If no known facility name is explicitly mentioned by name in the text, return empty string "" for facility.
 - "pickup" = the full pickup address. If city/state is missing, append ", MD" since we operate in Maryland.
 - "dropoff" = the full drop-off address. If city/state is missing, append ", MD". A phone number listed after an address is NOT part of the address.
@@ -7860,11 +7952,12 @@ IMPORTANT EXTRACTION RULES:
 - "time" = the PICKUP time in HH:MM 24hr format. "11am" = "11:00". If email says "arrive by X" calculate pickup 30-60 min earlier.
 - "ridetype" = "str" if stretcher mentioned, "wc" if wheelchair mentioned, "wc" if unclear
 - "triptype" = "rt" if round trip mentioned, "1way" if one way, "rt" if unclear
-- "notes" = any extra info like phone numbers, appointment type, special instructions
+- "notes" = any extra info like facility/requester phone numbers, appointment type, special instructions
 
 Respond ONLY with valid JSON, no markdown, no explanation:
 {
   "client": "",
+  "clientPhone": "",
   "facility": "",
   "pickup": "",
   "dropoff": "",
@@ -7908,6 +8001,7 @@ Respond ONLY with valid JSON, no markdown, no explanation:
       syncEmailReviewPanel();
       // Fill in extracted fields
       if(parsed.client) document.getElementById('r-client').value = parsed.client;
+      if(parsed.clientPhone || parsed.client_phone || parsed.phone) document.getElementById('r-client-phone').value = parsed.clientPhone || parsed.client_phone || parsed.phone;
       if(parsed.notes) document.getElementById('r-notes').value = parsed.notes;
       if(parsed.time) document.getElementById('r-time').value = parsed.time;
       if(parsed.date) document.getElementById('r-date').value = parsed.date;
