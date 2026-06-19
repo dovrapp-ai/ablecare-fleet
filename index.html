@@ -3987,6 +3987,7 @@ function buildRideAddressQueries(q){
     .replace(/\bave\b/ig,'Avenue')
     .replace(/\bst\b/ig,'Street');
   const hasMaryland=/\b(md|maryland)\b/i.test(normalized);
+  const hasStateOrCountry=/\b(al|ak|az|ar|ca|co|ct|de|dc|fl|ga|hi|ia|id|il|in|ks|ky|la|ma|me|mi|mn|mo|ms|mt|nc|nd|ne|nh|nj|nm|nv|ny|oh|ok|or|pa|ri|sc|sd|tn|tx|ut|va|vt|wa|wi|wv|wy|usa|united states|canada|mexico|israel|uk|united kingdom)\b/i.test(normalized);
   const hasLocalCity=/\b(baltimore|pikesville|towson|catonsville|randallstown|lutherville|owings mills|reisterstown|parkville|dundalk|essex|rosedale|timonium|cockeysville)\b/i.test(normalized);
   const queries=[];
   const add=(value)=>{
@@ -3999,9 +4000,10 @@ function buildRideAddressQueries(q){
     add(`${normalized} Baltimore County Maryland`);
   }
   add(normalized);
-  if(!hasLocalCity)add(`${normalized} Pikesville Maryland`);
-  if(!hasMaryland)add(`${normalized} Maryland`);
-  return queries.slice(0,4);
+  if(!hasStateOrCountry&&!hasLocalCity)add(`${normalized} Pikesville Maryland`);
+  if(!hasStateOrCountry&&!hasMaryland)add(`${normalized} Maryland`);
+  add(`${normalized} United States`);
+  return queries.slice(0,5);
 }
 
 function renderRideAddressMessage(listId,message){
@@ -4033,7 +4035,7 @@ async function fetchRideAddressSuggestions(kind,q){
     const seen=new Set();
     let data=[];
     for(const searchText of queries){
-      const res=await fetch(`https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(searchText)}&format=json&limit=5&countrycodes=us&addressdetails=1`,{headers:{'Accept-Language':'en'}});
+      const res=await fetch(`https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(searchText)}&format=json&limit=5&addressdetails=1`,{headers:{'Accept-Language':'en'}});
       const rows=await res.json();
       if(Array.isArray(rows)){
         rows.forEach(row=>{
