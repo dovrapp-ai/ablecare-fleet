@@ -342,6 +342,7 @@ button,input,select,textarea{-webkit-appearance:none;font-family:inherit}
 .settings-input:focus{border-color:#00b4d8}
 .settings-save-btn{background:#00b4d8;color:#fff;border:none;border-radius:10px;padding:8px 16px;font-size:13px;font-weight:700;cursor:pointer}
 .settings-save-btn:hover{background:#0096b7}
+body[data-user-role="manager"] .owner-only-setting{display:none !important}
 .fac-item{background:#f4f7fb;border-radius:12px;padding:12px 16px;margin-bottom:8px;display:flex;align-items:flex-start;gap:12px}
 .fac-item-info{flex:1}
 .fac-item-name{font-size:14px;font-weight:800;color:#0d1b2a}
@@ -1312,7 +1313,7 @@ button,input,select,textarea{-webkit-appearance:none;font-family:inherit}
   <div class="screen" id="screen-settings">
 
     <!-- Owner PIN -->
-    <div class="settings-section">
+    <div class="settings-section owner-only-setting">
       <div class="settings-section-title">🔐 Owner PIN</div>
       <div class="settings-row">
         <div class="settings-label">Dashboard Login PIN</div>
@@ -1325,7 +1326,7 @@ button,input,select,textarea{-webkit-appearance:none;font-family:inherit}
       </div>
     </div>
 
-    <div class="settings-section">
+    <div class="settings-section owner-only-setting">
       <div class="settings-section-title">Dashboard Accounts</div>
       <div id="dashboard-accounts-list"></div>
       <div class="settings-row">
@@ -3732,6 +3733,9 @@ function applyUserPermissions(){
   if(squareBtn) squareBtn.style.display=isOwnerUser()?'':'none';
   const invoiceTab=document.getElementById('tab-invoice');
   if(invoiceTab) invoiceTab.style.display=isOwnerUser()?'':'none';
+  document.querySelectorAll('.owner-only-setting').forEach(el=>{
+    el.style.display=isOwnerUser()?'':'none';
+  });
 }
 function checkPin(){
   const user=findDashboardUserByPin(pinBuf);
@@ -4373,6 +4377,7 @@ async function removeCustomStatus(index){
 }
 
 async function saveOwnerPin(){
+  if(!isOwnerUser()){alert('Only the owner can change the owner PIN.');return;}
   const p1=document.getElementById('s-pin').value;
   const p2=document.getElementById('s-pin2').value;
   const msg=document.getElementById('s-pin-msg');
@@ -4404,6 +4409,7 @@ function renderDashboardAccounts(){
 }
 
 function editDashboardAccount(index){
+  if(!isOwnerUser()){alert('Only the owner can edit dashboard accounts.');return;}
   const u=(DASHBOARD_ACCOUNTS||[])[index];
   if(!u) return;
   document.getElementById('acct-name').value=u.name||'';
@@ -4412,6 +4418,7 @@ function editDashboardAccount(index){
 }
 
 async function saveDashboardAccount(){
+  if(!isOwnerUser()){alert('Only the owner can save dashboard accounts.');return;}
   const name=document.getElementById('acct-name').value.trim();
   const pin=document.getElementById('acct-pin').value.trim();
   const role=document.getElementById('acct-role').value||'manager';
@@ -4429,6 +4436,7 @@ async function saveDashboardAccount(){
 }
 
 async function removeDashboardAccount(index){
+  if(!isOwnerUser()){alert('Only the owner can remove dashboard accounts.');return;}
   const accounts=[...(DASHBOARD_ACCOUNTS||[])];
   const u=accounts[index];
   if(!u) return;
