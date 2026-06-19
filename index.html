@@ -156,11 +156,14 @@ button,input,select,textarea{-webkit-appearance:none;font-family:inherit}
 .suggestions-list{
   position:absolute;top:0;left:0;right:0;
   background:#fff;border:1px solid #e8eef4;border-radius:12px;
-  box-shadow:0 4px 20px rgba(0,0,0,0.1);z-index:100;overflow:hidden;
+  box-shadow:0 4px 20px rgba(0,0,0,0.1);z-index:5000;overflow:hidden;
+  max-height:220px;overflow-y:auto;
 }
 .suggestion-item{padding:11px 16px;font-size:13px;cursor:pointer;color:#0d1b2a;border-bottom:1px solid #f4f7fb}
 .suggestion-item:last-child{border-bottom:none}
 .suggestion-item:hover{background:#f4f7fb}
+.suggestion-item.muted{cursor:default;color:#6b82a8;background:#fff}
+.suggestion-item.muted:hover{background:#fff}
 .dispatch-loading{text-align:center;padding:20px;color:#6b82a8;font-size:14px}
 .dispatch-results{display:flex;flex-direction:column;gap:10px}
 .result-row{
@@ -3973,12 +3976,50 @@ function selectSuggestion(label,lat,lng){
   document.getElementById('addr-suggestions').style.display='none';
 }
 
+function buildRideAddressQueries(q){
+  const raw=String(q||'').trim().replace(/\s+/g,' ');
+  if(!raw)return [];
+  let normalized=raw
+    .replace(/\breisters?\b/ig,'Reisterstown Road')
+    .replace(/\breisterstown\s+rd\b/ig,'Reisterstown Road')
+    .replace(/\bpk\b/ig,'Pike')
+    .replace(/\brd\b/ig,'Road')
+    .replace(/\bave\b/ig,'Avenue')
+    .replace(/\bst\b/ig,'Street');
+  const hasMaryland=/\b(md|maryland)\b/i.test(normalized);
+  const hasLocalCity=/\b(baltimore|pikesville|towson|catonsville|randallstown|lutherville|owings mills|reisterstown|parkville|dundalk|essex|rosedale|timonium|cockeysville)\b/i.test(normalized);
+  const queries=[];
+  const add=(value)=>{
+    const clean=String(value||'').trim().replace(/\s+/g,' ');
+    if(clean&&!queries.some(existing=>existing.toLowerCase()===clean.toLowerCase()))queries.push(clean);
+  };
+
+  if(/\breisterstown/i.test(normalized)){
+    add(hasLocalCity?normalized:`${normalized} Pikesville MD 21208`);
+    add(`${normalized} Baltimore County Maryland`);
+  }
+  add(normalized);
+  if(!hasLocalCity)add(`${normalized} Pikesville Maryland`);
+  if(!hasMaryland)add(`${normalized} Maryland`);
+  return queries.slice(0,4);
+}
+
+function renderRideAddressMessage(listId,message){
+  const el=document.getElementById(listId);
+  if(!el)return;
+  el.innerHTML=`<div class="suggestion-item muted">${escHtml(message)}</div>`;
+  el.style.display='block';
+}
+
 function onRideAddressInput(kind){
   const inputId=kind==='dropoff'?'r-dropoff':'r-pickup';
   const listId=kind==='dropoff'?'r-dropoff-suggestions':'r-pickup-suggestions';
   const q=document.getElementById(inputId).value.trim();
   if(rideAddrDebounce) clearTimeout(rideAddrDebounce);
-  if(q.length>2) rideAddrDebounce=setTimeout(()=>fetchRideAddressSuggestions(kind,q),350);
+  if(q.length>2){
+    renderRideAddressMessage(listId,'Searching addresses...');
+    rideAddrDebounce=setTimeout(()=>fetchRideAddressSuggestions(kind,q),350);
+  }
   else document.getElementById(listId).style.display='none';
 }
 
@@ -3988,17 +4029,33 @@ async function fetchRideAddressSuggestions(kind,q){
   if(cacheKey===lastRideAddrQuery)return;
   lastRideAddrQuery=cacheKey;
   try{
-    const searchText=/\\b(md|maryland|baltimore|pikesville|towson|catonsville|randallstown|lutherville)\\b/i.test(q) ? q : q + ' Maryland';
-    const res=await fetch(`https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(searchText)}&format=json&limit=5&countrycodes=us&addressdetails=1`,{headers:{'Accept-Language':'en'}});
-    const data=await res.json();
+    const queries=buildRideAddressQueries(q);
+    const seen=new Set();
+    let data=[];
+    for(const searchText of queries){
+      const res=await fetch(`https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(searchText)}&format=json&limit=5&countrycodes=us&addressdetails=1`,{headers:{'Accept-Language':'en'}});
+      const rows=await res.json();
+      if(Array.isArray(rows)){
+        rows.forEach(row=>{
+          const key=String(row.place_id||row.display_name||'');
+          if(key&&!seen.has(key)){
+            seen.add(key);
+            data.push(row);
+          }
+        });
+      }
+      if(data.length>=5)break;
+    }
     const el=document.getElementById(listId);
-    if(!data.length){el.style.display='none';return;}
+    if(!data.length){renderRideAddressMessage(listId,'No address matches yet. Try adding city or ZIP.');return;}
     el.innerHTML=data.map(r=>{
       const label=String(r.display_name||'').replace(/'/g,"\\'").replace(/"/g,'&quot;');
       return `<div class="suggestion-item" onclick="selectRideAddressSuggestion('${kind}','${label}')">${escHtml(r.display_name||'')}</div>`;
     }).join('');
     el.style.display='block';
-  }catch(e){}
+  }catch(e){
+    renderRideAddressMessage(listId,'Address lookup is unavailable. You can still type the full address.');
+  }
 }
 
 function selectRideAddressSuggestion(kind,label){
