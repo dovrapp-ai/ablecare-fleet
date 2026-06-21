@@ -879,8 +879,10 @@ body[data-user-role="manager"] .owner-only-setting{display:none !important}
 .mobile-date{margin-top:6px;font-size:14px;color:#cbd5e1}
 .mobile-date-jump{display:grid;grid-template-columns:1fr auto;gap:8px;align-items:end;margin-top:12px}
 .mobile-date-input{width:100%;border:1px solid #dbe2ea;border-radius:14px;padding:12px;font-size:14px;font-weight:800;color:#0f172a;background:#fff}
-.mobile-week-strip{display:grid;grid-template-columns:repeat(7,1fr);gap:6px;margin-top:10px}
-.mobile-week-day{border:1px solid #e2e8f0;background:#fff;color:#334155;border-radius:14px;padding:8px 4px;text-align:center;cursor:pointer}
+.mobile-week-strip{display:flex;gap:6px;margin-top:10px;overflow-x:auto;padding-bottom:4px;scroll-snap-type:x proximity;-webkit-overflow-scrolling:touch}
+.mobile-week-strip::-webkit-scrollbar{display:none}
+.mobile-week-day{border:1px solid #e2e8f0;background:#fff;color:#334155;border-radius:14px;padding:8px 4px;text-align:center;cursor:pointer;min-width:54px;scroll-snap-align:center}
+.mobile-week-day.today:not(.active){border-color:#06b6d4;color:#0369a1}
 .mobile-week-day.active{background:#0f172a;border-color:#0f172a;color:#fff}
 .mobile-week-name{font-size:10px;text-transform:uppercase;color:inherit;opacity:.72;font-weight:800}
 .mobile-week-num{font-size:15px;font-weight:900;margin-top:2px}
@@ -5018,18 +5020,18 @@ function renderMobileWeekStrip(rideDates){
   const container=document.getElementById('mobile-week-strip');
   if(!container)return;
   const selected=new Date(selectedDate||new Date());
-  const weekStart=new Date(selected);
-  weekStart.setDate(selected.getDate()-selected.getDay());
+  const stripStart=new Date(selected);
+  stripStart.setDate(selected.getDate()-14);
   const selectedDs=dateStr(selected);
   const todayDs=dateStr(new Date());
   const dayNames=['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
   let html='';
-  for(let i=0;i<7;i++){
-    const d=new Date(weekStart);
-    d.setDate(weekStart.getDate()+i);
+  for(let i=0;i<35;i++){
+    const d=new Date(stripStart);
+    d.setDate(stripStart.getDate()+i);
     const ds=dateStr(d);
     const label=dayNames[d.getDay()];
-    html+=`<button class="mobile-week-day${ds===selectedDs?' active':''}${rideDates&&rideDates.has(ds)?' has-rides':''}" onclick="mobileSelectDate('${ds}')" title="${escHtml(d.toLocaleDateString('en-US',{weekday:'long',month:'long',day:'numeric'}))}">
+    html+=`<button class="mobile-week-day${ds===todayDs?' today':''}${ds===selectedDs?' active':''}${rideDates&&rideDates.has(ds)?' has-rides':''}" data-date="${ds}" onclick="mobileSelectDate('${ds}')" title="${escHtml(d.toLocaleDateString('en-US',{weekday:'long',month:'long',day:'numeric'}))}">
       <div class="mobile-week-name">${label}</div>
       <div class="mobile-week-num">${d.getDate()}</div>
     </button>`;
@@ -5037,6 +5039,10 @@ function renderMobileWeekStrip(rideDates){
   container.innerHTML=html;
   const picker=document.getElementById('mobile-ride-date-picker');
   if(picker) picker.value=selectedDs;
+  setTimeout(()=>{
+    const active=container.querySelector('.mobile-week-day.active');
+    if(active&&active.scrollIntoView) active.scrollIntoView({behavior:'smooth',inline:'center',block:'nearest'});
+  },0);
 }
 
 function toggleMobileReportsShowAll(){
