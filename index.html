@@ -877,6 +877,15 @@ body[data-user-role="manager"] .owner-only-setting{display:none !important}
 .mobile-brand{font-size:11px;letter-spacing:2px;text-transform:uppercase;color:#94a3b8;margin-bottom:6px}
 .mobile-title{font-size:24px;font-weight:800;line-height:1.1}
 .mobile-date{margin-top:6px;font-size:14px;color:#cbd5e1}
+.mobile-date-jump{display:grid;grid-template-columns:1fr auto;gap:8px;align-items:end;margin-top:12px}
+.mobile-date-input{width:100%;border:1px solid #dbe2ea;border-radius:14px;padding:12px;font-size:14px;font-weight:800;color:#0f172a;background:#fff}
+.mobile-week-strip{display:grid;grid-template-columns:repeat(7,1fr);gap:6px;margin-top:10px}
+.mobile-week-day{border:1px solid #e2e8f0;background:#fff;color:#334155;border-radius:14px;padding:8px 4px;text-align:center;cursor:pointer}
+.mobile-week-day.active{background:#0f172a;border-color:#0f172a;color:#fff}
+.mobile-week-name{font-size:10px;text-transform:uppercase;color:inherit;opacity:.72;font-weight:800}
+.mobile-week-num{font-size:15px;font-weight:900;margin-top:2px}
+.mobile-week-day.has-rides .mobile-week-num::after{content:'';display:block;width:5px;height:5px;border-radius:50%;background:#06b6d4;margin:4px auto 0}
+.mobile-week-day.active.has-rides .mobile-week-num::after{background:#fff}
 .mobile-header-actions{display:grid;grid-template-columns:1fr 1fr;gap:8px;min-width:170px}
 .mobile-top-btn{border:none;border-radius:14px;padding:11px 10px;font-size:12px;font-weight:800;cursor:pointer;text-align:center}
 .mobile-top-btn.primary{background:#06b6d4;color:#fff}
@@ -1596,6 +1605,14 @@ body[data-user-role="manager"] .owner-only-setting{display:none !important}
                 <button class="mobile-soft-btn" onclick="mobileShiftDay(1)">Next Day</button>
                 <button class="mobile-soft-btn" onclick="renderMobileDashboard()">Refresh</button>
               </div>
+              <div class="mobile-date-jump">
+                <div>
+                  <div class="mobile-input-label">Jump to Date</div>
+                  <input class="mobile-date-input" id="mobile-ride-date-picker" type="date" onchange="mobileSelectDate(this.value)" />
+                </div>
+                <button class="mobile-top-btn primary" style="padding:12px 14px" onclick="openRideModal(null,dateStr(selectedDate))">Add</button>
+              </div>
+              <div class="mobile-week-strip" id="mobile-week-strip"></div>
             </div>
 
             <div class="mobile-section-title">Needs attention</div>
@@ -4988,6 +5005,40 @@ function mobileGoToday(){
   renderMobileDashboard();
 }
 
+function mobileSelectDate(ds){
+  if(!ds)return;
+  selectedDate=new Date(ds+'T12:00:00');
+  miniMonthOffset=(selectedDate.getFullYear()-new Date().getFullYear())*12+(selectedDate.getMonth()-new Date().getMonth());
+  renderMobileDashboard();
+  renderDayView();
+  renderMiniCal();
+}
+
+function renderMobileWeekStrip(rideDates){
+  const container=document.getElementById('mobile-week-strip');
+  if(!container)return;
+  const selected=new Date(selectedDate||new Date());
+  const weekStart=new Date(selected);
+  weekStart.setDate(selected.getDate()-selected.getDay());
+  const selectedDs=dateStr(selected);
+  const todayDs=dateStr(new Date());
+  const dayNames=['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
+  let html='';
+  for(let i=0;i<7;i++){
+    const d=new Date(weekStart);
+    d.setDate(weekStart.getDate()+i);
+    const ds=dateStr(d);
+    const label=dayNames[d.getDay()];
+    html+=`<button class="mobile-week-day${ds===selectedDs?' active':''}${rideDates&&rideDates.has(ds)?' has-rides':''}" onclick="mobileSelectDate('${ds}')" title="${escHtml(d.toLocaleDateString('en-US',{weekday:'long',month:'long',day:'numeric'}))}">
+      <div class="mobile-week-name">${label}</div>
+      <div class="mobile-week-num">${d.getDate()}</div>
+    </button>`;
+  }
+  container.innerHTML=html;
+  const picker=document.getElementById('mobile-ride-date-picker');
+  if(picker) picker.value=selectedDs;
+}
+
 function toggleMobileReportsShowAll(){
   mobileReportsShowAll=!mobileReportsShowAll;
   renderMobileDashboard();
@@ -5132,8 +5183,11 @@ async function renderMobileDashboard(){
   if(!shell) return;
   const ds=dateStr(selectedDate||new Date());
   mobileSetText('mobile-dashboard-date',selectedDate.toLocaleDateString('en-US',{weekday:'long',month:'long',day:'numeric'}));
+  const picker=document.getElementById('mobile-ride-date-picker');
+  if(picker) picker.value=ds;
 
   if(!db){
+    renderMobileWeekStrip(new Set());
     document.getElementById('mobile-needs-list').innerHTML=mobileEmpty('Not connected to the database yet. Enter the PIN and wait for the dashboard to load.');
     document.getElementById('mobile-assigned-list').innerHTML='';
     return;
@@ -5157,6 +5211,8 @@ async function renderMobileDashboard(){
     mobileLocCache=locs;
     mobileDriversCache=drivers;
     const allRides=Object.entries(allRidesCache).map(([k,v])=>({...v,_key:k}));
+    const mobileRideDates=new Set(allRides.map(r=>r.date).filter(Boolean));
+    renderMobileWeekStrip(mobileRideDates);
     const dayRides=allRides.filter(r=>r.date===ds).sort((a,b)=>(a.time||'').localeCompare(b.time||''));
     const assigned=dayRides.filter(r=>r.driver);
     const unassigned=dayRides.filter(r=>!r.driver);
