@@ -1149,6 +1149,31 @@ body[data-user-role="manager"] .owner-only-setting{display:none !important}
           </div>
         </div>
 
+        <div style="background:#f8fafc;border:1px solid #e2e8f0;border-radius:14px;padding:14px;margin-bottom:16px">
+          <div style="display:flex;justify-content:space-between;gap:12px;align-items:center;margin-bottom:12px">
+            <div>
+              <div style="font-size:12px;color:#6b82a8;font-weight:800;text-transform:uppercase;letter-spacing:.06em">Rate Being Quoted</div>
+              <div id="q-rate-label" style="font-size:13px;color:#0d1b2a;font-weight:800;margin-top:3px"></div>
+            </div>
+            <button class="modal-cancel" type="button" style="width:auto;padding:9px 12px" onclick="resetQuoteRate()">Reset</button>
+          </div>
+          <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px">
+            <div class="modal-field" style="margin:0">
+              <label>Base $</label>
+              <input type="number" id="q-rate-base" min="0" step="1" style="width:100%;padding:10px 12px;border:2px solid #e8eef4;border-radius:10px;font-size:14px;color:#0d1b2a;outline:none;font-family:inherit" oninput="saveQuoteRateFromInputs()"/>
+            </div>
+            <div class="modal-field" style="margin:0">
+              <label>Free Miles</label>
+              <input type="number" id="q-rate-free" min="0" step="0.1" style="width:100%;padding:10px 12px;border:2px solid #e8eef4;border-radius:10px;font-size:14px;color:#0d1b2a;outline:none;font-family:inherit" oninput="saveQuoteRateFromInputs()"/>
+            </div>
+            <div class="modal-field" style="margin:0">
+              <label>$/Mile</label>
+              <input type="number" id="q-rate-mile" min="0" step="0.25" style="width:100%;padding:10px 12px;border:2px solid #e8eef4;border-radius:10px;font-size:14px;color:#0d1b2a;outline:none;font-family:inherit" oninput="saveQuoteRateFromInputs()"/>
+            </div>
+          </div>
+          <div style="font-size:12px;color:#6b82a8;margin-top:10px">Change the numbers here before calculating. They are saved on this dashboard.</div>
+        </div>
+
         <button class="add-btn" style="width:100%;padding:14px;font-size:15px" onclick="calculateQuote()">📐 Calculate Quote</button>
       </div>
 
@@ -1683,16 +1708,40 @@ body[data-user-role="manager"] .owner-only-setting{display:none !important}
               <input class="mobile-input" id="mobile-quote-dropoff" placeholder="Drop off address" />
 
               <div class="mobile-input-label">Ride Type</div>
-              <select class="mobile-select" id="mobile-quote-ride-type">
+              <select class="mobile-select" id="mobile-quote-ride-type" onchange="setQuoteToggle('ridetype',this.value)">
                 <option value="wc">Wheelchair</option>
                 <option value="str">Stretcher</option>
               </select>
 
               <div class="mobile-input-label">Trip Type</div>
-              <select class="mobile-select" id="mobile-quote-trip-type">
+              <select class="mobile-select" id="mobile-quote-trip-type" onchange="setQuoteToggle('triptype',this.value)">
                 <option value="rt">Round Trip</option>
                 <option value="1way">1 Way</option>
               </select>
+
+              <div style="background:#f8fafc;border:1px solid #e2e8f0;border-radius:14px;padding:12px;margin:4px 0 12px">
+                <div style="display:flex;justify-content:space-between;gap:10px;align-items:center;margin-bottom:10px">
+                  <div>
+                    <div style="font-size:11px;color:#6b82a8;font-weight:900;text-transform:uppercase">Rate Being Quoted</div>
+                    <div id="mobile-quote-rate-label" style="font-size:13px;color:#0d1b2a;font-weight:900;margin-top:2px"></div>
+                  </div>
+                  <button class="mobile-driver-open" type="button" onclick="resetQuoteRate()" style="padding:8px 10px">Reset</button>
+                </div>
+                <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px">
+                  <div>
+                    <div class="mobile-input-label">Base $</div>
+                    <input class="mobile-input" id="mobile-quote-rate-base" type="number" min="0" step="1" oninput="saveQuoteRateFromInputs()" style="margin-bottom:0"/>
+                  </div>
+                  <div>
+                    <div class="mobile-input-label">Free Mi</div>
+                    <input class="mobile-input" id="mobile-quote-rate-free" type="number" min="0" step="0.1" oninput="saveQuoteRateFromInputs()" style="margin-bottom:0"/>
+                  </div>
+                  <div>
+                    <div class="mobile-input-label">$/Mi</div>
+                    <input class="mobile-input" id="mobile-quote-rate-mile" type="number" min="0" step="0.25" oninput="saveQuoteRateFromInputs()" style="margin-bottom:0"/>
+                  </div>
+                </div>
+              </div>
 
               <button class="mobile-calc-btn" onclick="mobileCalculateQuote()">Calculate Quote</button>
             </div>
@@ -4993,6 +5042,10 @@ function switchMobilePanel(name){
   const panel=document.getElementById('mobile-panel-'+name);
   if(tab) tab.classList.add('active');
   if(panel) panel.classList.add('active');
+  if(name==='quote'){
+    loadQuotePricing();
+    renderQuoteRateInputs();
+  }
   renderMobileDashboard();
 }
 
@@ -5355,6 +5408,9 @@ async function mobileCalculateQuote(){
   const dropoff=document.getElementById('mobile-quote-dropoff').value.trim();
   const ridetype=document.getElementById('mobile-quote-ride-type').value;
   const triptype=document.getElementById('mobile-quote-trip-type').value;
+  quoteToggles.ridetype=ridetype;
+  quoteToggles.triptype=triptype;
+  renderQuoteRateInputs();
   const resultEl=document.getElementById('mobile-quote-result');
   if(!pickup||!dropoff){alert('Please enter both pickup and drop off addresses.');return;}
   resultEl.style.display='block';
@@ -5365,7 +5421,8 @@ async function mobileCalculateQuote(){
     resultEl.innerHTML=`<div style="font-size:13px;color:#cbd5e1">Route Quote</div>
       <div style="margin-top:6px">${mobileEsc(pickup)} to ${mobileEsc(dropoff)}</div>
       <div class="mobile-quote-price">$${Math.round(result.total)}</div>
-      <div style="margin-top:10px;font-size:12px;color:#cbd5e1">Estimated mileage: ${miles.toFixed(1)} mi</div>`;
+      <div style="margin-top:10px;font-size:12px;color:#cbd5e1">Estimated mileage: ${miles.toFixed(1)} mi</div>
+      <div style="margin-top:8px;font-size:12px;color:#cbd5e1">${mobileEsc(quoteRateDescription(ridetype,triptype))}: base $${result.p.base.toFixed(2)}, free ${result.p.freeMiles} mi, $${result.p.ratePerMile}/mi</div>`;
   }catch(e){
     resultEl.innerHTML=`<div style="font-size:13px;color:#fecaca;font-weight:800">Could not calculate quote: ${mobileEsc(e.message||e)}</div>`;
   }
@@ -8214,7 +8271,7 @@ function fallbackParseEmail(text){
 }
 
 // ── RIDE QUOTE CALCULATOR ──
-const PRICING = {
+const DEFAULT_QUOTE_PRICING = {
   wc: {
     rt:   { base: 165, freeMiles: 10, ratePerMile: 1 },
     '1way': { base: 100, freeMiles: 10, ratePerMile: 1 },
@@ -8225,12 +8282,99 @@ const PRICING = {
   }
 };
 
+let quotePricing = JSON.parse(JSON.stringify(DEFAULT_QUOTE_PRICING));
 let quoteToggles = { ridetype: 'wc', triptype: 'rt' };
 let quoteData = null;
 
+function loadQuotePricing(){
+  try{
+    const saved = JSON.parse(localStorage.getItem('ablecareQuotePricing') || 'null');
+    if(saved && saved.wc && saved.str){
+      quotePricing = {
+        wc: {
+          rt: {...DEFAULT_QUOTE_PRICING.wc.rt, ...(saved.wc.rt||{})},
+          '1way': {...DEFAULT_QUOTE_PRICING.wc['1way'], ...(saved.wc['1way']||{})}
+        },
+        str: {
+          rt: {...DEFAULT_QUOTE_PRICING.str.rt, ...(saved.str.rt||{})},
+          '1way': {...DEFAULT_QUOTE_PRICING.str['1way'], ...(saved.str['1way']||{})}
+        }
+      };
+    }
+  }catch(e){
+    quotePricing = JSON.parse(JSON.stringify(DEFAULT_QUOTE_PRICING));
+  }
+}
+
+function persistQuotePricing(){
+  localStorage.setItem('ablecareQuotePricing', JSON.stringify(quotePricing));
+}
+
+function currentQuoteRate(){
+  return quotePricing[quoteToggles.ridetype][quoteToggles.triptype];
+}
+
+function quoteRateDescription(ridetype=quoteToggles.ridetype, triptype=quoteToggles.triptype){
+  const typeLabel = ridetype==='str' ? 'Stretcher' : 'Wheelchair';
+  const tripLabel = triptype==='rt' ? 'Round Trip' : 'One Way';
+  return `${typeLabel} - ${tripLabel}`;
+}
+
+function renderQuoteRateInputs(){
+  const rate = currentQuoteRate();
+  const label = quoteRateDescription();
+  const desktopLabel = document.getElementById('q-rate-label');
+  const mobileLabel = document.getElementById('mobile-quote-rate-label');
+  if(desktopLabel) desktopLabel.textContent = label;
+  if(mobileLabel) mobileLabel.textContent = label;
+  const mobileRideType = document.getElementById('mobile-quote-ride-type');
+  const mobileTripType = document.getElementById('mobile-quote-trip-type');
+  if(mobileRideType && mobileRideType.value !== quoteToggles.ridetype) mobileRideType.value = quoteToggles.ridetype;
+  if(mobileTripType && mobileTripType.value !== quoteToggles.triptype) mobileTripType.value = quoteToggles.triptype;
+
+  [
+    ['q-rate-base','mobile-quote-rate-base',rate.base],
+    ['q-rate-free','mobile-quote-rate-free',rate.freeMiles],
+    ['q-rate-mile','mobile-quote-rate-mile',rate.ratePerMile]
+  ].forEach(([desktopId,mobileId,value])=>{
+    const desktop = document.getElementById(desktopId);
+    const mobile = document.getElementById(mobileId);
+    if(desktop && document.activeElement !== desktop) desktop.value = value;
+    if(mobile && document.activeElement !== mobile) mobile.value = value;
+  });
+}
+
+function readQuoteRateInputValue(desktopId, mobileId, fallback){
+  const active = document.activeElement;
+  const desktop = document.getElementById(desktopId);
+  const mobile = document.getElementById(mobileId);
+  const chosen = active===mobile ? mobile : active===desktop ? desktop : desktop || mobile;
+  const val = chosen ? parseFloat(chosen.value) : NaN;
+  return Number.isFinite(val) && val >= 0 ? val : fallback;
+}
+
+function saveQuoteRateFromInputs(){
+  const rate = currentQuoteRate();
+  rate.base = readQuoteRateInputValue('q-rate-base','mobile-quote-rate-base',rate.base);
+  rate.freeMiles = readQuoteRateInputValue('q-rate-free','mobile-quote-rate-free',rate.freeMiles);
+  rate.ratePerMile = readQuoteRateInputValue('q-rate-mile','mobile-quote-rate-mile',rate.ratePerMile);
+  persistQuotePricing();
+  renderQuoteRateInputs();
+  clearQuote();
+}
+
+function resetQuoteRate(){
+  quotePricing[quoteToggles.ridetype][quoteToggles.triptype] = {...DEFAULT_QUOTE_PRICING[quoteToggles.ridetype][quoteToggles.triptype]};
+  persistQuotePricing();
+  renderQuoteRateInputs();
+  clearQuote();
+}
+
 function initQuote(){
+  loadQuotePricing();
   quoteToggles = { ridetype: 'wc', triptype: 'rt' };
   updateQuoteToggles();
+  renderQuoteRateInputs();
   clearQuote();
 }
 
@@ -8245,6 +8389,7 @@ function updateQuoteToggles(){
   document.getElementById('q-rt-str').classList.toggle('active', quoteToggles.ridetype==='str');
   document.getElementById('q-tt-rt').classList.toggle('active', quoteToggles.triptype==='rt');
   document.getElementById('q-tt-1way').classList.toggle('active', quoteToggles.triptype==='1way');
+  renderQuoteRateInputs();
 }
 
 function clearQuote(){
@@ -8254,7 +8399,7 @@ function clearQuote(){
 }
 
 function calcPrice(miles, ridetype, triptype){
-  const p = PRICING[ridetype][triptype];
+  const p = quotePricing[ridetype][triptype];
   const isRT = triptype==='rt';
   const legs = isRT ? 2 : 1;
 
