@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
 <meta charset="UTF-8"/>
@@ -6,14 +6,14 @@
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate"/>
 <meta http-equiv="Pragma" content="no-cache"/>
 <meta http-equiv="Expires" content="0"/>
-<title>AbleCare Fleet â€” Dashboard v2.1</title>
+<title>AbleCare Fleet — Dashboard v2.1</title>
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css"/>
 <style>
 *{box-sizing:border-box;margin:0;padding:0}
 body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:#f4f7fb;color:#1a2a3a;min-height:100vh;-webkit-tap-highlight-color:transparent}
 button,input,select,textarea{-webkit-appearance:none;font-family:inherit}
 
-/* â”€â”€ TOP BAR â”€â”€ */
+/* ── TOP BAR ── */
 .topbar{
   background:#0d1b2a;
   padding:0 24px;
@@ -33,7 +33,7 @@ button,input,select,textarea{-webkit-appearance:none;font-family:inherit}
 .online-dot{width:7px;height:7px;border-radius:50%;background:#06d6a0;animation:blink 1.4s infinite}
 @keyframes blink{0%,100%{opacity:1}50%{opacity:0.2}}
 
-/* â”€â”€ TABS â”€â”€ */
+/* ── TABS ── */
 .tabs{
   background:#fff;
   border-bottom:2px solid #e8eef4;
@@ -53,7 +53,7 @@ button,input,select,textarea{-webkit-appearance:none;font-family:inherit}
 .tab.active{color:#00b4d8;border-bottom-color:#00b4d8}
 .tab-icon{font-size:16px}
 
-  /* â”€â”€ SCREENS â”€â”€ */
+  /* ── SCREENS ── */
   .screen{display:none;padding:24px;max-width:1100px;margin:0 auto}
   .screen.active{display:block}
   #screen-rides.active{display:flex}
@@ -68,7 +68,7 @@ button,input,select,textarea{-webkit-appearance:none;font-family:inherit}
   #ride-log-table .rep-wrap{display:block;white-space:normal;line-height:1.25;max-height:2.6em;overflow:hidden}
 
 
-/* â”€â”€ PIN SCREEN â”€â”€ */
+/* ── PIN SCREEN ── */
 #screen-pin{
   display:flex;align-items:center;justify-content:center;
   min-height:calc(100vh - 60px);padding:24px;
@@ -99,19 +99,19 @@ button,input,select,textarea{-webkit-appearance:none;font-family:inherit}
 .key.ok{background:#00b4d8;color:#fff;font-size:18px}
 .key.ok:hover{background:#0096b7}
 
-/* â”€â”€ SUMMARY CARDS â”€â”€ */
+/* ── SUMMARY CARDS ── */
 .summary-row{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:14px;margin-bottom:24px}
 .sum-card{background:#fff;border-radius:14px;padding:18px 20px;box-shadow:0 1px 6px rgba(0,0,0,0.05)}
 .sum-card-num{font-size:28px;font-weight:900;color:#0d1b2a}
 .sum-card-num.cyan{color:#00b4d8}
 .sum-card-label{font-size:11px;color:#6b82a8;text-transform:uppercase;letter-spacing:1px;margin-top:4px}
 
-/* â”€â”€ MAP â”€â”€ */
+/* ── MAP ── */
 #map{height:420px;border-radius:14px;overflow:hidden;box-shadow:0 1px 6px rgba(0,0,0,0.08)}
 .map-wrap{background:#fff;border-radius:16px;padding:16px;box-shadow:0 1px 6px rgba(0,0,0,0.05);margin-bottom:20px}
 .section-title{font-size:13px;font-weight:700;color:#6b82a8;text-transform:uppercase;letter-spacing:1px;margin-bottom:12px}
 
-/* â”€â”€ DRIVER STATUS LIST â”€â”€ */
+/* ── DRIVER STATUS LIST ── */
 .driver-list{display:flex;flex-direction:column;gap:10px}
 .driver-row{
   background:#fff;border-radius:14px;padding:14px 18px;
@@ -137,7 +137,7 @@ button,input,select,textarea{-webkit-appearance:none;font-family:inherit}
 .driver-row-locate{border:1px solid #cfe8f3;background:#fff;color:#0369a1;border-radius:999px;padding:5px 9px;font-size:10px;font-weight:900;cursor:pointer}
 .driver-row-locate:disabled{opacity:.45;cursor:not-allowed}
 
-/* â”€â”€ DISPATCH â”€â”€ */
+/* ── DISPATCH ── */
 .dispatch-wrap{background:#fff;border-radius:16px;padding:24px;box-shadow:0 1px 6px rgba(0,0,0,0.05);margin-bottom:20px}
 .dispatch-input-row{display:flex;gap:10px;margin-bottom:16px}
 .addr-input{
@@ -180,7 +180,7 @@ button,input,select,textarea{-webkit-appearance:none;font-family:inherit}
 .result-offline{color:#94a3b8;font-size:13px}
 #dispatch-map{height:200px;border-radius:12px;margin-top:16px;overflow:hidden}
 
-/* â”€â”€ HOURS / TIMESHEET â”€â”€ */
+/* ── HOURS / TIMESHEET ── */
 .ts-controls{display:flex;align-items:center;gap:12px;margin-bottom:20px;flex-wrap:wrap}
 .ts-mode-btn{padding:8px 16px;border-radius:10px;border:2px solid #e8eef4;background:#fff;font-size:13px;font-weight:600;color:#6b82a8;cursor:pointer;transition:all 0.15s}
 .ts-mode-btn.active{border-color:#00b4d8;color:#00b4d8;background:#e0f7fc}
@@ -218,7 +218,7 @@ button,input,select,textarea{-webkit-appearance:none;font-family:inherit}
 .edit-btn{background:#f4f7fb;border:none;border-radius:8px;padding:6px 12px;font-size:12px;font-weight:600;color:#6b82a8;cursor:pointer;transition:all 0.15s}
 .edit-btn:hover{background:#e8eef4;color:#0d1b2a}
 
-/* â”€â”€ DRIVERS TAB â”€â”€ */
+/* ── DRIVERS TAB ── */
 .drivers-wrap{background:#fff;border-radius:16px;padding:24px;box-shadow:0 1px 6px rgba(0,0,0,0.05)}
 .add-driver-row{display:flex;gap:10px;margin-bottom:24px}
 .driver-input{flex:1;padding:12px 16px;border:2px solid #e8eef4;border-radius:12px;font-size:14px;color:#0d1b2a;outline:none;font-family:inherit;transition:border-color 0.15s}
@@ -235,7 +235,7 @@ button,input,select,textarea{-webkit-appearance:none;font-family:inherit}
 .remove-btn{background:#fff0f0;border:none;border-radius:8px;padding:6px 12px;font-size:12px;font-weight:600;color:#ef4444;cursor:pointer;transition:all 0.15s}
 .remove-btn:hover{background:#fee2e2}
 
-/* â”€â”€ MODAL â”€â”€ */
+/* ── MODAL ── */
 .modal-overlay{position:fixed;inset:0;background:#00000066;display:none;align-items:center;justify-content:center;z-index:2000;padding:20px}
 .modal-box{background:#fff;border-radius:20px;padding:32px;width:100%;max-width:400px;box-shadow:0 20px 60px rgba(0,0,0,0.2)}
 .modal-title{font-size:18px;font-weight:800;color:#0d1b2a;margin-bottom:4px}
@@ -257,7 +257,7 @@ button,input,select,textarea{-webkit-appearance:none;font-family:inherit}
   .tabs .tab{padding:12px 14px;font-size:13px}
 }
 
-/* â”€â”€ RIDES â”€â”€ */
+/* ── RIDES ── */
 .toggle-btn{
   padding:8px 14px;border-radius:10px;border:2px solid #e8eef4;
   background:#fff;font-size:13px;font-weight:700;color:#6b82a8;
@@ -335,7 +335,7 @@ button,input,select,textarea{-webkit-appearance:none;font-family:inherit}
 .empty-state-icon{font-size:40px;margin-bottom:12px}
 .empty-state-text{font-size:15px;font-weight:600}
 .modal-section-label{font-size:11px;font-weight:700;color:#00b4d8;text-transform:uppercase;letter-spacing:1px;margin-bottom:12px}
-/* â”€â”€ SETTINGS â”€â”€ */
+/* ── SETTINGS ── */
 .settings-section{background:#fff;border-radius:14px;padding:20px;margin-bottom:14px;box-shadow:0 1px 4px rgba(0,0,0,0.05)}
 .settings-section-title{font-size:13px;font-weight:800;color:#0d1b2a;margin-bottom:14px;padding-bottom:10px;border-bottom:1px solid #f0f4f8}
 .settings-row{display:flex;align-items:center;gap:12px;margin-bottom:12px;flex-wrap:wrap}
@@ -459,13 +459,13 @@ body[data-user-role="manager"] .owner-only-setting{display:none !important}
 .import-paste-status.error{color:#b91c1c}
 .import-paste-status.success{color:#166534}
 @media(max-width:700px){
-  /* â”€â”€ TOPBAR â”€â”€ */
+  /* ── TOPBAR ── */
   .topbar{padding:0 14px;height:52px}
   .topbar-name{font-size:15px}
   .topbar-sub{display:none}
   .topbar-icon{width:28px;height:28px;font-size:14px}
 
-  /* â”€â”€ TABS â”€â”€ */
+  /* ── TABS ── */
   .tabs{
     padding:0;
     overflow-x:auto;
@@ -483,21 +483,21 @@ body[data-user-role="manager"] .owner-only-setting{display:none !important}
   }
   .tab-icon{font-size:14px}
 
-  /* â”€â”€ SCREENS â”€â”€ */
+  /* ── SCREENS ── */
   .screen{padding:14px}
 
-  /* â”€â”€ SUMMARY CARDS â”€â”€ */
+  /* ── SUMMARY CARDS ── */
   .summary-row{grid-template-columns:repeat(2,1fr);gap:10px;margin-bottom:16px}
   .sum-card{padding:14px 16px}
   .sum-card-num{font-size:22px}
 
-  /* â”€â”€ MAP â”€â”€ */
+  /* ── MAP ── */
   #map{height:280px}
 
-  /* â”€â”€ DRIVER ROWS â”€â”€ */
+  /* ── DRIVER ROWS ── */
   .driver-row{padding:12px}
 
-  /* â”€â”€ RIDES TAB â”€â”€ */
+  /* ── RIDES TAB ── */
   #screen-rides.active{
     flex-direction:column;
     height:auto !important;
@@ -534,7 +534,7 @@ body[data-user-role="manager"] .owner-only-setting{display:none !important}
   .time-row{min-height:52px}
   .ride-block{min-width:120px;max-width:180px}
 
-  /* â”€â”€ FORMS / MODALS â”€â”€ */
+  /* ── FORMS / MODALS ── */
   .modal-box{
     margin:8px;
     padding:20px 16px;
@@ -544,27 +544,27 @@ body[data-user-role="manager"] .owner-only-setting{display:none !important}
   }
   .modal-grid{grid-template-columns:1fr !important}
 
-  /* â”€â”€ SETTINGS â”€â”€ */
+  /* ── SETTINGS ── */
   .settings-section{padding:16px}
   .settings-input{font-size:14px}
 
-  /* â”€â”€ HOURS TAB â”€â”€ */
+  /* ── HOURS TAB ── */
   .hours-table{font-size:12px}
   .hours-table th,.hours-table td{padding:8px 6px}
 
-  /* â”€â”€ REPORTS â”€â”€ */
+  /* ── REPORTS ── */
   #rep-content{overflow-x:auto}
   #rep-content table{min-width:850px}
   .rep-filters{flex-direction:column !important;gap:8px !important}
   .rep-filters input,.rep-filters select{width:100% !important}
 
-  /* â”€â”€ INVOICE â”€â”€ */
+  /* ── INVOICE ── */
   .invoice-controls{flex-direction:column;gap:8px}
 
-  /* â”€â”€ QUOTE â”€â”€ */
+  /* ── QUOTE ── */
   .quote-grid{grid-template-columns:1fr !important}
 
-  /* â”€â”€ BUTTONS â”€â”€ */
+  /* ── BUTTONS ── */
   .add-btn{padding:10px 16px;font-size:13px}
   .export-btn{padding:8px 14px;font-size:12px}
   .optimize-btn{padding:6px 10px;font-size:11px}
@@ -572,7 +572,7 @@ body[data-user-role="manager"] .owner-only-setting{display:none !important}
 }
 
 
-/* â”€â”€ EMAIL REVIEW SIDE BY SIDE â”€â”€ */
+/* ── EMAIL REVIEW SIDE BY SIDE ── */
 .ride-modal-layout{display:grid;grid-template-columns:minmax(0,1.2fr) minmax(320px,.8fr);gap:18px;align-items:start}
 .ride-form-pane{min-width:0}
 .ride-email-pane{min-width:0;background:#f8fafc;border:1px solid #e8eef4;border-radius:14px;padding:14px;position:sticky;top:0}
@@ -582,7 +582,7 @@ body[data-user-role="manager"] .owner-only-setting{display:none !important}
 .email-review-note{font-size:11px;color:#6b82a8;margin-top:6px}
 .email-review-empty{color:#94a3b8;font-style:italic}
 
-/* â”€â”€ MOBILE IMPROVEMENTS â”€â”€ */
+/* ── MOBILE IMPROVEMENTS ── */
 @media(max-width:900px){
   .ride-modal-layout{grid-template-columns:1fr}
   .ride-email-pane{position:static}
@@ -1014,9 +1014,9 @@ body[data-user-role="manager"] .owner-only-setting{display:none !important}
       <button class="key" onclick="pinKey('7')">7</button>
       <button class="key" onclick="pinKey('8')">8</button>
       <button class="key" onclick="pinKey('9')">9</button>
-      <button class="key del" onclick="pinKey('del')">âŒ«</button>
+      <button class="key del" onclick="pinKey('del')">⌫</button>
       <button class="key" onclick="pinKey('0')">0</button>
-      <button class="key ok" onclick="pinKey('ok')">âœ“</button>
+      <button class="key ok" onclick="pinKey('ok')">✓</button>
     </div>
   </div>
 </div>
@@ -1029,7 +1029,7 @@ body[data-user-role="manager"] .owner-only-setting{display:none !important}
     <div class="topbar-logo">
       <div class="topbar-icon" id="brand-icon" aria-label="Brand logo">
         <img id="brand-logo-img" alt="Logo" style="display:none"/>
-        <span id="brand-logo-fallback">â™¿</span>
+        <span id="brand-logo-fallback">♿</span>
       </div>
       <div>
         <div class="topbar-name" id="brand-display-name">Able<span>Care</span> Fleet</div>
@@ -1039,22 +1039,22 @@ body[data-user-role="manager"] .owner-only-setting{display:none !important}
     <div class="topbar-right">
       <div class="online-pill" style="background:#f8fafc;color:#334155"><span id="current-user-label">David (owner)</span></div>
       <div class="online-pill"><div class="online-dot"></div><span id="online-count">0 Online</span></div>
-      <button id="mobile-menu-btn" onclick="toggleMobileMenu()" style="display:none;background:none;border:none;color:#fff;font-size:22px;cursor:pointer;padding:4px 8px">â˜°</button>
+      <button id="mobile-menu-btn" onclick="toggleMobileMenu()" style="display:none;background:none;border:none;color:#fff;font-size:22px;cursor:pointer;padding:4px 8px">☰</button>
     </div>
   </div>
 
   <!-- Tabs -->
   <div class="tabs">
-    <div class="tab active" onclick="switchTab('map')" id="tab-map"><span class="tab-icon">ðŸ—º</span> Live Map</div>
-    <div class="tab" onclick="switchTab('dispatch')" id="tab-dispatch"><span class="tab-icon">ðŸ“</span> Dispatch</div>
-    <div class="tab" onclick="switchTab('hours')" id="tab-hours"><span class="tab-icon">ðŸ•</span> Hours</div>
-    <div class="tab" onclick="switchTab('drivers')" id="tab-drivers"><span class="tab-icon">ðŸ‘¥</span> Drivers</div>
-    <div class="tab" onclick="switchTab('rides')" id="tab-rides"><span class="tab-icon">ðŸš</span> Rides</div>
-    <div class="tab" onclick="switchTab('quote')" id="tab-quote"><span class="tab-icon">ðŸ’°</span> Quote</div>
-    <div class="tab" onclick="switchTab('invoice')" id="tab-invoice"><span class="tab-icon">ðŸ“„</span> Invoice</div>
-    <div class="tab" onclick="switchTab('reports')" id="tab-reports"><span class="tab-icon">ðŸ“Š</span> Reports</div>
+    <div class="tab active" onclick="switchTab('map')" id="tab-map"><span class="tab-icon">🗺</span> Live Map</div>
+    <div class="tab" onclick="switchTab('dispatch')" id="tab-dispatch"><span class="tab-icon">📍</span> Dispatch</div>
+    <div class="tab" onclick="switchTab('hours')" id="tab-hours"><span class="tab-icon">🕐</span> Hours</div>
+    <div class="tab" onclick="switchTab('drivers')" id="tab-drivers"><span class="tab-icon">👥</span> Drivers</div>
+    <div class="tab" onclick="switchTab('rides')" id="tab-rides"><span class="tab-icon">🚐</span> Rides</div>
+    <div class="tab" onclick="switchTab('quote')" id="tab-quote"><span class="tab-icon">💰</span> Quote</div>
+    <div class="tab" onclick="switchTab('invoice')" id="tab-invoice"><span class="tab-icon">📄</span> Invoice</div>
+    <div class="tab" onclick="switchTab('reports')" id="tab-reports"><span class="tab-icon">📊</span> Reports</div>
     <div class="tab" onclick="switchTab('mobile')" id="tab-mobile"><span class="tab-icon">M</span> Mobile</div>
-    <div class="tab" onclick="switchTab('settings')" id="tab-settings"><span class="tab-icon">âš™ï¸</span> Settings</div>
+    <div class="tab" onclick="switchTab('settings')" id="tab-settings"><span class="tab-icon">⚙️</span> Settings</div>
   </div>
 
   <!-- MAP TAB -->
@@ -1062,14 +1062,14 @@ body[data-user-role="manager"] .owner-only-setting{display:none !important}
     <div class="summary-row">
       <div class="sum-card"><div class="sum-card-num cyan" id="s-online">0</div><div class="sum-card-label">On Shift</div></div>
       <div class="sum-card"><div class="sum-card-num" id="s-total">0</div><div class="sum-card-label">Total Drivers</div></div>
-      <div class="sum-card"><div class="sum-card-num" id="s-today">â€”</div><div class="sum-card-label">Today</div></div>
+      <div class="sum-card"><div class="sum-card-num" id="s-today">—</div><div class="sum-card-label">Today</div></div>
     </div>
     <div class="map-wrap">
       <div class="map-title-bar">
         <div class="section-title">Live Driver Map</div>
         <button class="map-locate-btn" onclick="focusAllActiveDrivers()">Show Active Drivers</button>
       </div>
-      <div class="section-title">Live Map â€” Pikesville, MD</div>
+      <div class="section-title">Live Map — Pikesville, MD</div>
       <div id="map"></div>
     </div>
     <div class="map-status-card">
@@ -1091,7 +1091,7 @@ body[data-user-role="manager"] .owner-only-setting{display:none !important}
         </div>
         <button class="find-btn" onclick="findClosest()">Find Driver</button>
       </div>
-      <div class="dispatch-loading" id="dispatch-loading" style="display:none">ðŸ” Calculating driving distances...</div>
+      <div class="dispatch-loading" id="dispatch-loading" style="display:none">🔍 Calculating driving distances...</div>
       <div class="dispatch-results" id="dispatch-results" style="display:none"></div>
       <div id="dispatch-map" style="display:none"></div>
     </div>
@@ -1103,9 +1103,9 @@ body[data-user-role="manager"] .owner-only-setting{display:none !important}
       <button class="ts-mode-btn active" id="btn-pp" onclick="setTsMode('pp')">Pay Period</button>
       <button class="ts-mode-btn" id="btn-custom" onclick="setTsMode('custom')">Custom Range</button>
       <div class="pp-nav" id="pp-nav">
-        <button class="pp-arrow" onclick="shiftPP(-1)">â€¹</button>
+        <button class="pp-arrow" onclick="shiftPP(-1)">‹</button>
         <div class="pp-label" id="pp-label">Loading...</div>
-        <button class="pp-arrow" onclick="shiftPP(1)">â€º</button>
+        <button class="pp-arrow" onclick="shiftPP(1)">›</button>
       </div>
       <div id="custom-range" style="display:none" class="custom-range">
         <input type="date" class="date-input" id="ts-from"/>
@@ -1113,7 +1113,7 @@ body[data-user-role="manager"] .owner-only-setting{display:none !important}
         <input type="date" class="date-input" id="ts-to"/>
         <button class="find-btn" style="padding:8px 14px;font-size:13px" onclick="renderTimesheet()">Apply</button>
       </div>
-      <button class="export-btn" onclick="downloadExcel()">â¬‡ Export Excel</button>
+      <button class="export-btn" onclick="downloadExcel()">⬇ Export Excel</button>
     </div>
     <div style="overflow-x:auto"><div id="timesheet-content"></div></div>
   </div>
@@ -1135,15 +1135,15 @@ body[data-user-role="manager"] .owner-only-setting{display:none !important}
     <div style="max-width:560px;margin:0 auto">
 
       <div style="background:#fff;border-radius:16px;padding:24px;box-shadow:0 1px 6px rgba(0,0,0,0.05);margin-bottom:16px">
-        <div class="section-title" style="margin-bottom:20px">ðŸ’° Private Client Ride Quote</div>
+        <div class="section-title" style="margin-bottom:20px">💰 Private Client Ride Quote</div>
 
         <div class="modal-field">
-          <label>ðŸ“ Pickup Address</label>
+          <label>📍 Pickup Address</label>
           <input type="text" id="q-pickup" placeholder="Enter pickup address..." style="width:100%;padding:10px 14px;border:2px solid #e8eef4;border-radius:10px;font-size:14px;color:#0d1b2a;outline:none;font-family:inherit" oninput="clearQuote()"/>
         </div>
 
         <div class="modal-field">
-          <label>ðŸ¥ Drop Off Address</label>
+          <label>🏥 Drop Off Address</label>
           <input type="text" id="q-dropoff" placeholder="Enter drop off / appointment address..." style="width:100%;padding:10px 14px;border:2px solid #e8eef4;border-radius:10px;font-size:14px;color:#0d1b2a;outline:none;font-family:inherit" oninput="clearQuote()"/>
         </div>
 
@@ -1151,8 +1151,8 @@ body[data-user-role="manager"] .owner-only-setting{display:none !important}
           <div class="modal-field">
             <label>Ride Type</label>
             <div style="display:flex;gap:8px">
-              <button class="toggle-btn active" id="q-rt-wc" onclick="setQuoteToggle('ridetype','wc')">â™¿ WC</button>
-              <button class="toggle-btn" id="q-rt-str" onclick="setQuoteToggle('ridetype','str')">ðŸ› Stretcher</button>
+              <button class="toggle-btn active" id="q-rt-wc" onclick="setQuoteToggle('ridetype','wc')">♿ WC</button>
+              <button class="toggle-btn" id="q-rt-str" onclick="setQuoteToggle('ridetype','str')">🛏 Stretcher</button>
             </div>
           </div>
           <div class="modal-field">
@@ -1189,7 +1189,7 @@ body[data-user-role="manager"] .owner-only-setting{display:none !important}
           <div style="font-size:12px;color:#6b82a8;margin-top:10px">Change the numbers here before calculating. They are saved on this dashboard.</div>
         </div>
 
-        <button class="add-btn" style="width:100%;padding:14px;font-size:15px" onclick="calculateQuote()">ðŸ“ Calculate Quote</button>
+        <button class="add-btn" style="width:100%;padding:14px;font-size:15px" onclick="calculateQuote()">📐 Calculate Quote</button>
       </div>
 
       <!-- Result -->
@@ -1201,11 +1201,11 @@ body[data-user-role="manager"] .owner-only-setting{display:none !important}
           <div style="display:flex;justify-content:space-between;align-items:flex-end;margin-bottom:16px">
             <div>
               <div style="font-size:13px;color:#6b82a8;margin-bottom:4px">Total Miles</div>
-              <div style="font-size:28px;font-weight:900;color:#fff" id="q-miles">â€”</div>
+              <div style="font-size:28px;font-weight:900;color:#fff" id="q-miles">—</div>
             </div>
             <div style="text-align:right">
               <div style="font-size:13px;color:#6b82a8;margin-bottom:4px">Quote</div>
-              <div style="font-size:42px;font-weight:900;color:#00b4d8" id="q-price">â€”</div>
+              <div style="font-size:42px;font-weight:900;color:#00b4d8" id="q-price">—</div>
             </div>
           </div>
 
@@ -1215,14 +1215,14 @@ body[data-user-role="manager"] .owner-only-setting{display:none !important}
 
         <!-- Book button -->
         <button class="add-btn" style="width:100%;padding:16px;font-size:15px;background:#06d6a0" onclick="bookQuoteAsRide()">
-          âœ“ Client Says Yes â€” Book This Ride
+          ✓ Client Says Yes — Book This Ride
         </button>
         <div style="font-size:12px;color:#6b82a8;text-align:center;margin-top:8px">Opens the Add Ride form pre-filled with all this info</div>
       </div>
 
       <!-- Loading -->
       <div id="quote-loading" style="display:none;text-align:center;padding:32px;background:#fff;border-radius:16px">
-        <div style="font-size:24px;margin-bottom:12px">ðŸ“</div>
+        <div style="font-size:24px;margin-bottom:12px">📐</div>
         <div style="font-size:14px;color:#6b82a8">Calculating route with Google Maps...</div>
       </div>
 
@@ -1240,7 +1240,7 @@ body[data-user-role="manager"] .owner-only-setting{display:none !important}
 
       <!-- Step 1: Select facility and date range -->
       <div id="inv-setup" style="background:#fff;border-radius:16px;padding:24px;box-shadow:0 1px 6px rgba(0,0,0,0.05);margin-bottom:16px">
-        <div class="section-title" style="margin-bottom:20px">ðŸ“„ Create Facility Invoice</div>
+        <div class="section-title" style="margin-bottom:20px">📄 Create Facility Invoice</div>
 
         <div class="modal-field">
           <label>Facility</label>
@@ -1281,15 +1281,15 @@ body[data-user-role="manager"] .owner-only-setting{display:none !important}
           <input type="text" id="inv-notes" placeholder="e.g. Payment due within 30 days" style="width:100%;padding:10px 14px;border:2px solid #e8eef4;border-radius:10px;font-size:14px;color:#0d1b2a;outline:none;font-family:inherit"/>
         </div>
 
-        <button class="add-btn" style="width:100%;padding:14px;font-size:15px" onclick="generateInvoice()">ðŸ“„ Generate Invoice</button>
+        <button class="add-btn" style="width:100%;padding:14px;font-size:15px" onclick="generateInvoice()">📄 Generate Invoice</button>
       </div>
 
       <!-- Invoice preview -->
       <div id="inv-preview-wrap" style="display:none">
         <div style="display:flex;gap:10px;margin-bottom:16px;flex-wrap:wrap">
-          <button class="add-btn" style="flex:1;padding:12px" onclick="printInvoice()">ðŸ–¨ï¸ Download PDF</button>
-          <button class="add-btn" style="flex:1;padding:12px;background:#0d1b2a" onclick="emailInvoice()">ðŸ“§ Email to Facility</button>
-          <button class="ts-mode-btn" style="padding:12px" onclick="resetInvoice()">â† New Invoice</button>
+          <button class="add-btn" style="flex:1;padding:12px" onclick="printInvoice()">🖨️ Download PDF</button>
+          <button class="add-btn" style="flex:1;padding:12px;background:#0d1b2a" onclick="emailInvoice()">📧 Email to Facility</button>
+          <button class="ts-mode-btn" style="padding:12px" onclick="resetInvoice()">← New Invoice</button>
         </div>
         <div id="inv-preview" style="background:#fff;border-radius:16px;overflow:hidden;box-shadow:0 2px 12px rgba(0,0,0,0.08)"></div>
       </div>
@@ -1309,7 +1309,7 @@ body[data-user-role="manager"] .owner-only-setting{display:none !important}
       <!-- Controls -->
       <div style="background:#fff;border-radius:16px;padding:20px;box-shadow:0 1px 6px rgba(0,0,0,0.05);margin-bottom:16px">
         <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap" class="rep-filters">
-          <div style="font-size:13px;font-weight:700;color:#0d1b2a">ðŸ“Š Reports</div>
+          <div style="font-size:13px;font-weight:700;color:#0d1b2a">📊 Reports</div>
           <div style="display:flex;gap:8px;align-items:center">
             <input type="date" id="rep-from" class="date-input" style="font-size:13px"/>
             <span style="font-size:13px;color:#6b82a8">to</span>
@@ -1327,7 +1327,7 @@ body[data-user-role="manager"] .owner-only-setting{display:none !important}
             <option value="no">Unpaid</option>
           </select>
           <button class="add-btn" style="padding:8px 16px;font-size:13px" onclick="loadReports()">Apply</button>
-          <button class="export-btn" onclick="exportReportsExcel()" style="margin-left:auto">ðŸ“¥ Export Excel</button>
+          <button class="export-btn" onclick="exportReportsExcel()" style="margin-left:auto">📥 Export Excel</button>
         </div>
       </div>
 
@@ -1350,10 +1350,10 @@ body[data-user-role="manager"] .owner-only-setting{display:none !important}
       <!-- View Toggle -->
       <div style="display:flex;gap:8px;margin-bottom:12px;flex-wrap:wrap">
         <button class="ts-mode-btn" id="rep-view-square" onclick="setRepView('square')">Square</button>
-        <button class="ts-mode-btn active" id="rep-view-log" onclick="setRepView('log')">ðŸ“‹ Ride Log</button>
-        <button class="ts-mode-btn" id="rep-view-facility" onclick="setRepView('facility')">ðŸ¥ By Facility</button>
-        <button class="ts-mode-btn" id="rep-view-driver" onclick="setRepView('driver')">ðŸ‘¤ By Driver</button>
-        <button class="ts-mode-btn" id="rep-view-month" onclick="setRepView('month')">ðŸ“… By Month</button>
+        <button class="ts-mode-btn active" id="rep-view-log" onclick="setRepView('log')">📋 Ride Log</button>
+        <button class="ts-mode-btn" id="rep-view-facility" onclick="setRepView('facility')">🏥 By Facility</button>
+        <button class="ts-mode-btn" id="rep-view-driver" onclick="setRepView('driver')">👤 By Driver</button>
+        <button class="ts-mode-btn" id="rep-view-month" onclick="setRepView('month')">📅 By Month</button>
         <button class="ts-mode-btn" id="rep-view-duplicates" onclick="setRepView('duplicates')" style="border-color:#f59e0b;color:#9a3412;background:#fff7ed">Duplicates</button>
       </div>
 
@@ -1368,7 +1368,7 @@ body[data-user-role="manager"] .owner-only-setting{display:none !important}
 
     <!-- Owner PIN -->
     <div class="settings-section owner-only-setting">
-      <div class="settings-section-title">ðŸ” Owner PIN</div>
+      <div class="settings-section-title">🔐 Owner PIN</div>
       <div class="settings-row">
         <div class="settings-label">Dashboard Login PIN</div>
         <div style="display:flex;gap:8px;align-items:center">
@@ -1399,13 +1399,13 @@ body[data-user-role="manager"] .owner-only-setting{display:none !important}
 
     <!-- Driver PINs -->
     <div class="settings-section">
-      <div class="settings-section-title">ðŸ‘¤ Driver PINs</div>
+      <div class="settings-section-title">👤 Driver PINs</div>
       <div id="driver-pins-list"></div>
     </div>
 
     <!-- Pay Period -->
     <div class="settings-section">
-      <div class="settings-section-title">ðŸ“… Pay Period</div>
+      <div class="settings-section-title">📅 Pay Period</div>
       <div class="settings-row">
         <div class="settings-label">Pay period length</div>
         <div style="display:flex;gap:8px;align-items:center">
@@ -1437,15 +1437,15 @@ body[data-user-role="manager"] .owner-only-setting{display:none !important}
 
     <!-- Facilities -->
     <div class="settings-section">
-      <div class="settings-section-title">ðŸ¥ Facilities & Addresses</div>
+      <div class="settings-section-title">🏥 Facilities & Addresses</div>
       <div id="facilities-list"></div>
       <button class="add-btn" style="margin-top:12px" onclick="openFacilityModal(null)">+ Add Facility</button>
     </div>
 
     <!-- Ride Request Portal -->
     <div class="settings-section">
-      <div class="settings-section-title">ðŸ“¨ Ride Request Portal</div>
-      <div style="font-size:12px;color:#6b82a8;margin-bottom:12px">Facilities can request rides from a private link. Requests appear in Rides â†’ Requests.</div>
+      <div class="settings-section-title">📨 Ride Request Portal</div>
+      <div style="font-size:12px;color:#6b82a8;margin-bottom:12px">Facilities can request rides from a private link. Requests appear in Rides → Requests.</div>
       <div class="settings-row">
         <div class="settings-label">Dispatch notification email</div>
         <input type="email" id="s-dispatch-email" class="settings-input" style="flex:1" placeholder="dispatch@yourcompany.com"/>
@@ -1459,11 +1459,11 @@ body[data-user-role="manager"] .owner-only-setting{display:none !important}
         <input type="text" id="s-emailjs-service" class="settings-input" style="flex:1" placeholder="e.g. service_xxx"/>
       </div>
       <div class="settings-row">
-        <div class="settings-label">EmailJS template id (new request â†’ dispatch)</div>
+        <div class="settings-label">EmailJS template id (new request → dispatch)</div>
         <input type="text" id="s-emailjs-template-request" class="settings-input" style="flex:1" placeholder="e.g. template_request"/>
       </div>
       <div class="settings-row">
-        <div class="settings-label">EmailJS template id (status update â†’ requester)</div>
+        <div class="settings-label">EmailJS template id (status update → requester)</div>
         <input type="text" id="s-emailjs-template-update" class="settings-input" style="flex:1" placeholder="e.g. template_update"/>
       </div>
       <button class="settings-save-btn" style="margin-top:12px" onclick="saveEmailSettings()">Save Portal/Email Settings</button>
@@ -1472,7 +1472,7 @@ body[data-user-role="manager"] .owner-only-setting{display:none !important}
 
     <!-- Business Info -->
     <div class="settings-section">
-      <div class="settings-section-title">ðŸ¢ Business Info</div>
+      <div class="settings-section-title">🏢 Business Info</div>
       <div class="settings-row">
         <div class="settings-label">Company Name</div>
         <input type="text" id="s-company" class="settings-input" style="flex:1" placeholder="AbleCare Mobility LLC"/>
@@ -1491,20 +1491,20 @@ body[data-user-role="manager"] .owner-only-setting{display:none !important}
 
     <!-- Ride Statuses -->
     <div class="settings-section">
-      <div class="settings-section-title">ðŸ·ï¸ Ride Statuses</div>
+      <div class="settings-section-title">🏷️ Ride Statuses</div>
       <div style="font-size:12px;color:#6b82a8;margin-bottom:12px">Default statuses are built-in. Add custom ones below.</div>
       <div style="display:flex;flex-direction:column;gap:6px;margin-bottom:12px">
         <div style="display:flex;gap:8px;align-items:center;padding:8px 12px;background:#f8fafc;border-radius:8px">
-          <span style="font-size:12px;font-weight:700;color:#16a34a">âœ… Completed</span><span style="font-size:11px;color:#94a3b8;margin-left:auto">built-in</span>
+          <span style="font-size:12px;font-weight:700;color:#16a34a">✅ Completed</span><span style="font-size:11px;color:#94a3b8;margin-left:auto">built-in</span>
         </div>
         <div style="display:flex;gap:8px;align-items:center;padding:8px 12px;background:#f8fafc;border-radius:8px">
-          <span style="font-size:12px;font-weight:700;color:#dc2626">ðŸš« Cancelled at Pickup</span><span style="font-size:11px;color:#94a3b8;margin-left:auto">built-in</span>
+          <span style="font-size:12px;font-weight:700;color:#dc2626">🚫 Cancelled at Pickup</span><span style="font-size:11px;color:#94a3b8;margin-left:auto">built-in</span>
         </div>
         <div style="display:flex;gap:8px;align-items:center;padding:8px 12px;background:#f8fafc;border-radius:8px">
-          <span style="font-size:12px;font-weight:700;color:#dc2626">âŒ Cancelled</span><span style="font-size:11px;color:#94a3b8;margin-left:auto">built-in</span>
+          <span style="font-size:12px;font-weight:700;color:#dc2626">❌ Cancelled</span><span style="font-size:11px;color:#94a3b8;margin-left:auto">built-in</span>
         </div>
         <div style="display:flex;gap:8px;align-items:center;padding:8px 12px;background:#f8fafc;border-radius:8px">
-          <span style="font-size:12px;font-weight:700;color:#9333ea">ðŸ‘» No Show</span><span style="font-size:11px;color:#94a3b8;margin-left:auto">built-in</span>
+          <span style="font-size:12px;font-weight:700;color:#9333ea">👻 No Show</span><span style="font-size:11px;color:#94a3b8;margin-left:auto">built-in</span>
         </div>
       </div>
       <div id="custom-statuses-list" style="display:flex;flex-direction:column;gap:6px;margin-bottom:12px"></div>
@@ -1524,9 +1524,9 @@ body[data-user-role="manager"] .owner-only-setting{display:none !important}
       <!-- Mini month calendar -->
       <div class="mini-cal">
         <div class="mini-cal-header">
-          <button class="mini-nav" onclick="shiftMonth(-1)">â€¹</button>
+          <button class="mini-nav" onclick="shiftMonth(-1)">‹</button>
           <span id="mini-month-label">April 2026</span>
-          <button class="mini-nav" onclick="shiftMonth(1)">â€º</button>
+          <button class="mini-nav" onclick="shiftMonth(1)">›</button>
         </div>
         <div class="mini-cal-grid">
           <div class="mini-day-name">S</div><div class="mini-day-name">M</div>
@@ -1539,22 +1539,22 @@ body[data-user-role="manager"] .owner-only-setting{display:none !important}
 
       <!-- Unpaid alert -->
       <div id="unpaid-bar" style="display:none;background:#fff7ed;border:1px solid #fed7aa;border-radius:10px;padding:10px 12px;margin:8px 12px;font-size:12px;color:#c2410c;font-weight:600;cursor:pointer" onclick="setRidesFilter('unpaid')">
-        âš ï¸ <span id="unpaid-count">0</span> unpaid â€” tap to view
+        ⚠️ <span id="unpaid-count">0</span> unpaid — tap to view
       </div>
 
       <!-- Filters -->
       <div style="padding:0 12px;display:flex;flex-direction:column;gap:6px;margin-top:4px">
         <button class="sidebar-filter active" id="filter-all" onclick="setRidesFilter('all')">All Rides</button>
-        <button class="sidebar-filter" id="filter-unpaid" onclick="setRidesFilter('unpaid')">ðŸ’° Unpaid</button>
-        <button class="sidebar-filter" id="filter-unassigned" onclick="setRidesFilter('unassigned')">ðŸ‘¤ No Driver</button>
+        <button class="sidebar-filter" id="filter-unpaid" onclick="setRidesFilter('unpaid')">💰 Unpaid</button>
+        <button class="sidebar-filter" id="filter-unassigned" onclick="setRidesFilter('unassigned')">👤 No Driver</button>
       </div>
 
       <div class="import-review-alert" id="request-review-alert" style="background:#ecfeff;border-color:#a5f3fc;color:#0d3a52" onclick="openRideRequestReviewModal()">
-        ðŸ“¨ <span id="pending-request-count">0</span> ride requests waiting
+        📨 <span id="pending-request-count">0</span> ride requests waiting
       </div>
 
       <div class="import-review-alert" id="import-review-alert" onclick="openImportReviewModal()">
-        ðŸ“¥ <span id="pending-import-count">0</span> imported rides waiting review
+        📥 <span id="pending-import-count">0</span> imported rides waiting review
       </div>
 
       <div style="padding:0 12px 12px">
@@ -1564,9 +1564,9 @@ body[data-user-role="manager"] .owner-only-setting{display:none !important}
       <!-- Add ride button -->
       <div style="padding:12px;display:grid;grid-template-columns:1fr 1fr;gap:8px">
         <button class="add-btn" style="width:100%;padding:10px;font-size:13px" onclick="openRideModal(null)">+ Add Ride</button>
-        <button class="add-btn" style="width:100%;padding:10px;font-size:13px;background:#152338" onclick="openEmailParser()">ðŸ“§ Paste Email</button>
+        <button class="add-btn" style="width:100%;padding:10px;font-size:13px;background:#152338" onclick="openEmailParser()">📧 Paste Email</button>
         <button class="add-btn" style="width:100%;padding:10px;font-size:13px;background:#0d1b2a" onclick="sendSelectedSchedule()">Save & Send Day</button>
-        <button class="add-btn" style="width:100%;padding:10px;font-size:13px;background:#1e3a5f" onclick="logAllRidesForDay()">ðŸ“‹ Log All</button>
+        <button class="add-btn" style="width:100%;padding:10px;font-size:13px;background:#1e3a5f" onclick="logAllRidesForDay()">📋 Log All</button>
       </div>
     </div>
 
@@ -1574,13 +1574,13 @@ body[data-user-role="manager"] .owner-only-setting{display:none !important}
     <div class="rides-main">
       <!-- Day header -->
       <div class="day-header">
-        <button class="cal-nav" onclick="shiftDay(-1)">â€¹</button>
+        <button class="cal-nav" onclick="shiftDay(-1)">‹</button>
         <div class="day-title" id="day-title">Loading...</div>
-        <button class="cal-nav" onclick="shiftDay(1)">â€º</button>
+        <button class="cal-nav" onclick="shiftDay(1)">›</button>
         <button class="cal-today-btn" onclick="goToToday()">Today</button>
-        <button class="optimize-btn" onclick="openOptimizer()">ðŸ¤– Optimize</button>
+        <button class="optimize-btn" onclick="openOptimizer()">🤖 Optimize</button>
         <button class="send-schedule-btn" style="margin-left:4px;padding:8px 14px;font-size:12px;width:auto" onclick="sendSelectedSchedule()">Save & Send to Driver App</button>
-        <button class="send-schedule-btn" style="margin-left:4px;padding:8px 14px;font-size:12px;width:auto;background:#1e3a5f" onclick="logAllRidesForDay()">ðŸ“‹ Log All</button>
+        <button class="send-schedule-btn" style="margin-left:4px;padding:8px 14px;font-size:12px;width:auto;background:#1e3a5f" onclick="logAllRidesForDay()">📋 Log All</button>
       </div>
 
       <div class="schedule-sync-bar" id="schedule-sync-bar"></div>
@@ -1840,7 +1840,7 @@ body[data-user-role="manager"] .owner-only-setting{display:none !important}
   <div style="background:#fff;width:100%;max-width:700px;margin:0 auto;height:100vh;overflow-y:auto;display:flex;flex-direction:column">
     <div style="background:#0d1b2a;padding:20px 24px;display:flex;align-items:center;gap:12px;flex-shrink:0">
       <div style="flex:1">
-        <div style="font-size:18px;font-weight:900;color:#fff">ðŸ¤– AI Route Optimizer</div>
+        <div style="font-size:18px;font-weight:900;color:#fff">🤖 AI Route Optimizer</div>
         <div style="font-size:12px;color:#6b82a8;margin-top:2px" id="opt-date-label">Loading...</div>
       </div>
       <button onclick="applyOptimizedSchedule()" style="background:#00b4d8;border:none;color:#fff;border-radius:8px;padding:8px 14px;font-size:13px;font-weight:700;cursor:pointer">Save & Send to Driver App</button>
@@ -1851,13 +1851,13 @@ body[data-user-role="manager"] .owner-only-setting{display:none !important}
 
       <!-- Driver selector -->
       <div id="opt-driver-select" style="margin-bottom:16px">
-        <div style="font-size:12px;font-weight:700;color:#6b82a8;margin-bottom:8px;text-transform:uppercase;letter-spacing:1px">Drivers available today â€” uncheck to exclude</div>
+        <div style="font-size:12px;font-weight:700;color:#6b82a8;margin-bottom:8px;text-transform:uppercase;letter-spacing:1px">Drivers available today — uncheck to exclude</div>
         <div id="opt-driver-checkboxes" style="display:flex;gap:8px;flex-wrap:wrap"></div>
-        <button class="add-btn" style="margin-top:12px;padding:10px 20px" onclick="reOptimize()">ðŸ¤– Run Optimization</button>
+        <button class="add-btn" style="margin-top:12px;padding:10px 20px" onclick="reOptimize()">🤖 Run Optimization</button>
       </div>
       <!-- Loading state -->
       <div id="opt-loading" style="text-align:center;padding:60px 24px">
-        <div style="font-size:36px;margin-bottom:16px">ðŸ¤–</div>
+        <div style="font-size:36px;margin-bottom:16px">🤖</div>
         <div style="font-size:16px;font-weight:700;color:#0d1b2a;margin-bottom:8px">Calculating optimal routes...</div>
         <div style="font-size:13px;color:#6b82a8" id="opt-loading-msg">Getting driving times from Google Maps</div>
         <div style="margin-top:20px;height:4px;background:#e8eef4;border-radius:2px;overflow:hidden">
@@ -1880,14 +1880,14 @@ body[data-user-role="manager"] .owner-only-setting{display:none !important}
         <!-- Action buttons -->
         <div style="display:flex;gap:10px;margin-top:20px;flex-wrap:wrap">
           <button class="add-btn" style="flex:1;padding:14px" onclick="applyOptimizedSchedule()">Save & Send to Driver App</button>
-          <button class="ts-mode-btn" style="padding:14px" onclick="reOptimize()">ðŸ”„ Re-optimize</button>
-          <button class="ts-mode-btn" style="padding:14px" onclick="closeOptimizer()">âœ• Cancel</button>
+          <button class="ts-mode-btn" style="padding:14px" onclick="reOptimize()">🔄 Re-optimize</button>
+          <button class="ts-mode-btn" style="padding:14px" onclick="closeOptimizer()">✕ Cancel</button>
         </div>
       </div>
 
       <!-- Error state -->
       <div id="opt-error" style="display:none;text-align:center;padding:40px 24px">
-        <div style="font-size:32px;margin-bottom:12px">âš ï¸</div>
+        <div style="font-size:32px;margin-bottom:12px">⚠️</div>
         <div style="font-size:15px;font-weight:700;color:#0d1b2a;margin-bottom:8px" id="opt-error-msg"></div>
         <button class="add-btn" style="margin-top:12px" onclick="reOptimize()">Try Again</button>
       </div>
@@ -1905,7 +1905,7 @@ body[data-user-role="manager"] .owner-only-setting{display:none !important}
       <div class="ride-form-pane">
 
     <!-- SECTION 1: Quick Entry -->
-    <div class="modal-section-label">ðŸ“‹ Ride Info</div>
+    <div class="modal-section-label">📋 Ride Info</div>
 
     <div class="modal-grid" style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
       <div class="modal-field">
@@ -1935,14 +1935,14 @@ body[data-user-role="manager"] .owner-only-setting{display:none !important}
     </div>
 
     <div class="modal-field">
-      <label>ðŸ“ Pickup Address</label>
+      <label>📍 Pickup Address</label>
       <input type="text" id="r-pickup" placeholder="Pickup address..." oninput="onRideAddressInput('pickup')" autocomplete="off" style="width:100%;padding:10px 14px;border:2px solid #e8eef4;border-radius:10px;font-size:13px;color:#0d1b2a;outline:none;font-family:inherit"/>
       <div class="suggestions"><div class="suggestions-list ride-address-suggestions" id="r-pickup-suggestions" style="display:none"></div></div>
       <div id="r-pickup-note" style="font-size:11px;color:#00b4d8;margin-top:4px;display:none"></div>
     </div>
 
     <div class="modal-field">
-      <label>ðŸ¥ Drop Off Address</label>
+      <label>🏥 Drop Off Address</label>
       <input type="text" id="r-dropoff" placeholder="Appointment / drop off location..." oninput="onRideAddressInput('dropoff')" autocomplete="off" style="width:100%;padding:10px 14px;border:2px solid #e8eef4;border-radius:10px;font-size:13px;color:#0d1b2a;outline:none;font-family:inherit"/>
       <div class="suggestions"><div class="suggestions-list ride-address-suggestions" id="r-dropoff-suggestions" style="display:none"></div></div>
       <div id="r-dropoff-note" style="font-size:11px;color:#00b4d8;margin-top:4px;display:none"></div>
@@ -1952,8 +1952,8 @@ body[data-user-role="manager"] .owner-only-setting{display:none !important}
       <div class="modal-field">
         <label>Ride Type</label>
         <div style="display:flex;gap:8px">
-          <button class="toggle-btn active" id="rt-wc" onclick="setToggle('ridetype','wc')">â™¿ WC</button>
-          <button class="toggle-btn" id="rt-str" onclick="setToggle('ridetype','str')">ðŸ› Stretcher</button>
+          <button class="toggle-btn active" id="rt-wc" onclick="setToggle('ridetype','wc')">♿ WC</button>
+          <button class="toggle-btn" id="rt-str" onclick="setToggle('ridetype','str')">🛏 Stretcher</button>
         </div>
       </div>
       <div class="modal-field">
@@ -1967,17 +1967,17 @@ body[data-user-role="manager"] .owner-only-setting{display:none !important}
 
     <!-- Wait required -->
     <div class="modal-field">
-      <label>â³ Wait Required?</label>
+      <label>⏳ Wait Required?</label>
       <div style="display:flex;gap:8px;align-items:center">
-        <button class="toggle-btn" id="wait-yes" onclick="setToggle('wait','yes')">â³ Yes â€” Driver Waits</button>
+        <button class="toggle-btn" id="wait-yes" onclick="setToggle('wait','yes')">⏳ Yes — Driver Waits</button>
         <button class="toggle-btn active" id="wait-no" onclick="setToggle('wait','no')">No Wait</button>
       </div>
-      <div id="wait-note" style="font-size:11px;color:#f59e0b;margin-top:6px;display:none">âš ï¸ Driver will be blocked for this ride â€” AI will not assign other rides during wait time</div>
+      <div id="wait-note" style="font-size:11px;color:#f59e0b;margin-top:6px;display:none">⚠️ Driver will be blocked for this ride — AI will not assign other rides during wait time</div>
     </div>
 
     <!-- SECTION 2: Night Before (Driver Assignment) -->
     <div style="border-top:2px dashed #e8eef4;padding-top:14px;margin-top:8px">
-      <div class="modal-section-label">ðŸŒ™ Night Before â€” Driver Assignment</div>
+      <div class="modal-section-label">🌙 Night Before — Driver Assignment</div>
       <div class="modal-grid" style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
         <div class="modal-field">
           <label>Driver</label>
@@ -1994,16 +1994,16 @@ body[data-user-role="manager"] .owner-only-setting{display:none !important}
           </div>
         </div>
       </div>
-      <!-- Helper â€” only shows for stretcher -->
+      <!-- Helper — only shows for stretcher -->
       <div class="modal-field" id="helper-field" style="display:none">
-        <label>ðŸ› Helper (Stretcher Ride)</label>
+        <label>🛏 Helper (Stretcher Ride)</label>
         <input type="text" id="r-helper" placeholder="Helper name..."/>
       </div>
     </div>
 
     <!-- SECTION 3: After Ride -->
     <div style="border-top:2px dashed #e8eef4;padding-top:14px;margin-top:8px">
-      <div class="modal-section-label">âœ… After Ride â€” Fill In Later</div>
+      <div class="modal-section-label">✅ After Ride — Fill In Later</div>
       <div class="modal-grid" style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
         <div class="modal-field">
           <label>Price</label>
@@ -2018,15 +2018,15 @@ body[data-user-role="manager"] .owner-only-setting{display:none !important}
         <div class="modal-field">
           <label>Paid?</label>
           <div style="display:flex;gap:8px">
-            <button class="toggle-btn" id="paid-yes" onclick="setToggle('paid','yes')">âœ“ Yes</button>
-            <button class="toggle-btn active" id="paid-no" onclick="setToggle('paid','no')">âœ— No</button>
+            <button class="toggle-btn" id="paid-yes" onclick="setToggle('paid','yes')">✓ Yes</button>
+            <button class="toggle-btn active" id="paid-no" onclick="setToggle('paid','no')">✗ No</button>
           </div>
         </div>
         <div class="modal-field">
           <label>Payment Method</label>
           <div style="display:flex;gap:8px">
-            <button class="toggle-btn active" id="pay-cc" onclick="setToggle('paymethod','cc')">ðŸ’³ Credit Card</button>
-            <button class="toggle-btn" id="pay-inv" onclick="setToggle('paymethod','invoice')">ðŸ“„ Invoice</button>
+            <button class="toggle-btn active" id="pay-cc" onclick="setToggle('paymethod','cc')">💳 Credit Card</button>
+            <button class="toggle-btn" id="pay-inv" onclick="setToggle('paymethod','invoice')">📄 Invoice</button>
           </div>
         </div>
         <div class="modal-field" id="miles-field" style="display:none">
@@ -2035,18 +2035,18 @@ body[data-user-role="manager"] .owner-only-setting{display:none !important}
         </div>
       </div>
       <div class="modal-field" id="wait-hours-field" style="display:none">
-        <label>â³ Actual Wait Time (hours)</label>
+        <label>⏳ Actual Wait Time (hours)</label>
         <input type="number" id="r-wait-hours" placeholder="e.g. 1.5" step="0.5" min="0" oninput="onWaitHoursChange()"/>
         <div id="r-wait-charge" style="font-size:12px;color:#00b4d8;margin-top:4px;display:none"></div>
       </div>
       <div class="modal-field">
         <label>Ride Status</label>
         <select id="r-status" style="width:100%;padding:9px 12px;border:2px solid #e8eef4;border-radius:10px;font-size:13px;outline:none;font-family:inherit;background:#fff">
-          <option value="">â€” Set Status â€”</option>
-          <option value="completed">âœ… Completed</option>
-          <option value="cancelled_pickup">ðŸš« Cancelled at Pickup</option>
-          <option value="cancelled">âŒ Cancelled</option>
-          <option value="noshow">ðŸ‘» No Show</option>
+          <option value="">— Set Status —</option>
+          <option value="completed">✅ Completed</option>
+          <option value="cancelled_pickup">🚫 Cancelled at Pickup</option>
+          <option value="cancelled">❌ Cancelled</option>
+          <option value="noshow">👻 No Show</option>
         </select>
       </div>
       <div class="modal-field">
@@ -2096,10 +2096,10 @@ body[data-user-role="manager"] .owner-only-setting{display:none !important}
 <div class="modal-overlay" id="return-modal">
   <div class="modal-box" style="max-width:440px">
     <div style="background:#f0fdf4;border-radius:10px;padding:12px 14px;margin-bottom:16px;border:1.5px solid #bbf7d0">
-      <div style="font-size:12px;font-weight:800;color:#16a34a;margin-bottom:4px">â†© RETURN RIDE</div>
+      <div style="font-size:12px;font-weight:800;color:#16a34a;margin-bottom:4px">↩ RETURN RIDE</div>
       <div id="return-modal-ref" style="font-size:13px;color:#14532d;font-weight:600"></div>
     </div>
-    <div class="modal-section-label">ðŸ“‹ Return Ride Info</div>
+    <div class="modal-section-label">📋 Return Ride Info</div>
     <div class="modal-grid" style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
       <div class="modal-field">
         <label>Date</label>
@@ -2111,11 +2111,11 @@ body[data-user-role="manager"] .owner-only-setting{display:none !important}
       </div>
     </div>
     <div class="modal-field">
-      <label>ðŸ“ Pickup Address <span style="color:#00b4d8;font-size:10px">(pre-filled from drop off)</span></label>
+      <label>📍 Pickup Address <span style="color:#00b4d8;font-size:10px">(pre-filled from drop off)</span></label>
       <input type="text" id="ret-pickup" style="width:100%;padding:10px 14px;border:2px solid #bbf7d0;border-radius:10px;font-size:13px;color:#0d1b2a;outline:none;font-family:inherit;background:#f0fdf4"/>
     </div>
     <div class="modal-field">
-      <label>ðŸ¥ Drop Off Address <span style="color:#00b4d8;font-size:10px">(pre-filled from pickup)</span></label>
+      <label>🏥 Drop Off Address <span style="color:#00b4d8;font-size:10px">(pre-filled from pickup)</span></label>
       <input type="text" id="ret-dropoff" style="width:100%;padding:10px 14px;border:2px solid #e8eef4;border-radius:10px;font-size:13px;color:#0d1b2a;outline:none;font-family:inherit"/>
     </div>
     <div class="modal-field">
@@ -2125,7 +2125,7 @@ body[data-user-role="manager"] .owner-only-setting{display:none !important}
       </select>
     </div>
     <div class="modal-field" id="ret-helper-field" style="display:none">
-      <label>ðŸ› Helper (Stretcher)</label>
+      <label>🛏 Helper (Stretcher)</label>
       <input type="text" id="ret-helper" placeholder="Helper name..."/>
     </div>
     <div class="modal-field">
@@ -2148,11 +2148,11 @@ body[data-user-role="manager"] .owner-only-setting{display:none !important}
       <input type="text" id="fac-name" placeholder="e.g. Chapel Hill"/>
     </div>
     <div class="modal-field">
-      <label>ðŸ“ Pickup Address (leave blank if varies)</label>
+      <label>📍 Pickup Address (leave blank if varies)</label>
       <input type="text" id="fac-pickup" placeholder="e.g. Chapel Hill Nursing, 4511 Robosson Road, Randallstown MD"/>
     </div>
     <div class="modal-field">
-      <label>ðŸ¥ Drop Off Address (leave blank if varies)</label>
+      <label>🏥 Drop Off Address (leave blank if varies)</label>
       <input type="text" id="fac-dropoff" placeholder="e.g. 1300 York Road, Lutherville MD"/>
     </div>
     <div class="modal-field">
@@ -2160,19 +2160,19 @@ body[data-user-role="manager"] .owner-only-setting{display:none !important}
       <input type="text" id="fac-notes" placeholder="e.g. RT pickup from facility, dropoff at appointment"/>
     </div>
     <div class="modal-field">
-      <label>ðŸ“§ Billing Email (for invoices)</label>
+      <label>📧 Billing Email (for invoices)</label>
       <input type="email" id="fac-email" placeholder="e.g. billing@chapelhill.com"/>
     </div>
     <div class="modal-field">
-      <label>ðŸ‘¤ Billing Contact Name</label>
-      <input type="text" id="fac-contact" placeholder="e.g. Jane Smith â€” Accounts Payable"/>
+      <label>👤 Billing Contact Name</label>
+      <input type="text" id="fac-contact" placeholder="e.g. Jane Smith — Accounts Payable"/>
     </div>
     <div class="modal-field">
       <label>Facility Phone</label>
       <input type="tel" id="fac-phone" placeholder="e.g. (410) 555-0123"/>
     </div>
     <div class="modal-field">
-      <label>ðŸ“¨ Ride Request Portal (Private Link)</label>
+      <label>📨 Ride Request Portal (Private Link)</label>
       <div style="display:flex;gap:8px;align-items:center">
         <input type="text" id="fac-portal-link" placeholder="Generate a private link..." readonly style="flex:1"/>
         <button class="modal-cancel" type="button" style="width:auto;padding:10px 12px" onclick="copyFacilityPortalLink()">Copy</button>
@@ -2215,7 +2215,7 @@ body[data-user-role="manager"] .owner-only-setting{display:none !important}
 <!-- Email Parser Modal -->
 <div class="modal-overlay" id="email-parser-modal">
   <div class="modal-box" style="max-width:520px;max-height:90vh;overflow-y:auto">
-    <div class="modal-title">ðŸ“§ Paste Ride Email</div>
+    <div class="modal-title">📧 Paste Ride Email</div>
     <div class="modal-driver">Paste the email from the facility and AI will fill in the ride details automatically</div>
 
     <div class="modal-field">
@@ -2224,12 +2224,12 @@ body[data-user-role="manager"] .owner-only-setting{display:none !important}
     </div>
 
     <div id="email-parse-loading" style="display:none;text-align:center;padding:16px;color:#6b82a8;font-size:13px">
-      ðŸ¤– Reading email...
+      🤖 Reading email...
     </div>
     <div id="email-parse-error" style="display:none;background:#fff7ed;border-radius:8px;padding:10px 14px;font-size:13px;color:#c2410c;margin-bottom:12px"></div>
 
     <div class="modal-actions">
-      <button class="modal-save" onclick="parseEmailWithAI()">ðŸ¤– Extract Ride Info</button>
+      <button class="modal-save" onclick="parseEmailWithAI()">🤖 Extract Ride Info</button>
       <button class="modal-cancel" onclick="closeEmailParser()">Cancel</button>
     </div>
   </div>
@@ -2237,7 +2237,7 @@ body[data-user-role="manager"] .owner-only-setting{display:none !important}
 
 <div class="modal-overlay" id="import-review-modal">
   <div class="modal-box" style="max-width:980px;width:min(980px,96vw);max-height:92vh;overflow-y:auto">
-    <div class="modal-title">ðŸ“¥ Review Imported Rides</div>
+    <div class="modal-title">📥 Review Imported Rides</div>
     <div class="modal-driver">Paste rides from ChatGPT, then approve only the ones you want in your live Rides tab.</div>
     <div class="import-paste-shell">
       <button class="import-action edit" type="button" onclick="toggleChatgptImportPanel()" id="chatgpt-import-toggle">Paste JSON</button>
@@ -2263,7 +2263,7 @@ body[data-user-role="manager"] .owner-only-setting{display:none !important}
 
 <div class="modal-overlay" id="request-review-modal">
   <div class="modal-box" style="max-width:980px;width:min(980px,96vw);max-height:92vh;overflow-y:auto">
-    <div class="modal-title">ðŸ“¨ Ride Requests</div>
+    <div class="modal-title">📨 Ride Requests</div>
     <div class="modal-driver">Review requests submitted by facilities. Accept to create a ride, or decline with a reply.</div>
     <div id="request-review-list" class="import-review-list">
       <div class="import-review-empty">Loading requests...</div>
@@ -2282,8 +2282,8 @@ body[data-user-role="manager"] .owner-only-setting{display:none !important}
     <div class="modal-field">
       <label>Status</label>
       <div style="display:flex;gap:8px;flex-wrap:wrap">
-        <button class="toggle-btn" id="req-status-accept" onclick="setReqRespStatus('accepted')">âœ… Accept</button>
-        <button class="toggle-btn" id="req-status-decline" onclick="setReqRespStatus('declined')">âŒ Decline</button>
+        <button class="toggle-btn" id="req-status-accept" onclick="setReqRespStatus('accepted')">✅ Accept</button>
+        <button class="toggle-btn" id="req-status-decline" onclick="setReqRespStatus('declined')">❌ Decline</button>
       </div>
     </div>
 
@@ -2340,7 +2340,7 @@ window.addEventListener('load', function() {
   // Preload settings so the PIN + branding are updated before login.
   tryAutoInit(true);
 });
-// â”€â”€ CONFIG (loaded from Firebase settings, these are defaults) â”€â”€
+// ── CONFIG (loaded from Firebase settings, these are defaults) ──
 let OWNER_PIN='6622';
 let PAY_PERIOD_DAYS=12;
 let PAY_PERIOD_REF_DATE='2026-04-13'; // Monday April 13
@@ -2351,19 +2351,19 @@ let pendingBrandLogoDataUrl='';
 let DASHBOARD_ACCOUNTS=[];
 let currentDashboardUser=null;
 
-// â€”â€” ADMIN MODE â€”â€”
+// —— ADMIN MODE ——
 // This is for "hide the branding editor from normal users" (especially customer deployments).
 // Note: this is not security. It's just UI gating.
 // (Admin mode removed)
-// Default facilities â€” overridden by Firebase settings
+// Default facilities — overridden by Firebase settings
 let FACILITIES=[
   {name:'Chapel Hill', pickup:CHAPEL_HILL_PICKUP, pickupNote:'Auto-filled', dropoff:'', dropoffNote:'Enter appointment location', notes:''},
   {name:'King David', pickup:'4204 Old Milford Mill Rd, Pikesville, MD 21208', pickupNote:'Auto-filled', dropoff:'', dropoffNote:'Enter appointment location', notes:''},
   {name:'Orchard Hill', pickup:'111 West Road, Towson, MD 21204', pickupNote:'Auto-filled', dropoff:'', dropoffNote:'Enter appointment location', notes:''},
   {name:'Meadow Park', pickup:'1525 Rolling Rd, Catonsville, MD 21228', pickupNote:'Auto-filled', dropoff:'', dropoffNote:'Enter appointment location', notes:''},
   {name:'Resorts of Augsburg', pickup:'6825 Campfield Rd, Baltimore, MD 21207', pickupNote:'Auto-filled', dropoff:'', dropoffNote:'Enter appointment location', notes:''},
-  {name:'Edenbridge PACE', pickup:'', pickupNote:'Enter client home address', dropoff:'3201 Suite A, Tioga Parkway, Baltimore, MD 21215', dropoffNote:'Auto-filled â€” Edenbridge PACE daycare', notes:'Pickup from home, drop at daycare, return home'},
-  {name:'WAAP', pickup:'', pickupNote:'Enter pickup facility (they provide address)', dropoff:'1300 York Road Building C Suite 200, Lutherville, MD 21093', dropoffNote:'Auto-filled â€” Vein & Vascular Center', notes:'Wound care â€” pickup from facility, fixed dropoff'},
+  {name:'Edenbridge PACE', pickup:'', pickupNote:'Enter client home address', dropoff:'3201 Suite A, Tioga Parkway, Baltimore, MD 21215', dropoffNote:'Auto-filled — Edenbridge PACE daycare', notes:'Pickup from home, drop at daycare, return home'},
+  {name:'WAAP', pickup:'', pickupNote:'Enter pickup facility (they provide address)', dropoff:'1300 York Road Building C Suite 200, Lutherville, MD 21093', dropoffNote:'Auto-filled — Vein & Vascular Center', notes:'Wound care — pickup from facility, fixed dropoff'},
   {name:'Langerman', pickup:'', pickupNote:'', dropoff:'', dropoffNote:'', notes:'Private client'},
   {name:'Wingo', pickup:'', pickupNote:'', dropoff:'', dropoffNote:'', notes:'Private client'},
   {name:'Maxine', pickup:'', pickupNote:'', dropoff:'', dropoffNote:'', notes:'Private client'},
@@ -2401,10 +2401,10 @@ let reqRespStatus='accepted';
 let EMAIL_CFG=null;
 let emailjsReady=false;
 
-// â”€â”€ FIREBASE â”€â”€
+// ── FIREBASE ──
 function tryAutoInit(){
   if(typeof firebase === 'undefined'){
-    alert('Connection error â€” please check your internet and reload the page.');
+    alert('Connection error — please check your internet and reload the page.');
     return;
   }
   try{
@@ -3284,9 +3284,9 @@ async function renderImportReviewList(){
     const duplicates = findRideDuplicates(rideDraft, allRides, record);
     const reviewFlag = String(record.reviewFlag || rideDraft.reviewFlag || 'ok').toLowerCase() === 'needs_review' ? 'needs_review' : 'ok';
     const duplicateDetail = duplicates.length
-      ? `<div class="import-review-field" style="margin-bottom:10px"><strong>Possible Duplicate</strong>${escHtml(duplicates.slice(0,2).map(r=>`${r.client||r.facility||'Ride'} ${r.date||''} ${r.time||''}`.trim()).join(' â€¢ '))}</div>`
+      ? `<div class="import-review-field" style="margin-bottom:10px"><strong>Possible Duplicate</strong>${escHtml(duplicates.slice(0,2).map(r=>`${r.client||r.facility||'Ride'} ${r.date||''} ${r.time||''}`.trim()).join(' • '))}</div>`
       : '';
-    const metaLine = [rideDraft.date || '', rideDraft.time || '', rideDraft.facility || 'Private'].filter(Boolean).join(' â€¢ ');
+    const metaLine = [rideDraft.date || '', rideDraft.time || '', rideDraft.facility || 'Private'].filter(Boolean).join(' • ');
     return `<div class="import-review-card${duplicates.length?' duplicate':''}">
       <div class="import-review-top">
         <div>
@@ -3303,8 +3303,8 @@ async function renderImportReviewList(){
       <div class="import-review-grid">
         <div class="import-review-field"><strong>Facility</strong>${escHtml(rideDraft.facility || 'Private')}</div>
         <div class="import-review-field"><strong>Client</strong>${escHtml(rideDraft.client || '')}</div>
-        <div class="import-review-field"><strong>Pickup</strong>${escHtml(rideDraft.pickup || 'â€”')}</div>
-        <div class="import-review-field"><strong>Drop Off</strong>${escHtml(rideDraft.dropoff || 'â€”')}</div>
+        <div class="import-review-field"><strong>Pickup</strong>${escHtml(rideDraft.pickup || '—')}</div>
+        <div class="import-review-field"><strong>Drop Off</strong>${escHtml(rideDraft.dropoff || '—')}</div>
       </div>
       ${duplicateDetail}
       ${rideDraft.notes ? `<div class="import-review-field" style="margin-bottom:10px"><strong>Notes</strong>${escHtml(rideDraft.notes)}</div>` : ''}
@@ -3352,7 +3352,7 @@ async function renderRideRequestReviewList(){
       : returnStatus === 'no_return'
         ? 'No return'
         : returnTime || '';
-    const metaLine = [ride.date || '', ride.time || '', facility].filter(Boolean).join(' Ã¢â‚¬Â¢ ');
+    const metaLine = [ride.date || '', ride.time || '', facility].filter(Boolean).join(' â€¢ ');
     const notes = ride.notes || '';
     const raw = req.rawMessage || '';
     const sourceLabel = String(req.source || '').toLowerCase().includes('ringcentral') ? 'Phone/Text' : 'Portal';
@@ -3370,12 +3370,12 @@ async function renderRideRequestReviewList(){
       </div>
       <div class="import-review-grid">
         <div class="import-review-field"><strong>Facility</strong>${escHtml(facility)}</div>
-        <div class="import-review-field"><strong>Requester</strong>${escHtml(req.requesterEmail || 'Ã¢â‚¬â€')}</div>
-        <div class="import-review-field"><strong>Contact</strong>${escHtml([req.requesterName, req.requesterPhone].filter(Boolean).join(' / ') || 'Ã¢â‚¬â€')}</div>
-        <div class="import-review-field"><strong>Appointment</strong>${escHtml(appointment || 'Ã¢â‚¬â€')}</div>
-        <div class="import-review-field"><strong>Return</strong>${escHtml(returnLabel || 'Ã¢â‚¬â€')}</div>
-        <div class="import-review-field"><strong>Pickup</strong>${escHtml(ride.pickup || 'Ã¢â‚¬â€')}</div>
-        <div class="import-review-field"><strong>Drop Off</strong>${escHtml(ride.dropoff || 'Ã¢â‚¬â€')}</div>
+        <div class="import-review-field"><strong>Requester</strong>${escHtml(req.requesterEmail || 'â€”')}</div>
+        <div class="import-review-field"><strong>Contact</strong>${escHtml([req.requesterName, req.requesterPhone].filter(Boolean).join(' / ') || 'â€”')}</div>
+        <div class="import-review-field"><strong>Appointment</strong>${escHtml(appointment || 'â€”')}</div>
+        <div class="import-review-field"><strong>Return</strong>${escHtml(returnLabel || 'â€”')}</div>
+        <div class="import-review-field"><strong>Pickup</strong>${escHtml(ride.pickup || 'â€”')}</div>
+        <div class="import-review-field"><strong>Drop Off</strong>${escHtml(ride.dropoff || 'â€”')}</div>
       </div>
       ${notes ? `<div class="import-review-field" style="margin-bottom:10px"><strong>Notes</strong>${escHtml(notes)}</div>` : ''}
       ${raw ? `<details style="margin-bottom:10px"><summary style="cursor:pointer;color:#64748b;font-size:12px">View original request</summary><div class="import-review-field" style="margin-top:8px;white-space:pre-wrap">${escHtml(raw)}</div></details>` : ''}
@@ -3418,7 +3418,7 @@ function openRideRequestResponseModal(requestKey, presetStatus){
   const facility = ride.facility || record.facility || '';
   const client = ride.client || '';
   document.getElementById('req-resp-title').textContent = `Respond: ${client || 'Ride Request'}`;
-  document.getElementById('req-resp-subtitle').textContent = `${facility}${record.requesterEmail ? ' Ã¢â‚¬Â¢ ' + record.requesterEmail : ''}`;
+  document.getElementById('req-resp-subtitle').textContent = `${facility}${record.requesterEmail ? ' â€¢ ' + record.requesterEmail : ''}`;
 
   document.getElementById('req-resp-date').value = ride.date || '';
   document.getElementById('req-resp-time').value = normalizeImportedTimeValue(ride.time || '');
@@ -3564,7 +3564,7 @@ async function saveRideRequestResponse(){
     renderRideRequestReviewList();
     updateRideRequestAlert(getPendingRideRequests().length);
     refreshImportedRideViews();
-    showToast(reqRespStatus === 'accepted' ? 'Ã¢Å“â€œ Request accepted' : 'Request declined');
+    showToast(reqRespStatus === 'accepted' ? '✓ Request accepted' : 'Request declined');
   }catch(e){
     console.error(e);
     alert('Could not save response. Please try again.');
@@ -3718,7 +3718,7 @@ async function approveImportedRide(importKey){
   rideImportsCache = freshSnap.val() || {};
   updateImportReviewAlert(getPendingRideImports().length);
   refreshImportedRideViews();
-  showToast('âœ“ Imported ride approved');
+  showToast('✓ Imported ride approved');
   renderImportReviewList();
 }
 
@@ -3769,7 +3769,7 @@ async function rejectImportedRide(importKey){
     status:'rejected',
     reviewedAt:Date.now()
   });
-  showToast('âœ“ Imported ride rejected');
+  showToast('✓ Imported ride rejected');
   renderImportReviewList();
 }
 
@@ -3822,7 +3822,7 @@ function fillRideModalFromImport(rideDraft){
   showHideStretcherFields();
 }
 
-// â”€â”€ PIN â”€â”€
+// ── PIN ──
 function pinKey(k){
   if(k==='del'){pinBuf=pinBuf.slice(0,-1);document.getElementById('pin-error').textContent='';}
   else if(k==='ok'){checkPin();}
@@ -3872,7 +3872,7 @@ window.pinKey = pinKey;
 window.updatePinDots = updatePinDots;
 window.checkPin = checkPin;
 
-// â”€â”€ TABS â”€â”€
+// ── TABS ──
 const MOBILE_DASHBOARD_QUERY='(max-width: 760px), (hover: none) and (pointer: coarse)';
 let desktopLastTab='map';
 let responsiveDashTimer=null;
@@ -3931,7 +3931,7 @@ function queueResponsiveDashboard(){
 window.addEventListener('resize',queueResponsiveDashboard);
 window.addEventListener('orientationchange',queueResponsiveDashboard);
 
-// â”€â”€ DASHBOARD INIT â”€â”€
+// ── DASHBOARD INIT ──
 function initDash(){
   refreshMap();
   if(dashInt) clearInterval(dashInt);
@@ -3949,7 +3949,7 @@ function initDash(){
   }
 }
 
-// â”€â”€ MAP â”€â”€
+// ── MAP ──
 async function refreshMap(){
   if(!db)return;
   const[drivers,locSnap]=await Promise.all([loadDrivers(),locsRef().once('value')]);
@@ -3960,7 +3960,7 @@ async function refreshMap(){
   const activeBounds=[];
   if(!map){
     map=L.map('map').setView([39.37,-76.66],12);
-    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{attribution:'Â© OpenStreetMap'}).addTo(map);
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{attribution:'© OpenStreetMap'}).addTo(map);
   }
   setTimeout(()=>map&&map.invalidateSize(),0);
   document.getElementById('s-total').textContent=drivers.length;
@@ -3986,8 +3986,8 @@ async function refreshMap(){
     row.className=`driver-row${isIn?' online':''}`;
     row.innerHTML=`<div class="driver-avatar" style="background:${color}">${d.name[0]}</div>
       <div class="driver-info"><div class="driver-name-row">${d.name}</div>
-      <div class="driver-detail">${hasPos?`${loc.lat.toFixed(4)}, ${loc.lng.toFixed(4)}`:(isIn?'On shift â€” acquiring GPS':'Last seen: '+ago)}</div></div>
-      <div style="text-align:right"><div class="status-badge ${isIn?'status-in':'status-out'}">${isIn?'â— IN':'OUT'}</div>${isIn?`<div class="driver-time">${ago}</div>`:''}</div>`;
+      <div class="driver-detail">${hasPos?`${loc.lat.toFixed(4)}, ${loc.lng.toFixed(4)}`:(isIn?'On shift — acquiring GPS':'Last seen: '+ago)}</div></div>
+      <div style="text-align:right"><div class="status-badge ${isIn?'status-in':'status-out'}">${isIn?'● IN':'OUT'}</div>${isIn?`<div class="driver-time">${ago}</div>`:''}</div>`;
     const actionBox=row.querySelector('div[style*="text-align:right"]');
     if(actionBox){
       actionBox.classList.add('driver-actions');
@@ -4028,10 +4028,10 @@ function focusDriverOnMap(driverKey){
   });
 }
 
-// â”€â”€ DISPATCH â”€â”€
+// ── DISPATCH ──
 function initDispatchMap(){
   setTimeout(()=>{
-    if(!dispatchMap){dispatchMap=L.map('dispatch-map').setView([39.37,-76.66],12);L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{attribution:'Â© OpenStreetMap'}).addTo(dispatchMap);}
+    if(!dispatchMap){dispatchMap=L.map('dispatch-map').setView([39.37,-76.66],12);L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{attribution:'© OpenStreetMap'}).addTo(dispatchMap);}
     dispatchMap.invalidateSize();
   },100);
 }
@@ -4174,7 +4174,7 @@ async function findClosest(){
     const loc=locs[safe(d.name)];
     const isIn=loc&&loc.status==='in';
     const hasPos=isIn&&loc.lat&&loc.lng&&(now-loc.ts)<stale;
-    return{name:d.name,color,isIn,hasPos,loc,distMiles:null,distText:'â€”',etaText:'â€”'};
+    return{name:d.name,color,isIn,hasPos,loc,distMiles:null,distText:'—',etaText:'—'};
   });
   const onlineDrivers=driverData.filter(d=>d.hasPos);
   if(onlineDrivers.length>0&&typeof google!=='undefined'){
@@ -4202,7 +4202,7 @@ function renderDispatchResults(results,pLat,pLng){
       row.innerHTML=`<div class="result-rank${rank===1?' first':''}">${rank}</div><div class="driver-avatar" style="background:${d.color};width:36px;height:36px;border-radius:9px;font-size:15px;font-weight:900;color:#fff;display:flex;align-items:center;justify-content:center;flex-shrink:0">${d.name[0]}</div><div style="flex:1"><div class="result-driver-name">${d.name}</div><div style="font-size:12px;color:#6b82a8">${d.etaText} driving</div></div><div style="text-align:right"><div class="result-dist${rank===1?' cyan':''}">${d.distText}</div></div>`;
       rank++;
     }else{
-      row.innerHTML=`<div class="result-rank" style="opacity:0.4">${rank}</div><div class="driver-avatar" style="background:#94a3b8;width:36px;height:36px;border-radius:9px;font-size:15px;font-weight:900;color:#fff;display:flex;align-items:center;justify-content:center;flex-shrink:0">${d.name[0]}</div><div style="flex:1"><div class="result-driver-name" style="color:#94a3b8">${d.name}</div><div class="result-offline">${d.isIn?'On shift â€” GPS unavailable':'Not on shift'}</div></div><div class="result-dist" style="color:#d1d5db">â€”</div>`;
+      row.innerHTML=`<div class="result-rank" style="opacity:0.4">${rank}</div><div class="driver-avatar" style="background:#94a3b8;width:36px;height:36px;border-radius:9px;font-size:15px;font-weight:900;color:#fff;display:flex;align-items:center;justify-content:center;flex-shrink:0">${d.name[0]}</div><div style="flex:1"><div class="result-driver-name" style="color:#94a3b8">${d.name}</div><div class="result-offline">${d.isIn?'On shift — GPS unavailable':'Not on shift'}</div></div><div class="result-dist" style="color:#d1d5db">—</div>`;
       rank++;
     }
     el.appendChild(row);
@@ -4216,7 +4216,7 @@ function renderDispatchResults(results,pLat,pLng){
     const pickupMarker=L.marker([pLat,pLng],{icon:L.divIcon({html:'<div style="background:#ef4444;width:14px;height:14px;border-radius:50%;border:2px solid #fff;box-shadow:0 2px 6px rgba(0,0,0,0.3)"></div>',className:'',iconSize:[14,14],iconAnchor:[7,7]})}).addTo(dispatchMap);
     dispatchResultLayers.push(pickupMarker);
     results.filter(d=>d.hasPos).forEach(d=>{
-      L.marker([d.loc.lat,d.loc.lng],{icon:L.divIcon({html:`<div style="background:${d.color};width:28px;height:28px;border-radius:50%;border:2px solid #fff;display:flex;align-items:center;justify-content:center;color:#fff;font-weight:900;font-size:12px;box-shadow:0 2px 6px rgba(0,0,0,0.25)">${d.name[0]}</div>`,className:'',iconSize:[28,28],iconAnchor:[14,14]})}).addTo(dispatchMap).bindPopup(`<b>${d.name}</b> â€” ${d.distText}`);
+      L.marker([d.loc.lat,d.loc.lng],{icon:L.divIcon({html:`<div style="background:${d.color};width:28px;height:28px;border-radius:50%;border:2px solid #fff;display:flex;align-items:center;justify-content:center;color:#fff;font-weight:900;font-size:12px;box-shadow:0 2px 6px rgba(0,0,0,0.25)">${d.name[0]}</div>`,className:'',iconSize:[28,28],iconAnchor:[14,14]})}).addTo(dispatchMap).bindPopup(`<b>${d.name}</b> — ${d.distText}`);
       bounds.push([d.loc.lat,d.loc.lng]);
     });
     if(bounds.length>1)dispatchMap.fitBounds(bounds,{padding:[20,20]});
@@ -4224,7 +4224,7 @@ function renderDispatchResults(results,pLat,pLng){
 }
 function haversine(lat1,lng1,lat2,lng2){const R=3958.8,dLat=(lat2-lat1)*Math.PI/180,dLng=(lng2-lng1)*Math.PI/180;const a=Math.sin(dLat/2)**2+Math.cos(lat1*Math.PI/180)*Math.cos(lat2*Math.PI/180)*Math.sin(dLng/2)**2;return R*2*Math.atan2(Math.sqrt(a),Math.sqrt(1-a));}
 
-// â”€â”€ TIMESHEET â”€â”€
+// ── TIMESHEET ──
 function getCurrentPPStart(){
   const ref=new Date(PAY_PERIOD_REF_DATE+'T00:00:00');
   const now=new Date();now.setHours(0,0,0,0);
@@ -4242,7 +4242,7 @@ function getPPRange(offset){
 function updatePPDisplay(){
   const{start,end}=getPPRange(ppOffset);
   const opts={month:'short',day:'numeric'};
-  document.getElementById('pp-label').textContent=`${start.toLocaleDateString('en-US',opts)} â€“ ${end.toLocaleDateString('en-US',{...opts,year:'numeric'})}`;
+  document.getElementById('pp-label').textContent=`${start.toLocaleDateString('en-US',opts)} – ${end.toLocaleDateString('en-US',{...opts,year:'numeric'})}`;
 }
 function shiftPP(dir){ppOffset+=dir;updatePPDisplay();renderTimesheet();}
 function setTsMode(mode){
@@ -4286,14 +4286,14 @@ async function renderTimesheet(){
       Object.entries(byDay).forEach(([day,dayShifts])=>{
         const dayMs=dayShifts.reduce((a,[,s])=>a+(s.durationMs||0),0);
         block.innerHTML+=`<div class="ts-day-header"><span>${fmtDate(day)}</span><span>${fmtH(dayMs)}</span></div>`;
-        dayShifts.forEach(([k,s])=>{block.innerHTML+=`<div class="ts-entry"><div class="ts-times"><div class="ts-in">â†‘ IN &nbsp; ${fmtTime(s.clockIn)}</div><div class="ts-out">â†“ OUT  ${s.clockOut?fmtTime(s.clockOut):'Still on shift'}</div></div><div class="ts-dur">${s.durationMs?fmtDur(s.durationMs):'â€”'}</div><button class="edit-btn" onclick="openEditModal('${d.name}','${k}',${s.clockIn},${s.clockOut||0})">Edit</button></div>`;});
+        dayShifts.forEach(([k,s])=>{block.innerHTML+=`<div class="ts-entry"><div class="ts-times"><div class="ts-in">↑ IN &nbsp; ${fmtTime(s.clockIn)}</div><div class="ts-out">↓ OUT  ${s.clockOut?fmtTime(s.clockOut):'Still on shift'}</div></div><div class="ts-dur">${s.durationMs?fmtDur(s.durationMs):'—'}</div><button class="edit-btn" onclick="openEditModal('${d.name}','${k}',${s.clockIn},${s.clockOut||0})">Edit</button></div>`;});
       });
     }
     content.appendChild(block);
   });
 }
 
-// â”€â”€ DRIVERS TAB â”€â”€
+// ── DRIVERS TAB ──
 async function renderManage(){
   if(!db)return;
   const list=document.getElementById('manage-list');list.innerHTML='';
@@ -4325,7 +4325,7 @@ async function removeDriver(name){
   renderManage();
 }
 
-// â”€â”€ EDIT SHIFT MODAL â”€â”€
+// ── EDIT SHIFT MODAL ──
 async function openEditModal(driverName,shiftKey,clockIn,clockOut){
   if(!shiftKey||shiftKey==='undefined'){const snap=await shiftsRef().child(safe(driverName)).once('value');const all=snap.val()||{};shiftKey=Object.keys(all).find(k=>all[k].clockIn===clockIn)||null;}
   editContext={driverName,shiftKey};
@@ -4352,14 +4352,14 @@ async function deleteShift(){
   closeEditModal();renderTimesheet();
 }
 
-// â”€â”€ EXCEL EXPORT â”€â”€
+// ── EXCEL EXPORT ──
 async function downloadExcel(){
   let fromTs,toTs,label;
   if(tsMode==='pp'){const{start,end}=getPPRange(ppOffset);fromTs=start.getTime();toTs=end.getTime();const opts={month:'short',day:'numeric'};label=`${start.toLocaleDateString('en-US',opts)}-${end.toLocaleDateString('en-US',{...opts,year:'numeric'})}`;}
   else{const fv=document.getElementById('ts-from').value;const tv=document.getElementById('ts-to').value;if(!fv||!tv){alert('Please set a date range first.');return;}fromTs=new Date(fv+'T00:00:00').getTime();toTs=new Date(tv+'T23:59:59').getTime();label=`${fv} to ${tv}`;}
   const drivers=await loadDrivers();const snap=await shiftsRef().once('value');const all=snap.val()||{};
   const wb=XLSX.utils.book_new();
-  const summaryRows=[['AbleCare Mobility â€” Payroll Summary'],['Period: '+label],[''],['Driver','Total Hours','Decimal Hours','# Shifts','Hourly Rate','Gross Pay']];
+  const summaryRows=[['AbleCare Mobility — Payroll Summary'],['Period: '+label],[''],['Driver','Total Hours','Decimal Hours','# Shifts','Hourly Rate','Gross Pay']];
   drivers.forEach(d=>{const raw=all[safe(d.name)]||{};const shifts=Object.values(raw).filter(s=>s.clockIn>=fromTs&&s.clockIn<=toTs);const ms=shifts.reduce((a,s)=>a+(s.durationMs||0),0);const hrs=parseFloat(fmtHDecimal(ms));const rate=d.hourlyRate?parseFloat(d.hourlyRate):null;const gross=rate?parseFloat((hrs*rate).toFixed(2)):'';summaryRows.push([d.name,fmtH(ms),hrs,shifts.length,rate?`$${rate.toFixed(2)}/hr`:'Not set',gross?`$${gross}`:'']);});
   const wsSummary=XLSX.utils.aoa_to_sheet(summaryRows);wsSummary['!cols']=[{wch:20},{wch:14},{wch:16},{wch:10},{wch:14},{wch:12}];XLSX.utils.book_append_sheet(wb,wsSummary,'Summary');
   const detailRows=[['Driver','Date','Day','Clock In','Clock Out','Duration (hrs)','Duration (h:m)']];
@@ -4368,17 +4368,17 @@ async function downloadExcel(){
   XLSX.writeFile(wb,`AbleCare_Payroll_${label.replace(/[^a-zA-Z0-9]/g,'_')}.xlsx`);
 }
 
-// â”€â”€ SETTINGS TAB â”€â”€
-// â”€â”€ STATUS HELPERS â”€â”€
+// ── SETTINGS TAB ──
+// ── STATUS HELPERS ──
 const DEFAULT_STATUSES = [
   {value:'enroute',          label:'En route',             color:'#0369a1', bg:'#e0f2fe'},
   {value:'arrived',          label:'Arrived',              color:'#7c3aed', bg:'#f5f3ff'},
   {value:'onboard',          label:'Passenger onboard',    color:'#0f766e', bg:'#ccfbf1'},
   {value:'complete',         label:'Done',                 color:'#16a34a', bg:'#f0fdf4'},
-  {value:'completed',        label:'âœ… Completed',            color:'#16a34a', bg:'#f0fdf4'},
-  {value:'cancelled_pickup', label:'ðŸš« Cancelled at Pickup',  color:'#dc2626', bg:'#fef2f2'},
-  {value:'cancelled',        label:'âŒ Cancelled',             color:'#dc2626', bg:'#fef2f2'},
-  {value:'noshow',           label:'ðŸ‘» No Show',               color:'#9333ea', bg:'#faf5ff'},
+  {value:'completed',        label:'✅ Completed',            color:'#16a34a', bg:'#f0fdf4'},
+  {value:'cancelled_pickup', label:'🚫 Cancelled at Pickup',  color:'#dc2626', bg:'#fef2f2'},
+  {value:'cancelled',        label:'❌ Cancelled',             color:'#dc2626', bg:'#fef2f2'},
+  {value:'noshow',           label:'👻 No Show',               color:'#9333ea', bg:'#faf5ff'},
 ];
 function getStatuses(){
   return [...DEFAULT_STATUSES, ...(window._customStatuses||[])];
@@ -4394,7 +4394,7 @@ function statusBadgeHtml(statusVal){
   return `<div style="font-size:10px;font-weight:800;padding:2px 6px;border-radius:5px;margin-bottom:3px;background:${s.bg};color:${s.color}">${s.label}</div>`;
 }
 function statusBadgeTableHtml(statusVal){
-  if(!statusVal) return '<span style="color:#94a3b8;font-size:12px">â€”</span>';
+  if(!statusVal) return '<span style="color:#94a3b8;font-size:12px">—</span>';
   const s = getStatuses().find(x=>x.value===statusVal);
   if(!s) return `<span style="font-size:12px;font-weight:700;padding:2px 8px;border-radius:6px;background:#f0f4f8;color:#6b82a8">${statusVal}</span>`;
   return `<span style="font-size:12px;font-weight:700;padding:2px 8px;border-radius:6px;background:${s.bg};color:${s.color}">${s.label}</span>`;
@@ -4430,7 +4430,7 @@ async function renderScheduleSyncBar(ds, dayRides){
   bar.innerHTML=`
     <div>
       <div class="schedule-sync-title">Driver app schedule: ${statusText}</div>
-      <div class="schedule-sync-meta">${assigned.length}/${rides.length} assigned${lastStamp?' Â· '+fmtScheduleStamp(lastStamp):''}</div>
+      <div class="schedule-sync-meta">${assigned.length}/${rides.length} assigned${lastStamp?' · '+fmtScheduleStamp(lastStamp):''}</div>
     </div>
     <div style="display:flex;gap:6px;flex-wrap:wrap">
       <span class="schedule-sync-pill ${okClass}">${unassigned.length?unassigned.length+' unassigned':'All assigned'}</span>
@@ -4546,7 +4546,7 @@ async function initSettings(){
 function populateStatusDropdown(id, selectedVal){
   const sel = document.getElementById(id);
   if(!sel) return;
-  sel.innerHTML = '<option value="">â€” Set Status â€”</option>' +
+  sel.innerHTML = '<option value="">— Set Status —</option>' +
     getStatuses().map(s=>`<option value="${s.value}"${s.value===selectedVal?' selected':''}>${s.label}</option>`).join('');
 }
 
@@ -4573,7 +4573,7 @@ async function addCustomStatus(){
   await settingsRef().update({ customStatuses: customs });
   input.value = '';
   renderCustomStatuses();
-  showToast('âœ“ Status added!');
+  showToast('✓ Status added!');
 }
 
 async function removeCustomStatus(index){
@@ -4594,7 +4594,7 @@ async function saveOwnerPin(){
   await settingsRef().update({ownerPin:p1});
   OWNER_PIN=p1;
   document.getElementById('s-pin').value='';document.getElementById('s-pin2').value='';
-  msg.textContent='âœ“ Owner PIN updated!';msg.style.color='#06d6a0';msg.style.display='block';
+  msg.textContent='✓ Owner PIN updated!';msg.style.color='#06d6a0';msg.style.display='block';
   setTimeout(()=>msg.style.display='none',3000);
 }
 
@@ -4610,7 +4610,7 @@ function renderDashboardAccounts(){
     <div class="driver-pin-row">
       <div class="driver-pin-name">${escHtml(u.name||'User')}</div>
       <div class="driver-pin-val">${escHtml(u.role||'manager')}</div>
-      <div class="driver-pin-val">PIN: ${u.pin?'â€¢â€¢â€¢â€¢':'Not set'}</div>
+      <div class="driver-pin-val">PIN: ${u.pin?'••••':'Not set'}</div>
       <button class="driver-pin-btn" onclick="editDashboardAccount(${i})">Edit</button>
       <button class="driver-pin-btn" onclick="removeDashboardAccount(${i})">Remove</button>
     </div>`).join('');
@@ -4663,7 +4663,7 @@ async function savePPSettings(){
   await settingsRef().update({payPeriodDays:days,payPeriodRef:ref});
   PAY_PERIOD_DAYS=days;PAY_PERIOD_REF_DATE=ref;
   ppOffset=0;updatePPDisplay();
-  alert('âœ“ Pay period settings saved!');
+  alert('✓ Pay period settings saved!');
 }
 
 function showEmailSettingsMsg(text, ok){
@@ -4688,7 +4688,7 @@ async function saveEmailSettings(){
     await settingsRef().update({ emailjs: cfg });
     EMAIL_CFG = cfg;
     tryInitEmailjs(cfg);
-    showEmailSettingsMsg('Ã¢Å“â€œ Portal/email settings saved!', true);
+    showEmailSettingsMsg('✓ Portal/email settings saved!', true);
   }catch(e){
     console.error(e);
     showEmailSettingsMsg('Could not save portal/email settings.', false);
@@ -4701,7 +4701,7 @@ async function saveBusinessInfo(){
   const phone=document.getElementById('s-phone').value.trim();
   await settingsRef().update({company,baseAddress,phone});
   const msg=document.getElementById('s-biz-msg');
-  msg.textContent='âœ“ Business info saved!';msg.style.color='#06d6a0';msg.style.display='block';
+  msg.textContent='✓ Business info saved!';msg.style.color='#06d6a0';msg.style.display='block';
   setTimeout(()=>msg.style.display='none',3000);
 }
 
@@ -4714,7 +4714,7 @@ async function renderDriverPins(){
     const row=document.createElement('div');row.className='driver-pin-row';
     row.innerHTML=`<div class="driver-avatar" style="background:${color};width:36px;height:36px;border-radius:9px;font-size:15px;font-weight:900;color:#fff;display:flex;align-items:center;justify-content:center;flex-shrink:0">${d.name[0]}</div>
       <div class="driver-pin-name">${d.name}</div>
-      <div class="driver-pin-val">PIN: ${d.pin?'â€¢â€¢â€¢â€¢':'Not set'}</div>
+      <div class="driver-pin-val">PIN: ${d.pin?'••••':'Not set'}</div>
       <div class="driver-pin-val" style="color:${d.hourlyRate?'#16a34a':'#f59e0b'}">${d.hourlyRate?'$'+parseFloat(d.hourlyRate).toFixed(2)+'/hr':'No rate set'}</div>
       <button class="driver-pin-btn" onclick="openDriverRateModal('${d.name}',${d.hourlyRate||0})">Set Rate</button>
       <button class="driver-pin-btn" onclick="openDriverPinModal('${d.name}')">Change PIN</button>`;
@@ -4736,7 +4736,7 @@ async function saveDriverRate(){
   await drvsRef().child(safe(drRateDriverName)).update({hourlyRate:rate});
   closeDriverRateModal();
   renderDriverPins();
-  alert(`âœ“ ${drRateDriverName}'s rate set to $${rate.toFixed(2)}/hr`);
+  alert(`✓ ${drRateDriverName}'s rate set to $${rate.toFixed(2)}/hr`);
 }
 function openDriverPinModal(name){
   document.getElementById('dp-driver-name').textContent=name;
@@ -4755,7 +4755,7 @@ async function saveDriverPin(){
   await drvsRef().child(safe(dpDriverName)).update({pin:p1});
   closeDriverPinModal();
   renderDriverPins();
-  alert(`âœ“ ${dpDriverName}'s PIN updated!`);
+  alert(`✓ ${dpDriverName}'s PIN updated!`);
 }
 
 function renderFacilitiesList(){
@@ -4764,8 +4764,8 @@ function renderFacilitiesList(){
     const div=document.createElement('div');div.className='fac-item';
     div.innerHTML=`<div class="fac-item-info">
       <div class="fac-item-name">${f.name}</div>
-      <div class="fac-item-addr">${f.pickup?'ðŸ“ Pickup: '+f.pickup:'ðŸ“ Pickup: varies â€” enter manually'}${f.dropoff?'<br>ðŸ¥ Drop off: '+f.dropoff:''}${f.email?'<br>ðŸ“§ '+f.email:''}</div>
-      ${f.notes?`<div style="font-size:11px;color:#94a3b8;margin-top:3px">ðŸ“ ${f.notes}</div>`:''}
+      <div class="fac-item-addr">${f.pickup?'📍 Pickup: '+f.pickup:'📍 Pickup: varies — enter manually'}${f.dropoff?'<br>🏥 Drop off: '+f.dropoff:''}${f.email?'<br>📧 '+f.email:''}</div>
+      ${f.notes?`<div style="font-size:11px;color:#94a3b8;margin-top:3px">📝 ${f.notes}</div>`:''}
     </div>
       ${f.phone?`<div style="font-size:12px;color:#6b82a8;margin-top:3px">Phone: ${f.phone}</div>`:''}
     <button class="fac-edit-btn" onclick="openFacilityModal(${i})">Edit</button>`;
@@ -4881,14 +4881,14 @@ async function deleteFacility(){
   renderFacilitiesList();
 }
 
-// â”€â”€ RIDES / DAY VIEW â”€â”€
+// ── RIDES / DAY VIEW ──
 function toggleMobileMenu(){
   const tabs = document.querySelector('.tabs');
   if(tabs) tabs.style.display = tabs.style.display==='none' ? 'flex' : 'none';
 }
 
 function dateStr(d){return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');}
-function fmtTime12(t){if(!t)return'â€”';const[h,m]=t.split(':').map(Number);const ap=h>=12?'PM':'AM';const h12=h%12||12;return`${h12}:${String(m).padStart(2,'0')} ${ap}`;}
+function fmtTime12(t){if(!t)return'—';const[h,m]=t.split(':').map(Number);const ap=h>=12?'PM':'AM';const h12=h%12||12;return`${h12}:${String(m).padStart(2,'0')} ${ap}`;}
 
 function setRidesFilter(f){
   ridesFilter=f;
@@ -4927,7 +4927,7 @@ function returnRequestSummaryHtml(r, mode='desktop'){
   if(mode==='mobile'){
     return `<div class="mobile-tag" style="background:#dcfce7;color:#15803d">${mobileEsc(label)}</div>`;
   }
-  return `<div style="font-size:11px;font-weight:900;color:#15803d;background:#dcfce7;border:1px solid #86efac;border-radius:7px;padding:5px 8px;margin-top:6px">â†© ${escHtml(label)}${pickup?` Â· pickup: ${escHtml(pickup)}`:''}</div>`;
+  return `<div style="font-size:11px;font-weight:900;color:#15803d;background:#dcfce7;border:1px solid #86efac;border-radius:7px;padding:5px 8px;margin-top:6px">↩ ${escHtml(label)}${pickup?` · pickup: ${escHtml(pickup)}`:''}</div>`;
 }
 
 function renderMiniCal(){
@@ -4953,7 +4953,7 @@ function renderMiniCal(){
 
 async function renderDayView(){
   if(!db){
-    document.getElementById('time-grid').innerHTML='<div style="padding:40px;text-align:center;color:#ef4444;font-weight:800">âš ï¸ Not connected to database. Please refresh.</div>';
+    document.getElementById('time-grid').innerHTML='<div style="padding:40px;text-align:center;color:#ef4444;font-weight:800">⚠️ Not connected to database. Please refresh.</div>';
     return;
   }
   document.getElementById('time-grid').innerHTML='<div style="padding:40px;text-align:center;color:#6b82a8">Loading rides...</div>';
@@ -4977,14 +4977,14 @@ async function renderDayView(){
   else{unpaidBar.style.display='none';}
   renderMiniCal();
   const ds=dateStr(selectedDate);const today=dateStr(new Date());const isToday=ds===today;
-  document.getElementById('day-title').textContent=(isToday?'Today â€” ':'')+selectedDate.toLocaleDateString('en-US',{weekday:'long',month:'long',day:'numeric',year:'numeric'});
+  document.getElementById('day-title').textContent=(isToday?'Today — ':'')+selectedDate.toLocaleDateString('en-US',{weekday:'long',month:'long',day:'numeric',year:'numeric'});
   let dayRides=allRides.filter(r=>r.date===ds);
   if(ridesFilter==='unpaid') dayRides=dayRides.filter(r=>r.price&&r.price!==''&&r.paid!=='yes');
   if(ridesFilter==='unassigned') dayRides=dayRides.filter(r=>!r.driver);
   await renderScheduleSyncBar(ds, dayRides);
   renderDriverActivityPanel(ds, dayRides);
   const grid=document.getElementById('time-grid');
-  if(!dayRides.length){grid.innerHTML=`<div class="no-rides-msg"><div>ðŸš</div><div style="font-size:15px;font-weight:700;color:#6b82a8;margin-bottom:8px">No rides scheduled</div><div style="font-size:13px">Click "+ Add Ride" or tap a time slot to add a ride</div></div>`;return;}
+  if(!dayRides.length){grid.innerHTML=`<div class="no-rides-msg"><div>🚐</div><div style="font-size:15px;font-weight:700;color:#6b82a8;margin-bottom:8px">No rides scheduled</div><div style="font-size:13px">Click "+ Add Ride" or tap a time slot to add a ride</div></div>`;return;}
   const byHour={};
   dayRides.forEach(r=>{const h=r.time?parseInt(r.time.split(':')[0]):8;if(!byHour[h])byHour[h]=[];byHour[h].push(r);});
   const hours=Object.keys(byHour).map(Number);
@@ -5004,30 +5004,30 @@ async function renderDayView(){
       const editAction=isLogged?`openLogEdit('${r._key}')`:`openRideModal('${r._key}')`;
       html+=`<div class="ride-block ${cls}" onclick="event.stopPropagation();${editAction}">
         ${isLogged?`<div style="font-size:10px;font-weight:800;color:#16a34a;margin-bottom:4px">Logged in Reports</div>`:''}
-        ${isReturn?`<div style="font-size:10px;font-weight:800;color:#16a34a;margin-bottom:4px">â†© RETURN RIDE â€” ${r.returnOfClient||r.client||''} ${r.returnOfTime?'(orig. '+fmtTime12(r.returnOfTime)+')':''}</div>`:''}
+        ${isReturn?`<div style="font-size:10px;font-weight:800;color:#16a34a;margin-bottom:4px">↩ RETURN RIDE — ${r.returnOfClient||r.client||''} ${r.returnOfTime?'(orig. '+fmtTime12(r.returnOfTime)+')':''}</div>`:''}
         ${statusBadge}
         <div class="ride-block-time">${r.time?fmtTime12(r.time):'Awaiting call...'}</div>
-        <div class="ride-block-title">${r.facility||r.client||'â€”'}</div>
+        <div class="ride-block-title">${r.facility||r.client||'—'}</div>
         ${r.client&&r.facility?`<div class="ride-block-client">${r.client}</div>`:''}
-        ${r.pickup?`<div class="ride-block-client">ðŸ“ ${r.pickup}</div>`:''}
-        ${r.dropoff?`<div class="ride-block-client">ðŸ¥ ${r.dropoff}</div>`:''}
+        ${r.pickup?`<div class="ride-block-client">📍 ${r.pickup}</div>`:''}
+        ${r.dropoff?`<div class="ride-block-client">🏥 ${r.dropoff}</div>`:''}
         <div class="ride-block-tags">
-          <span class="ride-block-tag">${r.ridetype==='str'?'ðŸ› Str':'â™¿ WC'}</span>
+          <span class="ride-block-tag">${r.ridetype==='str'?'🛏 Str':'♿ WC'}</span>
           <span class="ride-block-tag">${r.triptype==='rt'?'RT':'1 Way'}</span>
           ${rideSourceTagHtml(r)}
           ${r.status?`<span class="ride-block-tag" style="background:#e0f2fe;color:#0369a1;font-weight:800">App: ${statusLabelText(r.status)}</span>`:''}
-          ${r.driver?`<span class="ride-block-tag">ðŸ‘¤ ${r.driver}${r.helper?' + '+r.helper:''}</span>`:'<span class="ride-block-tag" style="color:#f59e0b">No driver yet</span>'}
+          ${r.driver?`<span class="ride-block-tag">👤 ${r.driver}${r.helper?' + '+r.helper:''}</span>`:'<span class="ride-block-tag" style="color:#f59e0b">No driver yet</span>'}
           ${(r.updatedBy||r.createdBy)?`<span class="ride-block-tag" style="background:#f8fafc;color:#475569">By ${escHtml(r.updatedBy||r.createdBy)}</span>`:''}
           ${r.van?`<span class="ride-block-tag">Van #${r.van}</span>`:''}
-          ${r.wait==='yes'?`<span class="ride-block-tag" style="background:#fff7ed;color:#c2410c">â³ Wait</span>`:''}
-          ${r.estimatedMiles!=null&&r.estimatedMiles!==''?`<span class="ride-block-tag" style="background:#f0fdf4;color:#16a34a;font-weight:800">ðŸ—º Client ${r.estimatedMiles} mi</span>`:''}
+          ${r.wait==='yes'?`<span class="ride-block-tag" style="background:#fff7ed;color:#c2410c">⏳ Wait</span>`:''}
+          ${r.estimatedMiles!=null&&r.estimatedMiles!==''?`<span class="ride-block-tag" style="background:#f0fdf4;color:#16a34a;font-weight:800">🗺 Client ${r.estimatedMiles} mi</span>`:''}
         </div>
         ${!isReturn?returnRequestSummaryHtml(r):''}
-        ${isUnpaid&&!r.status?`<div class="ride-block-unpaid">ðŸ’° Unpaid â€” follow up</div>`:''}
-        ${r.price&&r.paid==='yes'?`<div style="font-size:10px;color:#16a34a;font-weight:700;margin-top:3px">âœ“ Paid ${r.price}</div>`:''}
+        ${isUnpaid&&!r.status?`<div class="ride-block-unpaid">💰 Unpaid — follow up</div>`:''}
+        ${r.price&&r.paid==='yes'?`<div style="font-size:10px;color:#16a34a;font-weight:700;margin-top:3px">✓ Paid ${r.price}</div>`:''}
         <div onclick="event.stopPropagation()" style="margin-top:6px;padding-top:6px;border-top:1px solid rgba(0,0,0,0.07);display:flex;gap:4px">
-          ${r.triptype==='rt'&&!isReturn?`<button class="add-return-btn" style="flex:1" onclick="event.stopPropagation();openReturnModal('${r._key}')">â†© Return</button>`:''}
-          <button class="add-return-btn" style="flex:1;background:#f0f4ff;border-color:#6b82a8;color:#6b82a8" onclick="event.stopPropagation();logRideFromCalendar('${r._key}')">ðŸ“‹ Log</button>
+          ${r.triptype==='rt'&&!isReturn?`<button class="add-return-btn" style="flex:1" onclick="event.stopPropagation();openReturnModal('${r._key}')">↩ Return</button>`:''}
+          <button class="add-return-btn" style="flex:1;background:#f0f4ff;border-color:#6b82a8;color:#6b82a8" onclick="event.stopPropagation();logRideFromCalendar('${r._key}')">📋 Log</button>
         </div>
       </div>`;
     });
@@ -5038,7 +5038,7 @@ async function renderDayView(){
 
 function initRides(){selectedDate=new Date();miniMonthOffset=0;ridesFilter='all';renderDayView();}
 
-// â”€â”€ RETURN RIDE â”€â”€
+// ── RETURN RIDE ──
 // Mobile dashboard merged from the standalone phone test file
 let mobilePanel='rides';
 let mobileMap=null;
@@ -5233,7 +5233,7 @@ function updateMobileMap(drivers,locs){
 
   if(!mobileMap){
     mobileMap=L.map('mobile-map-preview',{zoomControl:false}).setView([39.37,-76.66],12);
-    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{attribution:'Â© OpenStreetMap'}).addTo(mobileMap);
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{attribution:'© OpenStreetMap'}).addTo(mobileMap);
   }
 
   setTimeout(()=>mobileMap.invalidateSize(),60);
@@ -5407,18 +5407,18 @@ async function renderMobileDashboard(){
             const title=(r.facility||r.client||'Ride');
             const sub=(r.client&&r.facility)?r.client:'';
             const timeLabel=r.time?fmtTime12(r.time):'';
-            const typeLabel=`${r.ridetype==='str'?'Stretcher':'Wheelchair'} Â· ${r.triptype==='rt'?'RT':'1 Way'}`;
+            const typeLabel=`${r.ridetype==='str'?'Stretcher':'Wheelchair'} · ${r.triptype==='rt'?'RT':'1 Way'}`;
             const paidLabel=r.paid==='yes'?'Paid':'Unpaid';
-            const priceLabel=r.price?('$'+String(r.price).replace(/[^0-9.]/g,'')):'â€”';
+            const priceLabel=r.price?('$'+String(r.price).replace(/[^0-9.]/g,'')):'—';
             const milesLabel=formatReportMilesLabel(r);
             const editKey=mobileKey(r._key);
             return `<div style="border-top:1px solid #eef2f7;padding-top:10px;margin-top:10px;cursor:pointer" onclick="openLogEdit('${editKey}')">
               <div style="display:flex;justify-content:space-between;gap:10px;align-items:flex-start">
                 <div style="min-width:0">
-                  <div style="font-size:13px;font-weight:900;color:#0f172a;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${mobileEsc(r.date||'')} ${timeLabel?('â€¢ '+mobileEsc(timeLabel)):''}</div>
+                  <div style="font-size:13px;font-weight:900;color:#0f172a;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${mobileEsc(r.date||'')} ${timeLabel?('• '+mobileEsc(timeLabel)):''}</div>
                   <div style="font-size:16px;font-weight:900;color:#0f172a;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${mobileEsc(title)}</div>
                   ${sub?`<div style="font-size:13px;color:#64748b;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${mobileEsc(sub)}</div>`:''}
-                  <div style="font-size:12px;color:#64748b;margin-top:6px">${mobileEsc(typeLabel)} Â· ${mobileEsc(milesLabel)} Â· ${mobileEsc(paidLabel)} Â· ${mobileEsc(priceLabel)}</div>
+                  <div style="font-size:12px;color:#64748b;margin-top:6px">${mobileEsc(typeLabel)} · ${mobileEsc(milesLabel)} · ${mobileEsc(paidLabel)} · ${mobileEsc(priceLabel)}</div>
                 </div>
                 <button class="mobile-driver-open">Edit</button>
               </div>
@@ -5499,11 +5499,11 @@ async function openReturnModal(originalKey){
   // Reference label
   const origTime=orig.time?fmtTime12(orig.time):'';
   document.getElementById('return-modal-ref').textContent=
-    `Return for: ${orig.client||orig.facility||''}${origTime?' â€” original pickup '+origTime:''}`;
+    `Return for: ${orig.client||orig.facility||''}${origTime?' — original pickup '+origTime:''}`;
 
   // Pre-fill date (same day)
   document.getElementById('ret-date').value=orig.date||dateStr(new Date());
-  // Time blank â€” fill when client calls
+  // Time blank — fill when client calls
   document.getElementById('ret-time').value=currentTimeInputValue();
   // Swap pickup and dropoff
   document.getElementById('ret-pickup').value=orig.dropoff||'';
@@ -5638,7 +5638,7 @@ async function saveReturnRide(){
   alert(`Return ride sent to ${driver}'s app.${pushResult.sent?' Push notification sent.':' The app will show it live; lock-screen push needs the local/server dashboard and a saved phone token.'}`);
 }
 
-// â”€â”€ AI ROUTE OPTIMIZER â”€â”€
+// ── AI ROUTE OPTIMIZER ──
 const BASE_ADDRESS = '3404 Old Court Rd, Pikesville, MD 21208';
 const WAIT_BUFFER_HOURS = 3; // conservative buffer for wait rides
 let optimizedSchedule = null;
@@ -5780,7 +5780,7 @@ async function buildDistanceMatrix(addresses){
 }
 
 function buildFallbackMatrix(addresses){
-  // Simple fallback â€” estimate 20 mins between any two points
+  // Simple fallback — estimate 20 mins between any two points
   const matrix = {};
   addresses.forEach(a=>{
     matrix[a]={};
@@ -5899,7 +5899,7 @@ async function optimizeWithAI(rides, drivers, distMatrix, addresses){
     warnings.push({
       type:'conflict',
       driver:'Unassigned',
-      message:`Ride for ${ride.facility || ride.client || 'client'} has no valid time â€” check manually`
+      message:`Ride for ${ride.facility || ride.client || 'client'} has no valid time — check manually`
     });
   });
 
@@ -5982,7 +5982,7 @@ async function optimizeWithAI(rides, drivers, distMatrix, addresses){
       warnings.push({
         type:'conflict',
         driver:'Unassigned',
-        message:`Ride for ${ride.facility || ride.client || 'client'} at ${formatDisplayTime(ride.time)} could not be optimally assigned â€” check manually`
+        message:`Ride for ${ride.facility || ride.client || 'client'} at ${formatDisplayTime(ride.time)} could not be optimally assigned — check manually`
       });
       return;
     }
@@ -6002,7 +6002,7 @@ async function optimizeWithAI(rides, drivers, distMatrix, addresses){
         warnings.push({
           type:'tight',
           driver:bestDriver.name,
-          message:`Only ${Math.round(gap)} min between previous ride and ${ride.facility || ride.client || 'this ride'} at ${formatDisplayTime(ride.time)} â€” tight window`
+          message:`Only ${Math.round(gap)} min between previous ride and ${ride.facility || ride.client || 'this ride'} at ${formatDisplayTime(ride.time)} — tight window`
         });
       }
     }
@@ -6015,7 +6015,7 @@ async function optimizeWithAI(rides, drivers, distMatrix, addresses){
       warnings.push({
         type:'wait',
         driver:bestDriver.name,
-        message:`${bestDriver.name} must wait at appointment for ${ride.facility || ride.client || '?'} â€” blocked until ~${estimatedReturn} estimated`
+        message:`${bestDriver.name} must wait at appointment for ${ride.facility || ride.client || '?'} — blocked until ~${estimatedReturn} estimated`
       });
       state.currentTime = state.blockedUntil + postRideBuffer;
     } else {
@@ -6106,11 +6106,11 @@ function renderOptimizerResults(result, drivers){
     `;
   }
   document.getElementById('opt-summary').innerHTML =
-    `ðŸ¤– <strong>AI Recommendation:</strong> ${result.summary || ''}` +
-    (totalFleetMiles ? `<br><br>ðŸ“ Total fleet miles: <strong>${totalFleetMiles.toFixed(1)} miles</strong>` : '') +
-    `<br>ðŸ—º Client trip miles: <strong>${totalClientMiles.toFixed(1)} miles</strong>` +
-    `<br>ðŸš— Non-client miles: <strong>${totalNonClientMiles.toFixed(1)} miles</strong>` +
-    (totalDeadheadMiles ? `<br>â†— Deadhead before pickups: <strong>${totalDeadheadMiles.toFixed(1)} miles</strong>` : '');
+    `🤖 <strong>AI Recommendation:</strong> ${result.summary || ''}` +
+    (totalFleetMiles ? `<br><br>📍 Total fleet miles: <strong>${totalFleetMiles.toFixed(1)} miles</strong>` : '') +
+    `<br>🗺 Client trip miles: <strong>${totalClientMiles.toFixed(1)} miles</strong>` +
+    `<br>🚗 Non-client miles: <strong>${totalNonClientMiles.toFixed(1)} miles</strong>` +
+    (totalDeadheadMiles ? `<br>↗ Deadhead before pickups: <strong>${totalDeadheadMiles.toFixed(1)} miles</strong>` : '');
 
   const schedulesEl = document.getElementById('opt-schedules');
   schedulesEl.innerHTML = '';
@@ -6126,8 +6126,8 @@ function renderOptimizerResults(result, drivers){
     block.className = 'opt-driver-block';
 
     let html = `<div class="opt-driver-header" style="background:${color}">
-      <div class="opt-driver-name">ðŸ‘¤ ${driver.name}</div>
-      <div class="opt-driver-stats">${sched.rides?.length || 0} rides Â· ${(sched.totalMiles || 0).toFixed(1)} route mi Â· ${driverClientMiles.toFixed(1)} client mi Â· ${driverDeadheadMiles.toFixed(1)} deadhead mi Â· Done ~${sched.estimatedFinish || '?'}</div>
+      <div class="opt-driver-name">👤 ${driver.name}</div>
+      <div class="opt-driver-stats">${sched.rides?.length || 0} rides · ${(sched.totalMiles || 0).toFixed(1)} route mi · ${driverClientMiles.toFixed(1)} client mi · ${driverDeadheadMiles.toFixed(1)} deadhead mi · Done ~${sched.estimatedFinish || '?'}</div>
     </div>`;
 
     (sched.rides || []).forEach((ride, ri) => {
@@ -6137,20 +6137,20 @@ function renderOptimizerResults(result, drivers){
         <div class="opt-ride-num">${ri + 1}</div>
         <div class="opt-ride-info">
           <div class="opt-ride-time">${fmtTime12(ride.rawTime || '') || ride.displayTime || ride.pickupTime || ride.departBase || '?'}</div>
-          <div class="opt-ride-name">${ride.facility || ''} ${ride.client ? 'â€” ' + ride.client : ''}</div>
-          ${ride.pickup ? `<div class="opt-ride-detail">ðŸ“ ${ride.pickup}</div>` : ''}
-          ${ride.dropoff ? `<div class="opt-ride-detail">ðŸ¥ ${ride.dropoff}</div>` : ''}
+          <div class="opt-ride-name">${ride.facility || ''} ${ride.client ? '— ' + ride.client : ''}</div>
+          ${ride.pickup ? `<div class="opt-ride-detail">📍 ${ride.pickup}</div>` : ''}
+          ${ride.dropoff ? `<div class="opt-ride-detail">🏥 ${ride.dropoff}</div>` : ''}
           <div class="opt-tags">
-            <span class="opt-tag">${ride.ridetype === 'str' ? 'ðŸ› Str' : 'â™¿ WC'}</span>
+            <span class="opt-tag">${ride.ridetype === 'str' ? '🛏 Str' : '♿ WC'}</span>
             <span class="opt-tag">${ride.triptype === 'rt' ? 'RT' : 'OW'}</span>
             ${ride.teamLabel ? `<span class="opt-tag" style="background:#eef6ff;color:#2563eb">${ride.teamLabel}</span>` : ''}
-            ${ride.waitRequired ? '<span class="opt-tag wait">â³ Wait Required</span>' : ''}
+            ${ride.waitRequired ? '<span class="opt-tag wait">⏳ Wait Required</span>' : ''}
             ${ride.estimatedReturn ? `<span class="opt-tag gap">Return ~${ride.estimatedReturn}</span>` : ''}
-            ${ride.estimatedMiles ? `<span class="opt-tag" style="background:#f0fdf4;color:#16a34a">ðŸ—º Client ${ride.estimatedMiles} mi</span>` : ''}
-            ${ride.deadheadMiles ? `<span class="opt-tag" style="background:#fff7ed;color:#c2410c">â†— Deadhead ${ride.deadheadMiles} mi</span>` : ''}
-            ${ride.routeMiles ? `<span class="opt-tag" style="background:#eef2ff;color:#4338ca">ðŸ§­ Route ${ride.routeMiles} mi</span>` : ''}
+            ${ride.estimatedMiles ? `<span class="opt-tag" style="background:#f0fdf4;color:#16a34a">🗺 Client ${ride.estimatedMiles} mi</span>` : ''}
+            ${ride.deadheadMiles ? `<span class="opt-tag" style="background:#fff7ed;color:#c2410c">↗ Deadhead ${ride.deadheadMiles} mi</span>` : ''}
+            ${ride.routeMiles ? `<span class="opt-tag" style="background:#eef2ff;color:#4338ca">🧭 Route ${ride.routeMiles} mi</span>` : ''}
           </div>
-          ${ride.notes ? `<div class="opt-ride-detail" style="color:#f59e0b;margin-top:4px">ðŸ“ ${ride.notes}</div>` : ''}
+          ${ride.notes ? `<div class="opt-ride-detail" style="color:#f59e0b;margin-top:4px">📝 ${ride.notes}</div>` : ''}
         </div>
         <div style="display:flex;flex-direction:column;gap:8px;min-width:150px">
           <select class="opt-move-select" onchange="moveRideToDriver('${ride.rideKey}','${driver.name}',this.value,this)">
@@ -6163,10 +6163,10 @@ function renderOptimizerResults(result, drivers){
     });
 
     html += `<div class="opt-ride-row" style="background:#f0fdf4">
-      <div class="opt-ride-num" style="background:#16a34a">âœ“</div>
+      <div class="opt-ride-num" style="background:#16a34a">✓</div>
       <div class="opt-ride-info">
         <div class="opt-ride-time" style="color:#16a34a">${sched.estimatedFinish || '?'}</div>
-        <div class="opt-ride-name" style="color:#16a34a">All rides complete Â· ${(sched.totalMiles || 0).toFixed(1)} mi total</div>
+        <div class="opt-ride-name" style="color:#16a34a">All rides complete · ${(sched.totalMiles || 0).toFixed(1)} mi total</div>
       </div>
     </div>`;
 
@@ -6177,14 +6177,14 @@ function renderOptimizerResults(result, drivers){
   if(result.unassignedRides?.length){
     const unBlock = document.createElement('div');
     unBlock.style.cssText='background:#fff7ed;border:1.5px solid #fed7aa;border-radius:14px;padding:16px;margin-bottom:14px';
-    let unHtml = `<div style="font-weight:800;color:#c2410c;margin-bottom:10px">âš ï¸ ${result.unassignedRides.length} Unassigned Ride${result.unassignedRides.length!==1?'s':''}</div>`;
+    let unHtml = `<div style="font-weight:800;color:#c2410c;margin-bottom:10px">⚠️ ${result.unassignedRides.length} Unassigned Ride${result.unassignedRides.length!==1?'s':''}</div>`;
     unHtml += result.unassignedRides.map((r, idx) => {
       const assignButtons = drivers.map(d => `<button onclick="assignUnassignedRide('${r._key || ''}','${d.name.replace(/'/g,"&#39;") }')" style="background:#fff;border:1px solid #fdba74;color:#9a3412;border-radius:8px;padding:7px 10px;font-size:12px;font-weight:700;cursor:pointer">Add to ${d.name}</button>`).join('');
       return `
       <div style="background:#fff;border-radius:10px;padding:12px 14px;margin-bottom:8px;border:1px solid #fed7aa">
-        <div style="font-size:12px;font-weight:800;color:#c2410c;margin-bottom:4px">${idx+1}. ${fmtTime12(r.time || '') || r.time || 'Unknown time'} â€” ${r.facility || ''} ${r.client ? 'â€” ' + r.client : ''}</div>
-        ${r.pickup ? `<div style="font-size:12px;color:#6b7280">ðŸ“ ${r.pickup}</div>` : ''}
-        ${r.dropoff ? `<div style="font-size:12px;color:#6b7280">ðŸ¥ ${r.dropoff}</div>` : ''}
+        <div style="font-size:12px;font-weight:800;color:#c2410c;margin-bottom:4px">${idx+1}. ${fmtTime12(r.time || '') || r.time || 'Unknown time'} — ${r.facility || ''} ${r.client ? '— ' + r.client : ''}</div>
+        ${r.pickup ? `<div style="font-size:12px;color:#6b7280">📍 ${r.pickup}</div>` : ''}
+        ${r.dropoff ? `<div style="font-size:12px;color:#6b7280">🏥 ${r.dropoff}</div>` : ''}
         ${r.reason ? `<div style="font-size:12px;color:#b45309;margin-top:4px">Reason: ${r.reason}</div>` : ''}
         <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:10px">${assignButtons}</div>
       </div>`;
@@ -6198,7 +6198,7 @@ function renderOptimizerResults(result, drivers){
   (result.warnings || []).forEach(w => {
     const div = document.createElement('div');
     div.className = 'opt-warning';
-    div.innerHTML = `<b>âš ï¸ ${w.driver || ''} â€” ${w.type === 'tight' ? 'Tight Window' : w.type === 'wait' ? 'Wait Required' : 'Conflict'}</b>${w.message}`;
+    div.innerHTML = `<b>⚠️ ${w.driver || ''} — ${w.type === 'tight' ? 'Tight Window' : w.type === 'wait' ? 'Wait Required' : 'Conflict'}</b>${w.message}`;
     warningsEl.appendChild(div);
   });
 }
@@ -6380,7 +6380,7 @@ function showOptError(msg){
   document.getElementById('opt-error-msg').textContent = msg;
 }
 
-// â”€â”€ RIDE MODAL â”€â”€
+// ── RIDE MODAL ──
 function applyFacilityAddresses(name){
   const fac=FACILITIES.find(f=>f.name===name);
   const pu=document.getElementById('r-pickup');const puNote=document.getElementById('r-pickup-note');
@@ -6388,9 +6388,9 @@ function applyFacilityAddresses(name){
   if(!pu||!do_)return;
   if(fac){
     if(fac.pickup){pu.value=fac.pickup;pu.style.background='#f0faff';}else{pu.value='';pu.style.background='';}
-    if(puNote){puNote.textContent=fac.pickup?'âœ“ '+fac.pickupNote:(fac.pickupNote?'ðŸ’¡ '+fac.pickupNote:'');puNote.style.display=fac.pickupNote?'block':'none';}
+    if(puNote){puNote.textContent=fac.pickup?'✓ '+fac.pickupNote:(fac.pickupNote?'💡 '+fac.pickupNote:'');puNote.style.display=fac.pickupNote?'block':'none';}
     if(fac.dropoff){do_.value=fac.dropoff;do_.style.background='#f0faff';}else{do_.value='';do_.style.background='';}
-    if(doNote){doNote.textContent=fac.dropoff?'âœ“ '+fac.dropoffNote:(fac.dropoffNote?'ðŸ’¡ '+fac.dropoffNote:'');doNote.style.display=fac.dropoffNote?'block':'none';}
+    if(doNote){doNote.textContent=fac.dropoff?'✓ '+fac.dropoffNote:(fac.dropoffNote?'💡 '+fac.dropoffNote:'');doNote.style.display=fac.dropoffNote?'block':'none';}
   }else{pu.value='';pu.style.background='';do_.value='';do_.style.background='';if(puNote)puNote.style.display='none';if(doNote)doNote.style.display='none';}
 }
 function selectFacility(name){
@@ -6422,11 +6422,11 @@ function onWaitHoursChange(){
     // $150/hr, first 30 min free
     const billableHrs=Math.max(0,hrs-0.5);
     charge=billableHrs*150;
-    chargeEl.textContent=`Wait charge: ${billableHrs.toFixed(1)} hrs Ã— $150/hr = $${charge.toFixed(2)} (first 30 min free)`;
+    chargeEl.textContent=`Wait charge: ${billableHrs.toFixed(1)} hrs × $150/hr = $${charge.toFixed(2)} (first 30 min free)`;
   }else{
     // WC: $50/hr from minute 1
     charge=hrs*50;
-    chargeEl.textContent=`Wait charge: ${hrs.toFixed(1)} hrs Ã— $50/hr = $${charge.toFixed(2)}`;
+    chargeEl.textContent=`Wait charge: ${hrs.toFixed(1)} hrs × $50/hr = $${charge.toFixed(2)}`;
   }
   chargeEl.style.display='block';
 }
@@ -6464,7 +6464,7 @@ async function openRideModal(key,defaultDate){
     const snap=await ridesRef().child(key).once('value');const r=snap.val();if(!r)return;
     rideSourceContext = inferRideEntrySource(r);
     document.getElementById('ride-modal-title').textContent='Edit Ride';
-    document.getElementById('ride-modal-status').textContent=(r.facility||'')+(r.client?` â€” ${r.client}`:'');
+    document.getElementById('ride-modal-status').textContent=(r.facility||'')+(r.client?` — ${r.client}`:'');
     document.getElementById('r-date').value=r.date||'';
     document.getElementById('r-time').value=r.time||'';
     document.getElementById('r-facility').value=r.facility||'';
@@ -6645,13 +6645,13 @@ async function sendTomorrowSchedule(){
   const d=new Date(ds+'T12:00:00');
   const label=d.toLocaleDateString('en-US',{weekday:'long',month:'short',day:'numeric'});
   await db.ref('schedules').child(ds).set({sentAt:Date.now(),label});
-  let msg=`âœ… Schedule sent for ${label}!\n\n`;
+  let msg=`✅ Schedule sent for ${label}!\n\n`;
   if(Object.keys(byDriver).length)msg+=Object.entries(byDriver).map(([dr,dRides])=>`${dr}: ${dRides.length} ride${dRides.length!==1?'s':''}`).join('\n');
-  if(unassigned.length)msg+=`\n\nâš ï¸ ${unassigned.length} ride${unassigned.length!==1?'s':''} still have no driver assigned!`;
+  if(unassigned.length)msg+=`\n\n⚠️ ${unassigned.length} ride${unassigned.length!==1?'s':''} still have no driver assigned!`;
   alert(msg);
 }
 
-// â”€â”€ LOG RIDES TO REPORTS â”€â”€
+// ── LOG RIDES TO REPORTS ──
 function roundMiles1(value){
   const n = parseFloat(value);
   if(!Number.isFinite(n) || n <= 0) return 0;
@@ -6699,7 +6699,7 @@ async function logRideFromCalendar(rideKey){
   const snap = await ridesRef().child(rideKey).once('value');
   const r = snap.val();
   if(!r) return;
-  if(r.returnOf){alert('This is a return ride â€” log the original RT ride instead.');return;}
+  if(r.returnOf){alert('This is a return ride — log the original RT ride instead.');return;}
 
   // Check if already logged
   const existSnap = await rideLogRef().orderByChild('calendarKey').equalTo(rideKey).once('value');
@@ -6743,7 +6743,7 @@ async function logRideFromCalendar(rideKey){
 
   const newRef = rideLogRef().push();
   await newRef.set(logEntry);
-  showToast('âœ“ Ride logged to Reports!');
+  showToast('✓ Ride logged to Reports!');
 
   if(reportLogEntryNeedsCompletion(logEntry)){
     startReportCompletionWizard([newRef.key]);
@@ -6805,7 +6805,7 @@ async function logAllRidesForDay(){
     if(reportLogEntryNeedsCompletion(updates[newKey])) needsCompletion.push(newKey);
   }
   await rideLogRef().update(updates);
-  showToast(`âœ“ ${newRides.length} ride${newRides.length!==1?'s':''} logged to Reports!`);
+  showToast(`✓ ${newRides.length} ride${newRides.length!==1?'s':''} logged to Reports!`);
   if(needsCompletion.length){
     startReportCompletionWizard(needsCompletion);
   }
@@ -6819,7 +6819,7 @@ function showToast(msg){
   setTimeout(()=>t.remove(),2500);
 }
 
-// â”€â”€ REPORTS â”€â”€
+// ── REPORTS ──
 let repView = 'log';
 let repRides = [];
 
@@ -6841,11 +6841,11 @@ function formatReportMiles(r){
 
 function formatReportMilesLabel(r){
   const miles = formatReportMiles(r);
-  return miles ? miles + ' mi' : 'â€”';
+  return miles ? miles + ' mi' : '—';
 }
 
 async function initReports(){
-  // Set default date range â€” current month
+  // Set default date range — current month
   const now = new Date();
   const firstDay = new Date(now.getFullYear(), now.getMonth(), 1);
   document.getElementById('rep-from').value = dateStr(firstDay);
@@ -7124,33 +7124,33 @@ function renderRideLog(){
     <tbody id="ride-log-tbody">`;
 
   if(!repRides.length){
-    html += `<tr><td colspan="15" style="padding:40px;text-align:center;color:#6b82a8">No rides found â€” click + Add Row to add one</td></tr>`;
+    html += `<tr><td colspan="15" style="padding:40px;text-align:center;color:#6b82a8">No rides found — click + Add Row to add one</td></tr>`;
   }
 
   repRides.forEach((r,i)=>{
     const d = new Date(r.date+'T12:00:00');
-    const dateDisp = r.date?d.toLocaleDateString('en-US',{month:'2-digit',day:'2-digit',year:'numeric'}):'â€”';
+    const dateDisp = r.date?d.toLocaleDateString('en-US',{month:'2-digit',day:'2-digit',year:'numeric'}):'—';
     const isPaid = r.paid==='yes';
     const isUnpaid = r.price && !isPaid;
-    const typeStr = `${r.ridetype==='str'?'ðŸ› Str':'â™¿ WC'} ${r.triptype==='rt'?'RT':'1W'}`;
+    const typeStr = `${r.ridetype==='str'?'🛏 Str':'♿ WC'} ${r.triptype==='rt'?'RT':'1W'}`;
     const milesStr = formatReportMilesLabel(r);
     const bg = i%2===0?'#fff':'#f8fafc';
     html += `<tr style="background:${bg};border-bottom:1px solid #f0f4f8" id="log-row-${r._key||i}">
       <td style="padding:9px 12px;white-space:nowrap;color:#0d1b2a;font-weight:600">${dateDisp}</td>
-      <td style="padding:9px 12px;font-weight:700;color:#0d1b2a">${r.facility||'â€”'}</td>
-      <td style="padding:9px 12px;color:#0d1b2a">${r.client||'â€”'}</td>
+      <td style="padding:9px 12px;font-weight:700;color:#0d1b2a">${r.facility||'—'}</td>
+      <td style="padding:9px 12px;color:#0d1b2a">${r.client||'—'}</td>
       <td style="padding:9px 12px;white-space:nowrap;color:#6b82a8">${typeStr}</td>
       <td style="padding:9px 12px;text-align:right;white-space:nowrap;font-weight:800;color:#00a6c8">${milesStr}</td>
       <td style="padding:9px 12px;color:#94a3b8;font-style:italic;font-size:11px"><div class="rep-wrap">${r.calcNotes||''}</div></td>
-      <td style="padding:9px 12px;color:#6b82a8">${r.van?'#'+r.van:'â€”'}</td>
-      <td style="padding:9px 12px;color:#0d1b2a">${r.driver||'â€”'}${r.helper?' + '+r.helper:''}</td>
-      <td style="padding:9px 12px;text-align:right;font-weight:800;color:${isUnpaid?'#f59e0b':'#0d1b2a'}">${r.price||'â€”'}</td>
-      <td style="padding:9px 12px;text-align:center"><span style="font-size:11px;font-weight:700;padding:2px 8px;border-radius:6px;background:${isPaid?'#f0fdf4':'#fff7ed'};color:${isPaid?'#16a34a':'#f59e0b'}">${isPaid?'âœ“ Yes':'âœ— No'}</span></td>
-      <td style="padding:9px 12px;color:#6b82a8">${r.invoice||'â€”'}</td>
+      <td style="padding:9px 12px;color:#6b82a8">${r.van?'#'+r.van:'—'}</td>
+      <td style="padding:9px 12px;color:#0d1b2a">${r.driver||'—'}${r.helper?' + '+r.helper:''}</td>
+      <td style="padding:9px 12px;text-align:right;font-weight:800;color:${isUnpaid?'#f59e0b':'#0d1b2a'}">${r.price||'—'}</td>
+      <td style="padding:9px 12px;text-align:center"><span style="font-size:11px;font-weight:700;padding:2px 8px;border-radius:6px;background:${isPaid?'#f0fdf4':'#fff7ed'};color:${isPaid?'#16a34a':'#f59e0b'}">${isPaid?'✓ Yes':'✗ No'}</span></td>
+      <td style="padding:9px 12px;color:#6b82a8">${r.invoice||'—'}</td>
       <td style="padding:9px 12px;color:#94a3b8;font-style:italic;font-size:11px"><div class="rep-wrap">${r.notes||''}</div></td>
       <td style="padding:9px 12px;text-align:center">${statusBadgeTableHtml(r.status||'')}</td>
       <td style="padding:9px 12px;text-align:center">
-        <button title="Edit" aria-label="Edit ride" onclick="openLogEdit('${r._key||''}')" style="background:#f4f7fb;border:1px solid #e8eef4;border-radius:6px;width:34px;height:28px;display:inline-flex;align-items:center;justify-content:center;font-size:12px;font-weight:800;color:#6b82a8;cursor:pointer">âœï¸</button>
+        <button title="Edit" aria-label="Edit ride" onclick="openLogEdit('${r._key||''}')" style="background:#f4f7fb;border:1px solid #e8eef4;border-radius:6px;width:34px;height:28px;display:inline-flex;align-items:center;justify-content:center;font-size:12px;font-weight:800;color:#6b82a8;cursor:pointer">✏️</button>
       </td>
     </tr>`;
   });
@@ -7288,8 +7288,8 @@ async function openLogEdit(key){
 
   // Build modal
   const drivers = await loadDrivers();
-  const driverOpts = '<option value="">â€”</option>' + drivers.map(d=>`<option value="${d.name}"${r.driver===d.name?' selected':''}>${d.name}</option>`).join('');
-  const facOpts = '<option value="">â€”</option>' + FACILITIES.map(f=>`<option value="${f.name}"${r.facility===f.name?' selected':''}>${f.name}</option>`).join('');
+  const driverOpts = '<option value="">—</option>' + drivers.map(d=>`<option value="${d.name}"${r.driver===d.name?' selected':''}>${d.name}</option>`).join('');
+  const facOpts = '<option value="">—</option>' + FACILITIES.map(f=>`<option value="${f.name}"${r.facility===f.name?' selected':''}>${f.name}</option>`).join('');
 
   const billableMilesValue = formatReportMiles(r);
 
@@ -7322,8 +7322,8 @@ async function openLogEdit(key){
         <div class="modal-field">
           <label>Ride Type</label>
           <div style="display:flex;gap:8px">
-            <button class="toggle-btn ${(r.ridetype||'wc')==='wc'?'active':''}" id="le-wc" onclick="leToggle('ridetype','wc')">â™¿ WC</button>
-            <button class="toggle-btn ${r.ridetype==='str'?'active':''}" id="le-str" onclick="leToggle('ridetype','str')">ðŸ› Str</button>
+            <button class="toggle-btn ${(r.ridetype||'wc')==='wc'?'active':''}" id="le-wc" onclick="leToggle('ridetype','wc')">♿ WC</button>
+            <button class="toggle-btn ${r.ridetype==='str'?'active':''}" id="le-str" onclick="leToggle('ridetype','str')">🛏 Str</button>
           </div>
         </div>
         <div class="modal-field">
@@ -7374,22 +7374,22 @@ async function openLogEdit(key){
         <div class="modal-field">
           <label>Paid?</label>
           <div style="display:flex;gap:8px">
-            <button class="toggle-btn ${r.paid==='yes'?'active':''}" id="le-paid-yes" onclick="leToggle('paid','yes')">âœ“ Yes</button>
-            <button class="toggle-btn ${(r.paid||'no')==='no'?'active':''}" id="le-paid-no" onclick="leToggle('paid','no')">âœ— No</button>
+            <button class="toggle-btn ${r.paid==='yes'?'active':''}" id="le-paid-yes" onclick="leToggle('paid','yes')">✓ Yes</button>
+            <button class="toggle-btn ${(r.paid||'no')==='no'?'active':''}" id="le-paid-no" onclick="leToggle('paid','no')">✗ No</button>
           </div>
         </div>
         <div class="modal-field">
           <label>Payment Method</label>
           <div style="display:flex;gap:8px">
-            <button class="toggle-btn ${(r.paymethod||'cc')==='cc'?'active':''}" id="le-cc" onclick="leToggle('paymethod','cc')">ðŸ’³ CC</button>
-            <button class="toggle-btn ${r.paymethod==='invoice'?'active':''}" id="le-inv2" onclick="leToggle('paymethod','invoice')">ðŸ“„ Invoice</button>
+            <button class="toggle-btn ${(r.paymethod||'cc')==='cc'?'active':''}" id="le-cc" onclick="leToggle('paymethod','cc')">💳 CC</button>
+            <button class="toggle-btn ${r.paymethod==='invoice'?'active':''}" id="le-inv2" onclick="leToggle('paymethod','invoice')">📄 Invoice</button>
           </div>
         </div>
       </div>
       <div class="modal-field">
         <label>Ride Status</label>
         <select id="le-status" style="width:100%;padding:9px 12px;border:2px solid #e8eef4;border-radius:10px;font-size:13px;outline:none;font-family:inherit;background:#fff">
-          <option value="">â€” Set Status â€”</option>
+          <option value="">— Set Status —</option>
           ${getStatuses().map(s=>`<option value="${s.value}"${r.status===s.value?' selected':''}>${s.label}</option>`).join('')}
         </select>
       </div>
@@ -7701,7 +7701,7 @@ function renderByFacility(){
       <td style="padding:12px 16px;text-align:right;color:#00b4d8">${d.wc}</td>
       <td style="padding:12px 16px;text-align:right;color:#f97316">${d.str}</td>
       <td style="padding:12px 16px;text-align:right;font-weight:800;color:#0d1b2a">$${d.revenue.toFixed(2)}</td>
-      <td style="padding:12px 16px;text-align:right;font-weight:700;color:${d.unpaid>0?'#f59e0b':'#16a34a'}">${d.unpaid>0?'$'+d.unpaid.toFixed(2):'âœ“ Clear'}</td>
+      <td style="padding:12px 16px;text-align:right;font-weight:700;color:${d.unpaid>0?'#f59e0b':'#16a34a'}">${d.unpaid>0?'$'+d.unpaid.toFixed(2):'✓ Clear'}</td>
     </tr>`;
   });
   html += '</tbody></table>';
@@ -7775,7 +7775,7 @@ function renderByMonth(){
       <td style="padding:12px 16px;text-align:right;color:#6b82a8">${d.rides}</td>
       <td style="padding:12px 16px;text-align:right;font-weight:800;color:#00a6c8">${d.miles.toFixed(1)}</td>
       <td style="padding:12px 16px;text-align:right;font-weight:800;color:#0d1b2a">$${d.revenue.toFixed(2)}</td>
-      <td style="padding:12px 16px;text-align:right;font-weight:700;color:${d.unpaid>0?'#f59e0b':'#16a34a'}">${d.unpaid>0?'$'+d.unpaid.toFixed(2):'âœ“ Clear'}</td>
+      <td style="padding:12px 16px;text-align:right;font-weight:700;color:${d.unpaid>0?'#f59e0b':'#16a34a'}">${d.unpaid>0?'$'+d.unpaid.toFixed(2):'✓ Clear'}</td>
     </tr>`;
   });
   html += '</tbody></table>';
@@ -7786,7 +7786,7 @@ function exportReportsExcel(){
   if(!repRides.length){alert('No rides to export.');return;}
   const wb = XLSX.utils.book_new();
 
-  // Ride Log sheet â€” matches your Budget & Running tab format
+  // Ride Log sheet — matches your Budget & Running tab format
   const rows = [['Date','Day','Facility','Client','RT/1Way','WC/Stretcher','Miles','Calc Notes','Van','Price','Paid','Invoice #','Driver','Notes']];
   repRides.forEach(r=>{
     const d = new Date(r.date+'T12:00:00');
@@ -7818,7 +7818,7 @@ function exportReportsExcel(){
   const outstandingRev = reportOutstandingTotal(repRides);
   const totalMiles = repRides.reduce((s,r)=>s+reportTripMiles(r),0);
   const summRows = [
-    ['AbleCare Mobility â€” Ride Summary'],
+    ['AbleCare Mobility — Ride Summary'],
     ['Period:', `${document.getElementById('rep-from').value} to ${document.getElementById('rep-to').value}`],
     [''],
     ['Total Rides:', repRides.length],
@@ -7835,7 +7835,7 @@ function exportReportsExcel(){
   XLSX.writeFile(wb, `AbleCare_Rides_${from}_to_${to}.xlsx`);
 }
 
-// â”€â”€ INVOICE SYSTEM â”€â”€
+// ── INVOICE SYSTEM ──
 const WAIT_RATES = {
   str: { freeHrs: 0.5, ratePerHr: 150 },
   wc:  { freeHrs: 0,   ratePerHr: 50  }
@@ -7850,7 +7850,7 @@ function initInvoice(){
     FACILITIES.filter(f=>f.name!=='Langerman'&&f.name!=='Wingo'&&f.name!=='Maxine'&&f.name!=='Insight')
       .map(f=>`<option value="${f.name}">${f.name}</option>`).join('');
 
-  // Default dates â€” last 30 days
+  // Default dates — last 30 days
   const today = new Date();
   const from = new Date(today);
   from.setDate(today.getDate()-30);
@@ -7868,8 +7868,8 @@ function onInvFacilityChange(){
   const fac = FACILITIES.find(f=>f.name===name);
   const infoEl = document.getElementById('inv-facility-info');
   if(fac && (fac.email||fac.contact)){
-    document.getElementById('inv-facility-email').textContent = fac.email ? 'ðŸ“§ ' + fac.email : '';
-    document.getElementById('inv-facility-contact').textContent = fac.contact ? 'ðŸ‘¤ ' + fac.contact : '';
+    document.getElementById('inv-facility-email').textContent = fac.email ? '📧 ' + fac.email : '';
+    document.getElementById('inv-facility-contact').textContent = fac.contact ? '👤 ' + fac.contact : '';
     infoEl.style.display = 'block';
   } else {
     infoEl.style.display = 'none';
@@ -8038,11 +8038,11 @@ function renderInvoicePreview(data){
     subtotal += lineTotal;
 
     const waitStr = r.waitHours && parseFloat(r.waitHours)>0
-      ? `<br><span style="color:#6b82a8;font-size:11px">â³ Wait: ${r.waitHours}h = $${waitCharge.toFixed(2)}</span>`
+      ? `<br><span style="color:#6b82a8;font-size:11px">⏳ Wait: ${r.waitHours}h = $${waitCharge.toFixed(2)}</span>`
       : '';
 
     const milesStr = r.estimatedMiles
-      ? `<br><span style="color:#6b82a8;font-size:11px">ðŸ—º ${r.estimatedMiles} mi</span>`
+      ? `<br><span style="color:#6b82a8;font-size:11px">🗺 ${r.estimatedMiles} mi</span>`
       : '';
 
     return `<tr style="border-bottom:1px solid #f0f4f8">
@@ -8051,12 +8051,12 @@ function renderInvoicePreview(data){
         <div style="color:#6b82a8;font-size:11px">${r.time?fmtTime12(r.time):''}</div>
       </td>
       <td style="padding:10px 14px;font-size:13px;color:#0d1b2a;vertical-align:top">
-        <div style="font-weight:700">${r.client||'â€”'}</div>
-        <div style="color:#6b82a8;font-size:11px">${r.ridetype==='str'?'ðŸ› Stretcher':'â™¿ Wheelchair'} Â· ${r.triptype==='rt'?'Round Trip':'One Way'}</div>
+        <div style="font-weight:700">${r.client||'—'}</div>
+        <div style="color:#6b82a8;font-size:11px">${r.ridetype==='str'?'🛏 Stretcher':'♿ Wheelchair'} · ${r.triptype==='rt'?'Round Trip':'One Way'}</div>
       </td>
       <td style="padding:10px 14px;font-size:12px;color:#6b82a8;vertical-align:top">
-        <div>ðŸ“ ${r.pickup||r.facility||'â€”'}</div>
-        <div>ðŸ¥ ${r.dropoff||'â€”'}</div>
+        <div>📍 ${r.pickup||r.facility||'—'}</div>
+        <div>🏥 ${r.dropoff||'—'}</div>
         ${milesStr}
       </td>
       <td style="padding:10px 14px;font-size:13px;color:#0d1b2a;text-align:right;vertical-align:top">
@@ -8086,7 +8086,7 @@ function renderInvoicePreview(data){
           <div style="font-size:32px;font-weight:900;color:#00b4d8">INVOICE</div>
           <div style="font-size:14px;color:#0d1b2a;margin-top:4px"># ${invNumber}</div>
           <div style="font-size:12px;color:#6b82a8">Date: ${invDateFmt}</div>
-          <div style="font-size:12px;color:#6b82a8">Period: ${fromFmt} â€“ ${toFmt}</div>
+          <div style="font-size:12px;color:#6b82a8">Period: ${fromFmt} – ${toFmt}</div>
         </div>
       </div>
 
@@ -8132,7 +8132,7 @@ function renderInvoicePreview(data){
 
       <!-- Footer -->
       <div style="border-top:2px solid #e8eef4;padding-top:16px;text-align:center;font-size:11px;color:#94a3b8">
-        AbleCare Mobility LLC Â· 1829 Reisterstown Rd Suite 350, Pikesville, MD 21208 Â· (443) 819-1808<br>
+        AbleCare Mobility LLC · 1829 Reisterstown Rd Suite 350, Pikesville, MD 21208 · (443) 819-1808<br>
         Thank you for your business.
       </div>
     </div>`;
@@ -8142,7 +8142,7 @@ function renderInvoicePreview(data){
 }
 
 function formatInvDate(ds){
-  if(!ds) return 'â€”';
+  if(!ds) return '—';
   const d = new Date(ds+'T12:00:00');
   return d.toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'});
 }
@@ -8168,10 +8168,10 @@ function emailInvoice(){
   const {fac, facilityName, invNumber, subtotal, fromDate, toDate} = currentInvoiceData;
   const email = fac?.email||'';
   if(!email){
-    alert(`No email address saved for ${facilityName}.\n\nGo to Settings â†’ Facilities â†’ Edit ${facilityName} to add a billing email.`);
+    alert(`No email address saved for ${facilityName}.\n\nGo to Settings → Facilities → Edit ${facilityName} to add a billing email.`);
     return;
   }
-  const subject = encodeURIComponent(`AbleCare Mobility â€” Invoice #${invNumber}`);
+  const subject = encodeURIComponent(`AbleCare Mobility — Invoice #${invNumber}`);
   const body = encodeURIComponent(
     `Dear ${fac?.contact||facilityName},\n\nPlease find attached Invoice #${invNumber} for transportation services from ${formatInvDate(fromDate)} to ${formatInvDate(toDate)}.\n\nTotal Due: $${subtotal?.toFixed(2)||'0.00'}\n\nTo view the invoice, please open the attached PDF.\n\nThank you,\nAbleCare Mobility LLC\n(443) 819-1808\n1829 Reisterstown Rd Suite 350, Pikesville, MD 21208`
   );
@@ -8184,7 +8184,7 @@ function resetInvoice(){
   currentInvoiceData=null;
 }
 
-// â”€â”€ EMAIL PARSER â”€â”€
+// ── EMAIL PARSER ──
 function openEmailParser(){
   lastPastedEmail='';
   document.getElementById('email-text').value='';
@@ -8300,11 +8300,11 @@ Respond ONLY with valid JSON, no markdown, no explanation:
       if(parsed.time) document.getElementById('r-time').value = parsed.time;
       if(parsed.date) document.getElementById('r-date').value = parsed.date;
 
-      // Strict address-based facility detection â€” only match on EXACT known addresses
+      // Strict address-based facility detection — only match on EXACT known addresses
       const pickup_lower = (parsed.pickup||'').toLowerCase();
       const dropoff_lower = (parsed.dropoff||'').toLowerCase();
 
-      // Reset facility â€” never trust AI's facility guess, always re-derive from addresses
+      // Reset facility — never trust AI's facility guess, always re-derive from addresses
       parsed.facility = '';
 
       // Block any address containing these words from being matched as facilities
@@ -8323,7 +8323,7 @@ Respond ONLY with valid JSON, no markdown, no explanation:
       }
       // No match = private client, leave facility blank
 
-      // Handle facility â€” if matched, select it (which auto-fills addresses)
+      // Handle facility — if matched, select it (which auto-fills addresses)
       if(parsed.facility){
         const fac = FACILITIES.find(f=>
           f.name.toLowerCase()===parsed.facility.toLowerCase() ||
@@ -8382,11 +8382,11 @@ function fallbackParseEmail(text){
     // Put the raw email in notes so nothing is lost
     document.getElementById('r-notes').value = text.substring(0,200);
     document.getElementById('email-parse-error').style.display='block';
-    document.getElementById('email-parse-error').textContent = 'Could not fully parse â€” basic info extracted. Please fill in the remaining fields.';
+    document.getElementById('email-parse-error').textContent = 'Could not fully parse — basic info extracted. Please fill in the remaining fields.';
   });
 }
 
-// â”€â”€ RIDE QUOTE CALCULATOR â”€â”€
+// ── RIDE QUOTE CALCULATOR ──
 const DEFAULT_QUOTE_PRICING = {
   wc: {
     rt:   { base: 165, freeMiles: 10, ratePerMile: 1 },
@@ -8555,23 +8555,23 @@ async function calculateQuote(){
     // Display
     document.getElementById('q-miles').textContent = `${miles.toFixed(1)} mi`;
     document.getElementById('q-price').textContent = `$${result.total.toFixed(2)}`;
-    document.getElementById('q-route-label').textContent = `${pickup} â†’ ${dropoff}`;
+    document.getElementById('q-route-label').textContent = `${pickup} → ${dropoff}`;
     document.getElementById('q-type-label').textContent =
-      `${rt==='str'?'ðŸ› Stretcher':'â™¿ Wheelchair'} Â· ${tt==='rt'?'Round Trip':'One Way'}`;
+      `${rt==='str'?'🛏 Stretcher':'♿ Wheelchair'} · ${tt==='rt'?'Round Trip':'One Way'}`;
 
     // Breakdown
     let breakdown = '';
     if(rt==='str'){
       breakdown = `
         Base rate: $${result.p.base.toFixed(2)} (${result.legs} leg${result.legs>1?'s':''})<br>
-        Mileage: ${miles.toFixed(1)} mi Ã— $${result.p.ratePerMile}/mi Ã— ${result.legs} leg${result.legs>1?'s':''} = $${result.mileCharge.toFixed(2)}<br>
+        Mileage: ${miles.toFixed(1)} mi × $${result.p.ratePerMile}/mi × ${result.legs} leg${result.legs>1?'s':''} = $${result.mileCharge.toFixed(2)}<br>
         <span style="color:#00b4d8;font-weight:700">Total: $${result.total.toFixed(2)}</span>
       `;
     } else {
       breakdown = `
         Base rate: $${result.p.base.toFixed(2)}<br>
         Free miles: first ${result.p.freeMiles} mi per leg included<br>
-        Billable miles: ${result.billableMiles.toFixed(1)} mi Ã— $${result.p.ratePerMile}/mi Ã— ${result.legs} leg${result.legs>1?'s':''} = $${result.mileCharge.toFixed(2)}<br>
+        Billable miles: ${result.billableMiles.toFixed(1)} mi × $${result.p.ratePerMile}/mi × ${result.legs} leg${result.legs>1?'s':''} = $${result.mileCharge.toFixed(2)}<br>
         <span style="color:#00b4d8;font-weight:700">Total: $${result.total.toFixed(2)}</span>
       `;
     }
@@ -8626,8 +8626,8 @@ function bookQuoteAsRide(){
   }, 300);
 }
 
-// â”€â”€ HELPERS â”€â”€
-function fmtTime(ts){if(!ts)return'â€”';const d=new Date(ts);let h=d.getHours(),m=d.getMinutes(),ap=h>=12?'PM':'AM';h=h%12||12;return`${h}:${String(m).padStart(2,'0')} ${ap}`;}
+// ── HELPERS ──
+function fmtTime(ts){if(!ts)return'—';const d=new Date(ts);let h=d.getHours(),m=d.getMinutes(),ap=h>=12?'PM':'AM';h=h%12||12;return`${h}:${String(m).padStart(2,'0')} ${ap}`;}
 function fmtDate(s){return new Date(s+'T12:00:00').toLocaleDateString('en-US',{weekday:'short',month:'short',day:'numeric'});}
 function fmtDur(ms){const h=Math.floor(ms/3600000),m=Math.floor((ms%3600000)/60000);return h>0?`${h}h ${m}m`:`${m}m`;}
 function fmtH(ms){return(ms/3600000).toFixed(1)+'h';}
