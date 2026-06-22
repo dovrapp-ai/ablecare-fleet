@@ -2118,7 +2118,7 @@ body[data-user-role="manager"] .owner-only-setting{display:none !important}
       <input type="text" id="ret-notes" placeholder="Any notes for the return..."/>
     </div>
     <div class="modal-actions">
-      <button class="modal-save" onclick="saveReturnRide()">Save Return Ride</button>
+      <button class="modal-save" onclick="saveReturnRide()">Send Return to Driver App</button>
       <button class="modal-cancel" onclick="closeReturnModal()">Cancel</button>
     </div>
   </div>
@@ -5451,6 +5451,11 @@ async function mobileFindClosestDriver(){
 
 let returnOfKey=null;
 
+function currentTimeInputValue(){
+  const d=new Date();
+  return `${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}`;
+}
+
 async function openReturnModal(originalKey){
   const snap=await ridesRef().child(originalKey).once('value');
   const orig=snap.val();
@@ -5465,7 +5470,7 @@ async function openReturnModal(originalKey){
   // Pre-fill date (same day)
   document.getElementById('ret-date').value=orig.date||dateStr(new Date());
   // Time blank — fill when client calls
-  document.getElementById('ret-time').value='';
+  document.getElementById('ret-time').value=currentTimeInputValue();
   // Swap pickup and dropoff
   document.getElementById('ret-pickup').value=orig.dropoff||'';
   document.getElementById('ret-dropoff').value=orig.pickup||orig.facility||'';
@@ -5496,6 +5501,9 @@ async function saveReturnRide(){
 
   const date=document.getElementById('ret-date').value;
   if(!date){alert('Date is required.');return;}
+  const driver=document.getElementById('ret-driver').value;
+  if(!driver){alert('Choose the driver who should get this return ride.');return;}
+  const now=Date.now();
 
   const returnRide={
     date,
@@ -5506,20 +5514,41 @@ async function saveReturnRide(){
     dropoff:document.getElementById('ret-dropoff').value.trim(),
     ridetype:origData.ridetype||'wc',
     triptype:'1way', // return is always 1 way
-    driver:document.getElementById('ret-driver').value,
+    driver,
     helper:document.getElementById('ret-helper').value.trim(),
     van:'',paid:'no',price:'',invoice:'',miles:'',wait:'no',
-    notes:document.getElementById('ret-notes').value.trim(),
+    notes:document.getElementById('ret-notes').value.trim()||'Return pickup requested. Client is ready.',
+    status:'',
+    priority:'urgent-return',
+    onDemandReturn:true,
+    returnDispatchStatus:'sent',
+    returnAlertAt:now,
+    returnAssignedAt:now,
+    returnAssignedTo:driver,
     // Link back to original ride
     returnOf:returnOfKey,
     returnOfClient:origData.client||origData.facility||'',
     returnOfTime:origData.time||'',
-    createdAt:Date.now(),updatedAt:Date.now(),
+    createdAt:now,updatedAt:now,
   };
 
-  await ridesRef().push(returnRide);
+  const newRef=ridesRef().push();
+  await newRef.set(returnRide);
+  await db.ref('driverNotifications').child(safe(driver)).push({
+    type:'return-ride',
+    rideKey:newRef.key,
+    date,
+    driver,
+    client:returnRide.client||returnRide.facility||'',
+    pickup:returnRide.pickup||'',
+    dropoff:returnRide.dropoff||'',
+    time:returnRide.time||'',
+    createdAt:now,
+    status:'sent'
+  });
   closeReturnModal();
   renderDayView();
+  alert(`Return ride sent to ${driver}'s app.`);
 }
 
 // ── AI ROUTE OPTIMIZER ──
