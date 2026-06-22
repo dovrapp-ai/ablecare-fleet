@@ -5159,6 +5159,8 @@ function mobileRideCard(r){
   const unpaid=r.price&&r.paid!=='yes';
   const time=r.time?fmtTime12(r.time):'Awaiting call';
   const title=r.facility||r.client||'Ride';
+  const isReturn=!!r.returnOf;
+  const canReturn=r.triptype==='rt'&&!isReturn;
   return `<div class="mobile-card mobile-ride-card ${assigned?'':'unassigned'}">
     <div class="mobile-ride-top">
       <div>
@@ -5179,6 +5181,7 @@ function mobileRideCard(r){
       ${(r.updatedBy||r.createdBy)?`<div class="mobile-tag">By ${mobileEsc(r.updatedBy||r.createdBy)}</div>`:''}
     </div>
     <div class="mobile-ride-actions">
+      ${canReturn?`<button class="mobile-action-btn light" style="background:#dcfce7;color:#15803d" onclick="openReturnModal('${key}')">Return</button>`:''}
       <button class="mobile-action-btn dark" onclick="openRideModal('${key}')">Open Ride</button>
       <button class="mobile-action-btn light" onclick="openRideModal('${key}')">Edit</button>
     </div>
