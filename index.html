@@ -5494,6 +5494,22 @@ function closeReturnModal(){
   returnOfKey=null;
 }
 
+async function sendReturnRidePushNotification(payload){
+  if(!/^https?:$/.test(window.location.protocol)) return {ok:false,reason:'Dashboard is not running through the local server.'};
+  try{
+    const res=await fetch('/api/push/return-ride',{
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify(payload)
+    });
+    const data=await res.json().catch(()=>({ok:false,error:'Push response was not JSON'}));
+    if(!res.ok) return {ok:false,error:data.error||`HTTP ${res.status}`};
+    return data;
+  }catch(e){
+    return {ok:false,error:e.message||'Push server unavailable'};
+  }
+}
+
 async function saveReturnRide(){
   if(!returnOfKey)return;
   const orig=await ridesRef().child(returnOfKey).once('value');
@@ -5546,9 +5562,25 @@ async function saveReturnRide(){
     createdAt:now,
     status:'sent'
   });
+  const pushResult=await sendReturnRidePushNotification({
+    driver,
+    rideKey:newRef.key,
+    date,
+    client:returnRide.client||returnRide.facility||'Client',
+    pickup:returnRide.pickup||'',
+    dropoff:returnRide.dropoff||'',
+    time:returnRide.time||'',
+    title:'New Return Ride',
+    message:`${returnRide.client||returnRide.facility||'Client'} is ready for return pickup${returnRide.time?' at '+fmtTime12(returnRide.time):''}.`
+  });
+  await newRef.update({
+    pushAttemptedAt:Date.now(),
+    pushSent:!!pushResult.sent,
+    pushResult:pushResult.ok?'sent':(pushResult.reason||pushResult.error||'not sent')
+  });
   closeReturnModal();
   renderDayView();
-  alert(`Return ride sent to ${driver}'s app.`);
+  alert(`Return ride sent to ${driver}'s app.${pushResult.sent?' Push notification sent.':' The app will show it live; lock-screen push needs the local/server dashboard and a saved phone token.'}`);
 }
 
 // ── AI ROUTE OPTIMIZER ──
