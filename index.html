@@ -1147,12 +1147,14 @@ body[data-user-role="manager"] .owner-only-setting{display:none !important}
 
         <div class="modal-field">
           <label>📍 Pickup Address</label>
-          <input type="text" id="q-pickup" placeholder="Enter pickup address..." style="width:100%;padding:10px 14px;border:2px solid #e8eef4;border-radius:10px;font-size:14px;color:#0d1b2a;outline:none;font-family:inherit" oninput="clearQuote()"/>
+          <input type="text" id="q-pickup" placeholder="Enter pickup address..." autocomplete="off" style="width:100%;padding:10px 14px;border:2px solid #e8eef4;border-radius:10px;font-size:14px;color:#0d1b2a;outline:none;font-family:inherit" oninput="onQuoteAddressInput('pickup')"/>
+          <div class="suggestions"><div class="suggestions-list" id="q-pickup-suggestions" style="display:none"></div></div>
         </div>
 
         <div class="modal-field">
           <label>🏥 Drop Off Address</label>
-          <input type="text" id="q-dropoff" placeholder="Enter drop off / appointment address..." style="width:100%;padding:10px 14px;border:2px solid #e8eef4;border-radius:10px;font-size:14px;color:#0d1b2a;outline:none;font-family:inherit" oninput="clearQuote()"/>
+          <input type="text" id="q-dropoff" placeholder="Enter drop off / appointment address..." autocomplete="off" style="width:100%;padding:10px 14px;border:2px solid #e8eef4;border-radius:10px;font-size:14px;color:#0d1b2a;outline:none;font-family:inherit" oninput="onQuoteAddressInput('dropoff')"/>
+          <div class="suggestions"><div class="suggestions-list" id="q-dropoff-suggestions" style="display:none"></div></div>
         </div>
 
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:16px">
@@ -1725,10 +1727,12 @@ body[data-user-role="manager"] .owner-only-setting{display:none !important}
             <div class="mobile-section-title" style="margin-top:0">Quote</div>
             <div class="mobile-quote-row">
               <div class="mobile-input-label">Pickup Address</div>
-              <input class="mobile-input" id="mobile-quote-pickup" placeholder="Pickup address" />
+              <input class="mobile-input" id="mobile-quote-pickup" placeholder="Pickup address" autocomplete="off" oninput="onQuoteAddressInput('pickup',true)" />
+              <div class="suggestions"><div class="suggestions-list" id="mobile-quote-pickup-suggestions" style="display:none"></div></div>
 
               <div class="mobile-input-label">Drop Off Address</div>
-              <input class="mobile-input" id="mobile-quote-dropoff" placeholder="Drop off address" />
+              <input class="mobile-input" id="mobile-quote-dropoff" placeholder="Drop off address" autocomplete="off" oninput="onQuoteAddressInput('dropoff',true)" />
+              <div class="suggestions"><div class="suggestions-list" id="mobile-quote-dropoff-suggestions" style="display:none"></div></div>
 
               <div class="mobile-input-label">Ride Type</div>
               <select class="mobile-select" id="mobile-quote-ride-type" onchange="setQuoteToggle('ridetype',this.value)">
@@ -2386,7 +2390,7 @@ let dispatchMap=null;
 let dispatchResultLayers=[];
 let pinBuf='';
 let lastPastedEmail='';
-let addrDebounce=null,selectedCoords=null,lastQuery='',rideAddrDebounce=null,lastRideAddrQuery='';
+let addrDebounce=null,selectedCoords=null,lastQuery='',rideAddrDebounce=null,lastRideAddrQuery='',quoteAddrDebounce=null,lastQuoteAddrQuery='';
 let tsMode='pp',ppOffset=0;
 let editContext={driverName:null,shiftKey:null};
 let rideEditKey=null;
@@ -4159,7 +4163,7 @@ async function fetchRideAddressSuggestions(kind,q){
       const rows=await res.json();
       if(Array.isArray(rows)){
         rows.forEach(row=>{
-          const key=String(row.place_id||row.display_name||'');
+          const key=String(row.display_name||row.place_id||'').toLowerCase();
           if(key&&!seen.has(key)){
             seen.add(key);
             data.push(row);
@@ -4185,6 +4189,78 @@ function selectRideAddressSuggestion(kind,label){
   const listId=kind==='dropoff'?'r-dropoff-suggestions':'r-pickup-suggestions';
   document.getElementById(inputId).value=label;
   document.getElementById(listId).style.display='none';
+}
+
+function quoteAddressElementIds(kind,mobile=false){
+  const prefix=mobile?'mobile-quote':'q';
+  return {
+    inputId:`${prefix}-${kind}`,
+    listId:`${prefix}-${kind}-suggestions`
+  };
+}
+
+function onQuoteAddressInput(kind,mobile=false){
+  const {inputId,listId}=quoteAddressElementIds(kind,mobile);
+  const input=document.getElementById(inputId);
+  const list=document.getElementById(listId);
+  if(!input||!list)return;
+  if(!mobile)clearQuote();
+  const q=input.value.trim();
+  if(quoteAddrDebounce)clearTimeout(quoteAddrDebounce);
+  if(q.length>2){
+    renderRideAddressMessage(listId,'Searching addresses...');
+    quoteAddrDebounce=setTimeout(()=>fetchQuoteAddressSuggestions(kind,q,mobile),350);
+  }else{
+    list.style.display='none';
+  }
+}
+
+async function fetchQuoteAddressSuggestions(kind,q,mobile=false){
+  const {listId}=quoteAddressElementIds(kind,mobile);
+  const cacheKey=`${mobile?'mobile':'desktop'}|${kind}|${q}`;
+  if(cacheKey===lastQuoteAddrQuery)return;
+  lastQuoteAddrQuery=cacheKey;
+  try{
+    const queries=buildRideAddressQueries(q);
+    const seen=new Set();
+    const data=[];
+    for(const searchText of queries){
+      const res=await fetch(`https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(searchText)}&format=json&limit=5&countrycodes=us&addressdetails=1`,{headers:{'Accept-Language':'en'}});
+      const rows=await res.json();
+      if(Array.isArray(rows)){
+        rows.forEach(row=>{
+          const key=String(row.display_name||row.place_id||'').toLowerCase();
+          if(key&&!seen.has(key)){
+            seen.add(key);
+            data.push(row);
+          }
+        });
+      }
+      if(data.length>=5)break;
+    }
+    const list=document.getElementById(listId);
+    if(!list)return;
+    if(!data.length){
+      renderRideAddressMessage(listId,'No address matches yet. Try adding city or ZIP.');
+      return;
+    }
+    list.innerHTML=data.slice(0,5).map(row=>{
+      const encoded=encodeURIComponent(String(row.display_name||''));
+      return `<div class="suggestion-item" onclick="selectQuoteAddressSuggestion('${kind}','${encoded}',${mobile})">${escHtml(row.display_name||'')}</div>`;
+    }).join('');
+    list.style.display='block';
+  }catch(e){
+    renderRideAddressMessage(listId,'Address lookup is unavailable. You can still type the full address.');
+  }
+}
+
+function selectQuoteAddressSuggestion(kind,encodedLabel,mobile=false){
+  const {inputId,listId}=quoteAddressElementIds(kind,mobile);
+  const input=document.getElementById(inputId);
+  const list=document.getElementById(listId);
+  if(input)input.value=decodeURIComponent(encodedLabel);
+  if(list)list.style.display='none';
+  if(!mobile)clearQuote();
 }
 async function findClosest(){
   document.getElementById('addr-suggestions').style.display='none';
