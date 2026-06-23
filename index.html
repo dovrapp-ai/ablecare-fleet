@@ -66,6 +66,9 @@ button,input,select,textarea{-webkit-appearance:none;font-family:inherit}
   #ride-log-table th,#ride-log-table td{overflow-wrap:anywhere}
   /* Allow 2-line wrap for long text columns so the table can still fit without blowing up row height. */
   #ride-log-table .rep-wrap{display:block;white-space:normal;line-height:1.25;max-height:2.6em;overflow:hidden}
+  .rep-sort-head{width:100%;background:transparent;border:none;color:inherit;font:inherit;font-weight:800;padding:0;cursor:pointer;white-space:nowrap}
+  .rep-sort-head:hover{text-decoration:underline}
+  .rep-sort-head.active{color:#7dd3fc}
 
 
 /* ── PIN SCREEN ── */
@@ -325,6 +328,11 @@ button,input,select,textarea{-webkit-appearance:none;font-family:inherit}
 .opt-tag.wait{background:#fff7ed;color:#c2410c}
 .opt-tag.gap{background:#f0fdf4;color:#16a34a}
 .opt-tag.tight{background:#fef3c7;color:#d97706}
+.opt-helper-edit{margin-top:8px;display:grid;grid-template-columns:auto minmax(170px,1fr);align-items:center;gap:8px}
+.opt-helper-edit label{font-size:10px;font-weight:900;color:#6b82a8;text-transform:uppercase;letter-spacing:.6px}
+.opt-helper-select{border:1.5px solid #dbeafe;border-radius:8px;padding:7px 9px;font-size:12px;font-weight:800;color:#0d1b2a;outline:none;background:#fff;width:100%;min-width:0}
+.opt-helper-input{grid-column:2;border:1.5px solid #dbeafe;border-radius:8px;padding:7px 9px;font-size:12px;font-weight:800;color:#0d1b2a;outline:none;background:#fff;width:100%;min-width:0}
+.opt-helper-input:focus,.opt-helper-select:focus{border-color:#00b4d8;box-shadow:0 0 0 3px rgba(0,180,216,.12)}
 .opt-warning{background:#fff7ed;border:1px solid #fed7aa;border-radius:10px;padding:12px 14px;margin-bottom:8px;font-size:13px;color:#c2410c}
 .opt-warning b{display:block;margin-bottom:3px}
 .opt-driver-check{display:flex;align-items:center;gap:7px;background:#f4f7fb;border:1.5px solid #e8eef4;border-radius:10px;padding:8px 14px;cursor:pointer;font-size:13px;font-weight:700;color:#0d1b2a;transition:all 0.15s;user-select:none}
@@ -1835,6 +1843,8 @@ body[data-user-role="manager"] .owner-only-setting{display:none !important}
   </div>
 
 
+<datalist id="helper-options"></datalist>
+
 <!-- Optimizer Modal -->
 <div class="modal-overlay" id="optimizer-modal" style="align-items:flex-start;padding:0">
   <div style="background:#fff;width:100%;max-width:700px;margin:0 auto;height:100vh;overflow-y:auto;display:flex;flex-direction:column">
@@ -1997,7 +2007,7 @@ body[data-user-role="manager"] .owner-only-setting{display:none !important}
       <!-- Helper — only shows for stretcher -->
       <div class="modal-field" id="helper-field" style="display:none">
         <label>🛏 Helper (Stretcher Ride)</label>
-        <input type="text" id="r-helper" placeholder="Helper name..."/>
+        <input type="text" id="r-helper" list="helper-options" placeholder="Choose or type helper name..."/>
       </div>
     </div>
 
@@ -2126,7 +2136,7 @@ body[data-user-role="manager"] .owner-only-setting{display:none !important}
     </div>
     <div class="modal-field" id="ret-helper-field" style="display:none">
       <label>🛏 Helper (Stretcher)</label>
-      <input type="text" id="ret-helper" placeholder="Helper name..."/>
+      <input type="text" id="ret-helper" list="helper-options" placeholder="Choose or type helper name..."/>
     </div>
     <div class="modal-field">
       <label>Notes</label>
@@ -2528,6 +2538,33 @@ async function loadDrivers(){
     drivers=defaults.map(d=>({name:d.name,pin:d.pin,active:true}));
   }
   return drivers;
+}
+
+async function loadHelperOptions(extraNames=[]){
+  const names = new Set();
+  try{
+    const drivers = await loadDrivers();
+    drivers.forEach(d => { if(d?.name) names.add(String(d.name).trim()); });
+  }catch(e){
+    console.warn('Could not load drivers for helper options', e);
+  }
+  (extraNames || []).forEach(n => { if(n) names.add(String(n).trim()); });
+  try{
+    const snap = await ridesRef().once('value');
+    Object.values(snap.val() || {}).forEach(r => {
+      if(r?.helper) names.add(String(r.helper).trim());
+    });
+  }catch(e){
+    console.warn('Could not load ride helpers for helper options', e);
+  }
+  return Array.from(names).filter(Boolean).sort((a,b)=>a.localeCompare(b));
+}
+
+async function refreshHelperDatalist(extraNames=[]){
+  const list = document.getElementById('helper-options');
+  if(!list) return;
+  const names = await loadHelperOptions(extraNames);
+  list.innerHTML = names.map(n => `<option value="${escHtml(n)}"></option>`).join('');
 }
 
 function normalizeBranding(raw){
@@ -5512,12 +5549,13 @@ async function openReturnModal(originalKey){
 
   // Load drivers
   const drivers=await loadDrivers();
+  await refreshHelperDatalist([orig.helper]);
   const sel=document.getElementById('ret-driver');
   sel.innerHTML='<option value="">Assign later...</option>'+
     drivers.map(d=>`<option value="${d.name}"${d.name===orig.driver?' selected':''}>${d.name}</option>`).join('');
 
-  // Show helper field for stretcher
-  document.getElementById('ret-helper-field').style.display=orig.ridetype==='str'?'block':'none';
+  // Helper can be assigned for wheelchair or stretcher rides.
+  document.getElementById('ret-helper-field').style.display='block';
   document.getElementById('ret-helper').value=orig.helper||'';
 
   document.getElementById('return-modal').style.display='flex';
@@ -5656,6 +5694,7 @@ async function openOptimizer(){
     'Optimizing rides for '+d.toLocaleDateString('en-US',{weekday:'long',month:'long',day:'numeric',year:'numeric'});
   // Load drivers and render checkboxes
   const drivers=await loadDrivers();
+  await refreshHelperDatalist(drivers.map(d=>d.name));
   availableDriversForOpt=drivers.map(d=>d.name);
   const container=document.getElementById('opt-driver-checkboxes');
   container.innerHTML='';
@@ -5861,9 +5900,15 @@ async function optimizeWithAI(rides, drivers, distMatrix, addresses){
 
   function getTeamLabel(ride, assignedDriver){
     if((ride.ridetype || '').toLowerCase() !== 'str') return '';
+    if(ride.helper) return `${assignedDriver}/${ride.helper}`;
     if(assignedDriver === 'Raul') return 'Raul/wife';
     if(assignedDriver === 'Joel') return 'Joel/Gerson';
     return assignedDriver;
+  }
+  function getSuggestedHelper(assignedDriver){
+    if(assignedDriver === 'Raul') return 'wife';
+    if(assignedDriver === 'Joel') return 'Gerson';
+    return '';
   }
 
   function getStretcherPriorityPenalty(ride, name, sameTimeStretchers){
@@ -6044,6 +6089,7 @@ async function optimizeWithAI(rides, drivers, distMatrix, addresses){
       dropoff,
       ridetype: ride.ridetype || 'wc',
       triptype: ride.triptype || 'rt',
+      helper: ride.helper || '',
       waitRequired: hasExplicitWait(ride),
       estimatedReturn,
       estimatedMiles: parseFloat(tripMilesOnly.toFixed(1)),
@@ -6082,6 +6128,12 @@ async function optimizeWithAI(rides, drivers, distMatrix, addresses){
 
   optimizedSchedule = result;
   return result;
+}
+
+function getSuggestedHelper(assignedDriver){
+  if(assignedDriver === 'Raul') return 'wife';
+  if(assignedDriver === 'Joel') return 'Gerson';
+  return '';
 }
 
 function renderOptimizerResults(result, drivers){
@@ -6133,6 +6185,22 @@ function renderOptimizerResults(result, drivers){
     (sched.rides || []).forEach((ride, ri) => {
       const driversCopy = drivers.map(d => d.name).filter(n => n !== driver.name);
       const moveOptions = driversCopy.map(n => `<option value="${n}">Move to ${n}</option>`).join('');
+      const helperDriverOptions = drivers
+        .map(d => d.name)
+        .filter(n => n !== driver.name)
+        .map(n => `<option value="${escHtml(n)}"${String(ride.helper || '') === n ? ' selected' : ''}>${escHtml(n)}</option>`)
+        .join('');
+      const helperIsDriver = drivers.map(d => d.name).includes(String(ride.helper || ''));
+      const helperSelectValue = ride.helper ? (helperIsDriver ? ride.helper : '__custom__') : '';
+      const helperEditor = `<div class="opt-helper-edit">
+            <label>Helper</label>
+            <select class="opt-helper-select" onchange="setOptimizedRideHelperFromSelect('${ride.rideKey}','${driver.name}',this.value,this)">
+              <option value="">Choose driver helper...</option>
+              ${helperDriverOptions}
+              <option value="__custom__"${helperSelectValue === '__custom__' ? ' selected' : ''}>Custom helper...</option>
+            </select>
+            <input class="opt-helper-input" list="helper-options" value="${escHtml(helperSelectValue === '__custom__' ? (ride.helper || '') : '')}" placeholder="Type helper name..." style="${helperSelectValue === '__custom__' ? '' : 'display:none'}" oninput="updateOptimizedRideHelper('${ride.rideKey}','${driver.name}',this.value)"/>
+          </div>`;
       html += `<div class="opt-ride-row">
         <div class="opt-ride-num">${ri + 1}</div>
         <div class="opt-ride-info">
@@ -6150,6 +6218,7 @@ function renderOptimizerResults(result, drivers){
             ${ride.deadheadMiles ? `<span class="opt-tag" style="background:#fff7ed;color:#c2410c">↗ Deadhead ${ride.deadheadMiles} mi</span>` : ''}
             ${ride.routeMiles ? `<span class="opt-tag" style="background:#eef2ff;color:#4338ca">🧭 Route ${ride.routeMiles} mi</span>` : ''}
           </div>
+          ${helperEditor}
           ${ride.notes ? `<div class="opt-ride-detail" style="color:#f59e0b;margin-top:4px">📝 ${ride.notes}</div>` : ''}
         </div>
         <div style="display:flex;flex-direction:column;gap:8px;min-width:150px">
@@ -6203,6 +6272,35 @@ function renderOptimizerResults(result, drivers){
   });
 }
 
+function updateOptimizedRideHelper(rideKey, driverName, helperName){
+  if(!optimizedSchedule || !rideKey || !driverName) return;
+  const sched = optimizedSchedule.schedules?.[driverName];
+  const ride = sched?.rides?.find(r => r.rideKey === rideKey);
+  if(!ride) return;
+  ride.helper = (helperName || '').trim();
+  ride.teamLabel = ride.ridetype === 'str'
+    ? (ride.helper ? `${driverName}/${ride.helper}` : driverName)
+    : '';
+}
+
+function setOptimizedRideHelperFromSelect(rideKey, driverName, helperName, selectEl){
+  const wrap = selectEl?.closest?.('.opt-helper-edit');
+  const input = wrap?.querySelector?.('.opt-helper-input');
+  if(helperName === '__custom__'){
+    if(input){
+      input.style.display = '';
+      input.focus();
+    }
+    updateOptimizedRideHelper(rideKey, driverName, input?.value || '');
+    return;
+  }
+  if(input){
+    input.value = '';
+    input.style.display = 'none';
+  }
+  updateOptimizedRideHelper(rideKey, driverName, helperName);
+}
+
 function moveRideToDriver(rideKey, fromDriver, toDriver, selectEl){
   if(!toDriver||!optimizedSchedule) return;
   const fromSched = optimizedSchedule.schedules[fromDriver];
@@ -6211,6 +6309,9 @@ function moveRideToDriver(rideKey, fromDriver, toDriver, selectEl){
   const rideIdx = fromSched.rides.findIndex(r=>r.rideKey===rideKey);
   if(rideIdx===-1) return;
   const ride = fromSched.rides.splice(rideIdx,1)[0];
+  ride.teamLabel = (ride.ridetype || '').toLowerCase() === 'str'
+    ? (ride.helper ? `${toDriver}/${ride.helper}` : toDriver)
+    : '';
   toSched.rides.push(ride);
   toSched.rides.sort((a,b)=>(a.sortTimeMins||0)-(b.sortTimeMins||0));
   selectEl.value = '';
@@ -6235,6 +6336,7 @@ function removeRideFromOptimized(rideKey, fromDriver){
     notes: ride.notes || '',
     ridetype: ride.ridetype || 'wc',
     triptype: ride.triptype || 'rt',
+    helper: ride.helper || '',
     reason: 'Manually removed from assigned schedule'
   });
   recalcOptimizedCounts();
@@ -6259,11 +6361,12 @@ function assignUnassignedRide(rideKey, driverName){
     dropoff: r.dropoff || '',
     ridetype: r.ridetype || 'wc',
     triptype: r.triptype || 'rt',
+    helper: r.helper || '',
     waitRequired: false,
     estimatedReturn: '',
     estimatedMiles: r.estimatedMiles || 0,
     notes: r.notes || '',
-    teamLabel: ((r.ridetype || '').toLowerCase() === 'str' ? (driverName === 'Raul' ? 'Raul/wife' : driverName === 'Joel' ? 'Joel/Gerson' : driverName) : '')
+    teamLabel: ((r.ridetype || '').toLowerCase() === 'str' ? `${driverName}/${r.helper || getSuggestedHelper(driverName) || ''}`.replace(/\/$/,'') : '')
   });
   optimizedSchedule.schedules[driverName].rides.sort((a,b)=>(a.sortTimeMins||0)-(b.sortTimeMins||0));
   recalcOptimizedCounts();
@@ -6335,6 +6438,7 @@ async function applyOptimizedSchedule(){
         updates[`rides/${ride.rideKey}/estimatedMiles`] = ride.estimatedMiles||0;
         updates[`rides/${ride.rideKey}/routeMiles`] = ride.routeMiles||ride.estimatedMiles||0;
         updates[`rides/${ride.rideKey}/deadheadMiles`] = ride.deadheadMiles||0;
+        updates[`rides/${ride.rideKey}/helper`] = ride.helper || '';
       }
     });
   });
@@ -6344,6 +6448,7 @@ async function applyOptimizedSchedule(){
       updates[`rides/${ride._key}/estimatedMiles`] = ride.estimatedMiles||0;
       updates[`rides/${ride._key}/routeMiles`] = ride.routeMiles||ride.estimatedMiles||0;
       updates[`rides/${ride._key}/deadheadMiles`] = ride.deadheadMiles||0;
+      updates[`rides/${ride._key}/helper`] = '';
     }
   });
   if(Object.keys(updates).length){
@@ -6404,9 +6509,9 @@ function onFacilityType(){
   applyFacilityAddresses(name);
 }
 function showHideStretcherFields(){
-  const isStr=rideToggles.ridetype==='str';
   const hasWait=rideToggles.wait==='yes';
-  document.getElementById('helper-field').style.display=isStr?'block':'none';
+  document.getElementById('helper-field').style.display='block';
+  const isStr=rideToggles.ridetype==='str';
   document.getElementById('miles-field').style.display=isStr?'block':'none';
   const waitHours=document.getElementById('wait-hours-field');
   if(waitHours) waitHours.style.display=hasWait?'block':'none';
@@ -6455,6 +6560,7 @@ function updateRideToggles(){
 async function openRideModal(key,defaultDate){
   key=key||null;rideEditKey=key;
   const drivers=await loadDrivers();
+  await refreshHelperDatalist();
   const sel=document.getElementById('r-driver');
   sel.innerHTML='<option value="">Assign later...</option>'+drivers.map(d=>`<option value="${d.name}">${d.name}</option>`).join('');
   const fbEl=document.getElementById('facility-btns');
@@ -6822,6 +6928,58 @@ function showToast(msg){
 // ── REPORTS ──
 let repView = 'log';
 let repRides = [];
+let repSort = { key: 'date', dir: 'asc' };
+
+function setRideLogSort(key){
+  if(repSort.key === key){
+    repSort.dir = repSort.dir === 'asc' ? 'desc' : 'asc';
+  }else{
+    repSort.key = key;
+    repSort.dir = key === 'price' || key === 'miles' ? 'desc' : 'asc';
+  }
+  renderRideLog();
+}
+
+function rideLogSortHeader(key, label, align='left'){
+  const active = repSort.key === key;
+  const arrow = active ? (repSort.dir === 'asc' ? ' ▲' : ' ▼') : '';
+  return `<button class="rep-sort-head ${active?'active':''}" onclick="setRideLogSort('${key}')" style="text-align:${align}">${label}${arrow}</button>`;
+}
+
+function rideLogSortValue(r, key){
+  if(key === 'date') return `${r.date || ''} ${r.time || ''}`;
+  if(key === 'facility') return String(r.facility || '').toLowerCase();
+  if(key === 'client') return String(r.client || '').toLowerCase();
+  if(key === 'type') return `${r.ridetype === 'str' ? 'stretcher' : 'wheelchair'} ${r.triptype || ''}`.toLowerCase();
+  if(key === 'miles') return reportTripMiles(r);
+  if(key === 'calcNotes') return String(r.calcNotes || '').toLowerCase();
+  if(key === 'van') return String(r.van || '').toLowerCase();
+  if(key === 'driver') return `${r.driver || ''} ${r.helper || ''}`.toLowerCase();
+  if(key === 'price') return reportMoneyValue(r.price);
+  if(key === 'paid') return String(r.paid || '').toLowerCase();
+  if(key === 'invoice') return String(r.invoice || '').toLowerCase();
+  if(key === 'notes') return String(r.notes || '').toLowerCase();
+  if(key === 'status') return String(r.status || '').toLowerCase();
+  return '';
+}
+
+function sortedRideLogRows(rides){
+  const key = repSort.key || 'date';
+  const dir = repSort.dir === 'desc' ? -1 : 1;
+  const numericKeys = new Set(['miles','price']);
+  return [...(rides || [])].sort((a,b)=>{
+    const av = rideLogSortValue(a,key);
+    const bv = rideLogSortValue(b,key);
+    let cmp;
+    if(numericKeys.has(key)){
+      cmp = (Number(av) || 0) - (Number(bv) || 0);
+    }else{
+      cmp = String(av).localeCompare(String(bv), undefined, {numeric:true, sensitivity:'base'});
+    }
+    if(cmp) return cmp * dir;
+    return `${a.date || ''} ${a.time || ''}`.localeCompare(`${b.date || ''} ${b.time || ''}`);
+  });
+}
 
 function reportTripMiles(r){
   const explicitMiles = parseFloat(r && (r.billableMiles ?? r.tripMiles ?? r.miles));
@@ -7105,19 +7263,19 @@ function renderRideLog(){
     </colgroup>
     <thead>
       <tr style="background:#0d1b2a;color:#fff">
-        <th style="padding:10px 12px;text-align:left;font-weight:700;white-space:nowrap">Date</th>
-        <th style="padding:10px 12px;text-align:left;font-weight:700">Facility</th>
-        <th style="padding:10px 12px;text-align:left;font-weight:700">Client</th>
-        <th style="padding:10px 12px;text-align:left;font-weight:700">Type</th>
-        <th style="padding:10px 12px;text-align:right;font-weight:700">Miles</th>
-        <th style="padding:10px 12px;text-align:left;font-weight:700">Calc Notes</th>
-        <th style="padding:10px 12px;text-align:left;font-weight:700">Van</th>
-        <th style="padding:10px 12px;text-align:left;font-weight:700">Driver</th>
-        <th style="padding:10px 12px;text-align:right;font-weight:700">Price</th>
-        <th style="padding:10px 12px;text-align:center;font-weight:700">Paid</th>
-        <th style="padding:10px 12px;text-align:left;font-weight:700">Invoice #</th>
-        <th style="padding:10px 12px;text-align:left;font-weight:700">Notes</th>
-        <th style="padding:10px 12px;text-align:center;font-weight:700">Status</th>
+        <th style="padding:10px 12px;text-align:left;font-weight:700;white-space:nowrap">${rideLogSortHeader('date','Date')}</th>
+        <th style="padding:10px 12px;text-align:left;font-weight:700">${rideLogSortHeader('facility','Facility')}</th>
+        <th style="padding:10px 12px;text-align:left;font-weight:700">${rideLogSortHeader('client','Client')}</th>
+        <th style="padding:10px 12px;text-align:left;font-weight:700">${rideLogSortHeader('type','Type')}</th>
+        <th style="padding:10px 12px;text-align:right;font-weight:700">${rideLogSortHeader('miles','Miles','right')}</th>
+        <th style="padding:10px 12px;text-align:left;font-weight:700">${rideLogSortHeader('calcNotes','Calc Notes')}</th>
+        <th style="padding:10px 12px;text-align:left;font-weight:700">${rideLogSortHeader('van','Van')}</th>
+        <th style="padding:10px 12px;text-align:left;font-weight:700">${rideLogSortHeader('driver','Driver')}</th>
+        <th style="padding:10px 12px;text-align:right;font-weight:700">${rideLogSortHeader('price','Price','right')}</th>
+        <th style="padding:10px 12px;text-align:center;font-weight:700">${rideLogSortHeader('paid','Paid','center')}</th>
+        <th style="padding:10px 12px;text-align:left;font-weight:700">${rideLogSortHeader('invoice','Invoice #')}</th>
+        <th style="padding:10px 12px;text-align:left;font-weight:700">${rideLogSortHeader('notes','Notes')}</th>
+        <th style="padding:10px 12px;text-align:center;font-weight:700">${rideLogSortHeader('status','Status','center')}</th>
         <th style="padding:10px 12px;text-align:center;font-weight:700">Edit</th>
       </tr>
     </thead>
@@ -7127,7 +7285,7 @@ function renderRideLog(){
     html += `<tr><td colspan="15" style="padding:40px;text-align:center;color:#6b82a8">No rides found — click + Add Row to add one</td></tr>`;
   }
 
-  repRides.forEach((r,i)=>{
+  sortedRideLogRows(repRides).forEach((r,i)=>{
     const d = new Date(r.date+'T12:00:00');
     const dateDisp = r.date?d.toLocaleDateString('en-US',{month:'2-digit',day:'2-digit',year:'numeric'}):'—';
     const isPaid = r.paid==='yes';
