@@ -56,6 +56,7 @@ button,input,select,textarea{-webkit-appearance:none;font-family:inherit}
   /* ── SCREENS ── */
   .screen{display:none;padding:24px;max-width:1100px;margin:0 auto}
   .screen.active{display:block}
+  #screen-rides:not(.active){display:none !important}
   #screen-rides.active{display:flex}
   /* Reports: make Ride Log fit on-screen (no left/right scroll) by clipping long text and keeping rows compact. */
   #screen-reports{max-width:none;padding:18px 14px}
@@ -995,6 +996,69 @@ body[data-user-role="manager"] .owner-only-setting{display:none !important}
 #screen-dash.mobile-app-mode .mobile-dashboard-wrap{display:block}
 #screen-dash.mobile-app-mode .mobile-phone-shell{max-width:none;min-height:100vh;box-shadow:none}
 
+/* Compliance tracker */
+#screen-compliance{max-width:1320px}
+.comp-shell{display:grid;grid-template-columns:minmax(0,1fr) 360px;gap:14px;align-items:start}
+.comp-panel{background:#fff;border:1px solid #e2e8f0;border-radius:14px;padding:16px;box-shadow:0 1px 6px rgba(15,23,42,0.05)}
+.comp-toolbar{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;margin-bottom:14px}
+.comp-title{font-size:18px;font-weight:900;color:#0d1b2a}
+.comp-subtitle{font-size:12px;color:#64748b;margin-top:3px}
+.comp-actions{display:flex;gap:8px;flex-wrap:wrap}
+.comp-btn{border:none;border-radius:10px;padding:9px 12px;font-size:12px;font-weight:800;cursor:pointer;background:#0d1b2a;color:#fff}
+.comp-btn.secondary{background:#e8eef4;color:#0d1b2a}
+.comp-btn.warn{background:#fff7ed;color:#9a3412;border:1px solid #fed7aa}
+.comp-btn.danger{background:#fef2f2;color:#b91c1c;border:1px solid #fecaca}
+.comp-btn:disabled{opacity:.55;cursor:not-allowed}
+.comp-summary{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px;margin-bottom:12px}
+.comp-stat{border:1px solid #e2e8f0;border-radius:12px;padding:12px;background:#f8fafc}
+.comp-stat strong{display:block;font-size:22px;line-height:1;color:#0f172a}
+.comp-stat span{display:block;font-size:10px;text-transform:uppercase;letter-spacing:1.2px;color:#64748b;margin-top:7px;font-weight:800}
+.comp-filters{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px}
+.comp-filter,.comp-input,.comp-select,.comp-textarea{border:1px solid #dbe2ea;border-radius:10px;background:#fff;color:#0f172a;font-size:12px;padding:9px 10px;font-family:inherit}
+.comp-filter{font-weight:800;cursor:pointer}
+.comp-filter.active{background:#0d1b2a;color:#fff;border-color:#0d1b2a}
+.comp-table-wrap{overflow:auto;border:1px solid #e2e8f0;border-radius:12px}
+.comp-table{width:100%;border-collapse:collapse;font-size:12px;min-width:820px}
+.comp-table th{background:#f8fafc;color:#64748b;text-align:left;text-transform:uppercase;letter-spacing:.08em;font-size:10px;padding:10px;border-bottom:1px solid #e2e8f0}
+.comp-table td{padding:10px;border-bottom:1px solid #f1f5f9;vertical-align:top}
+.comp-table tr:last-child td{border-bottom:none}
+.comp-name{font-weight:900;color:#0f172a}
+.comp-meta{font-size:11px;color:#64748b;margin-top:2px;line-height:1.35}
+.comp-badge{display:inline-flex;align-items:center;border-radius:999px;padding:4px 8px;font-size:10px;font-weight:900;text-transform:uppercase;letter-spacing:.04em}
+.comp-badge.current{background:#dcfce7;color:#15803d}
+.comp-badge.renew{background:#fef9c3;color:#a16207}
+.comp-badge.urgent{background:#ffedd5;color:#c2410c}
+.comp-badge.expired{background:#fee2e2;color:#b91c1c}
+.comp-badge.unverified{background:#e2e8f0;color:#475569}
+.comp-form-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.comp-field{display:flex;flex-direction:column;gap:5px;margin-bottom:10px}
+.comp-field label{font-size:10px;font-weight:900;color:#64748b;text-transform:uppercase;letter-spacing:.08em}
+.comp-field.full{grid-column:1 / -1}
+.comp-textarea{min-height:74px;resize:vertical}
+.comp-side-tabs{display:flex;gap:6px;margin-bottom:12px}
+.comp-side-tabs button{flex:1}
+.comp-side-section{display:none}
+.comp-side-section.active{display:block}
+.comp-empty{padding:28px 12px;text-align:center;color:#64748b;font-size:13px}
+.comp-maint-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:10px;margin-top:12px}
+.comp-maint-card{border:1px solid #e2e8f0;border-radius:12px;padding:12px;background:#fff}
+.comp-upload-box{border:1px dashed #cbd5e1;background:#f8fafc;border-radius:12px;padding:12px;margin-bottom:12px}
+.comp-upload-list{display:flex;flex-direction:column;gap:8px;margin-top:10px}
+.comp-upload-row{display:flex;align-items:center;justify-content:space-between;gap:8px;background:#fff;border:1px solid #e2e8f0;border-radius:10px;padding:9px}
+.comp-small{font-size:11px;color:#64748b;line-height:1.4}
+@media(max-width:900px){
+  .comp-shell{grid-template-columns:1fr}
+  .comp-summary{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .comp-form-grid{grid-template-columns:1fr}
+}
+@media(max-width:760px){
+  #screen-compliance{padding:12px}
+  .comp-panel{padding:12px;border-radius:12px}
+  .comp-title{font-size:16px}
+  .comp-actions{width:100%}
+  .comp-actions .comp-btn{flex:1}
+}
+
 </style>
 </head>
 <body>
@@ -1061,6 +1125,7 @@ body[data-user-role="manager"] .owner-only-setting{display:none !important}
     <div class="tab" onclick="switchTab('quote')" id="tab-quote"><span class="tab-icon">💰</span> Quote</div>
     <div class="tab" onclick="switchTab('invoice')" id="tab-invoice"><span class="tab-icon">📄</span> Invoice</div>
     <div class="tab" onclick="switchTab('reports')" id="tab-reports"><span class="tab-icon">📊</span> Reports</div>
+    <div class="tab" onclick="switchTab('compliance')" id="tab-compliance"><span class="tab-icon">OK</span> Compliance</div>
     <div class="tab" onclick="switchTab('mobile')" id="tab-mobile"><span class="tab-icon">M</span> Mobile</div>
     <div class="tab" onclick="switchTab('settings')" id="tab-settings"><span class="tab-icon">⚙️</span> Settings</div>
   </div>
@@ -1370,6 +1435,216 @@ body[data-user-role="manager"] .owner-only-setting{display:none !important}
       <!-- Content Area -->
       <div id="rep-content" style="background:#fff;border-radius:16px;overflow:hidden;box-shadow:0 1px 6px rgba(0,0,0,0.05)"></div>
 
+    </div>
+  </div>
+
+  <!-- COMPLIANCE TAB -->
+  <div class="screen" id="screen-compliance">
+    <div class="comp-toolbar">
+      <div>
+        <div class="comp-title">Compliance Tracker</div>
+        <div class="comp-subtitle">Driver, vehicle, company, and maintenance records sorted by expiration risk.</div>
+      </div>
+      <div class="comp-actions">
+        <button class="comp-btn secondary" onclick="downloadComplianceCsv()">Export CSV</button>
+        <button class="comp-btn secondary" onclick="downloadCompliancePacketIndex()">Packet Index</button>
+        <button class="comp-btn" onclick="resetComplianceForm()">New Item</button>
+      </div>
+    </div>
+
+    <div class="comp-summary">
+      <div class="comp-stat"><strong id="comp-count-expired">0</strong><span>Expired</span></div>
+      <div class="comp-stat"><strong id="comp-count-urgent">0</strong><span>Urgent</span></div>
+      <div class="comp-stat"><strong id="comp-count-renew">0</strong><span>Renew Soon</span></div>
+      <div class="comp-stat"><strong id="comp-count-current">0</strong><span>Current</span></div>
+    </div>
+
+    <div class="comp-shell">
+      <div class="comp-panel">
+        <div class="comp-filters">
+          <button class="comp-filter active" id="comp-filter-all" onclick="setComplianceStatusFilter('all')">All</button>
+          <button class="comp-filter" id="comp-filter-expired" onclick="setComplianceStatusFilter('expired')">Expired</button>
+          <button class="comp-filter" id="comp-filter-urgent" onclick="setComplianceStatusFilter('urgent')">Urgent</button>
+          <button class="comp-filter" id="comp-filter-renew" onclick="setComplianceStatusFilter('renew')">Renew Soon</button>
+          <button class="comp-filter" id="comp-filter-unverified" onclick="setComplianceStatusFilter('unverified')">Unverified</button>
+          <select id="comp-entity-filter" class="comp-select" onchange="renderCompliance()"><option value="">All entities</option></select>
+          <select id="comp-category-filter" class="comp-select" onchange="renderCompliance()"><option value="">All categories</option></select>
+        </div>
+        <div class="comp-table-wrap">
+          <table class="comp-table">
+            <thead>
+              <tr>
+                <th>Status</th>
+                <th>Item</th>
+                <th>Entity</th>
+                <th>Issue</th>
+                <th>Expiry</th>
+                <th>Documents</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody id="comp-items-body">
+              <tr><td colspan="7"><div class="comp-empty">Loading compliance records...</div></td></tr>
+            </tbody>
+          </table>
+        </div>
+
+        <div class="comp-toolbar" style="margin:18px 0 0">
+          <div>
+            <div class="comp-title" style="font-size:16px">Vehicle Maintenance</div>
+            <div class="comp-subtitle">Receipt-backed service history by vehicle.</div>
+          </div>
+          <button class="comp-btn secondary" onclick="resetMaintenanceForm()">New Maintenance</button>
+        </div>
+        <div class="comp-maint-grid" id="comp-maint-list"></div>
+      </div>
+
+      <div class="comp-panel">
+        <div class="comp-side-tabs">
+          <button class="comp-btn secondary" id="comp-tab-item" onclick="setComplianceSideTab('item')">Item</button>
+          <button class="comp-btn secondary" id="comp-tab-maint" onclick="setComplianceSideTab('maintenance')">Maintenance</button>
+          <button class="comp-btn secondary" id="comp-tab-settings" onclick="setComplianceSideTab('settings')">Settings</button>
+        </div>
+
+        <div class="comp-upload-box">
+          <div class="section-title" style="margin-bottom:8px">Document Upload Queue</div>
+          <input type="file" id="comp-upload-file" class="comp-input" style="width:100%" onchange="stageComplianceDocument(this.files[0])" accept=".pdf,image/*"/>
+          <div class="comp-small" style="margin-top:8px">Phase 1 stores file metadata for review. AI extraction and Storage upload are wired as the next phase.</div>
+          <div class="comp-upload-list" id="comp-upload-list"></div>
+        </div>
+
+        <div class="comp-side-section active" id="comp-side-item">
+          <div class="section-title">Compliance Item</div>
+          <div class="comp-form-grid">
+            <input type="hidden" id="comp-item-key"/>
+            <div class="comp-field full">
+              <label>Title</label>
+              <input class="comp-input" id="comp-title-input" placeholder="Q'STRAINT wheelchair securement"/>
+            </div>
+            <div class="comp-field">
+              <label>Entity</label>
+              <select class="comp-select" id="comp-entity-input"></select>
+            </div>
+            <div class="comp-field">
+              <label>Category</label>
+              <select class="comp-select" id="comp-category-input"></select>
+            </div>
+            <div class="comp-field">
+              <label>Issuer</label>
+              <input class="comp-input" id="comp-issuer-input" placeholder="Issuer or carrier"/>
+            </div>
+            <div class="comp-field">
+              <label>Expiry Rule</label>
+              <select class="comp-select" id="comp-expiry-rule-input">
+                <option value="printed">Printed</option>
+                <option value="issue+12mo">Issue + 12 months</option>
+                <option value="manual">Manual</option>
+                <option value="none">No expiry</option>
+              </select>
+            </div>
+            <div class="comp-field">
+              <label>Issue Date</label>
+              <input type="date" class="comp-input" id="comp-issue-input"/>
+            </div>
+            <div class="comp-field">
+              <label>Expiry Date</label>
+              <input type="date" class="comp-input" id="comp-expiry-input"/>
+            </div>
+            <div class="comp-field">
+              <label>Verified</label>
+              <select class="comp-select" id="comp-verified-input">
+                <option value="yes">Human confirmed</option>
+                <option value="no">Unverified</option>
+              </select>
+            </div>
+            <div class="comp-field">
+              <label>Archived</label>
+              <select class="comp-select" id="comp-archived-input">
+                <option value="no">Active</option>
+                <option value="yes">Archived</option>
+              </select>
+            </div>
+            <div class="comp-field full">
+              <label>Notes</label>
+              <textarea class="comp-textarea" id="comp-notes-input" placeholder="Policy number, renewal notes, missing paperwork, etc."></textarea>
+            </div>
+          </div>
+          <div class="comp-actions">
+            <button class="comp-btn" onclick="saveComplianceItem()">Save Item</button>
+            <button class="comp-btn secondary" onclick="resetComplianceForm()">Clear</button>
+            <button class="comp-btn warn" onclick="downloadComplianceItemIcs()">Add to Calendar</button>
+            <button class="comp-btn danger" id="comp-delete-btn" onclick="deleteOrArchiveComplianceItem()">Archive/Delete</button>
+          </div>
+        </div>
+
+        <div class="comp-side-section" id="comp-side-maintenance">
+          <div class="section-title">Maintenance Record</div>
+          <div class="comp-form-grid">
+            <input type="hidden" id="maint-key"/>
+            <div class="comp-field">
+              <label>Vehicle</label>
+              <select class="comp-select" id="maint-vehicle-input"></select>
+            </div>
+            <div class="comp-field">
+              <label>Service Date</label>
+              <input type="date" class="comp-input" id="maint-date-input"/>
+            </div>
+            <div class="comp-field">
+              <label>Vendor</label>
+              <input class="comp-input" id="maint-vendor-input" placeholder="Toyota of Owings Mills"/>
+            </div>
+            <div class="comp-field">
+              <label>Category</label>
+              <select class="comp-select" id="maint-category-input">
+                <option value="routine">Routine</option>
+                <option value="repair">Repair</option>
+                <option value="tires">Tires</option>
+                <option value="lift_equipment">Lift equipment</option>
+                <option value="inspection">Inspection</option>
+                <option value="bodywork">Bodywork</option>
+              </select>
+            </div>
+            <div class="comp-field">
+              <label>Odometer</label>
+              <input type="number" class="comp-input" id="maint-odometer-input" placeholder="141230"/>
+            </div>
+            <div class="comp-field">
+              <label>Total Cost</label>
+              <input type="number" step="0.01" class="comp-input" id="maint-cost-input" placeholder="142.51"/>
+            </div>
+            <div class="comp-field full">
+              <label>Work Performed</label>
+              <input class="comp-input" id="maint-work-input" placeholder="oil change, tire rotation"/>
+            </div>
+            <div class="comp-field full">
+              <label>Notes</label>
+              <textarea class="comp-textarea" id="maint-notes-input"></textarea>
+            </div>
+          </div>
+          <div class="comp-actions">
+            <button class="comp-btn" onclick="saveMaintenanceRecord()">Save Maintenance</button>
+            <button class="comp-btn secondary" onclick="resetMaintenanceForm()">Clear</button>
+            <button class="comp-btn danger" onclick="deleteMaintenanceRecord()">Delete</button>
+          </div>
+        </div>
+
+        <div class="comp-side-section" id="comp-side-settings">
+          <div class="section-title">Categories</div>
+          <div id="comp-category-settings"></div>
+          <div class="comp-form-grid" style="margin-top:12px">
+            <div class="comp-field">
+              <label>Name</label>
+              <input class="comp-input" id="comp-new-category-name" placeholder="business"/>
+            </div>
+            <div class="comp-field">
+              <label>Lead Days</label>
+              <input type="number" class="comp-input" id="comp-new-category-lead" value="30"/>
+            </div>
+          </div>
+          <button class="comp-btn" onclick="addComplianceCategory()">Add Category</button>
+          <div class="comp-small" style="margin-top:12px">Broker credentialing is intentionally not seeded. Add it here later only if the workflow needs it.</div>
+        </div>
+      </div>
     </div>
   </div>
 
@@ -2414,6 +2689,10 @@ let pendingRideRequestRecord=null;
 let reqRespStatus='accepted';
 let EMAIL_CFG=null;
 let emailjsReady=false;
+let complianceCache={entities:{},categories:{},items:{},documents:{},maintenanceRecords:{}};
+let complianceFilter='all';
+let complianceDocDrafts=[];
+let complianceLoaded=false;
 
 // ── FIREBASE ──
 function tryAutoInit(){
@@ -2442,6 +2721,12 @@ const settingsRef=()=>db.ref('settings');
 const rideLogRef=()=>db.ref('rideLog');
 const rideImportsRef=()=>db.ref('rideImports');
 const rideRequestsRef=()=>db.ref('rideRequests');
+const complianceRef=()=>db.ref('compliance');
+const complianceEntitiesRef=()=>complianceRef().child('entities');
+const complianceCategoriesRef=()=>complianceRef().child('categories');
+const complianceItemsRef=()=>complianceRef().child('items');
+const complianceDocumentsRef=()=>complianceRef().child('documents');
+const maintenanceRecordsRef=()=>complianceRef().child('maintenanceRecords');
 function safe(n){return n.replace(/[^a-zA-Z0-9_-]/g,'_');}
 function escHtml(value){
   return String(value==null?'':value).replace(/[&<>"']/g,ch=>({
@@ -3941,6 +4226,7 @@ function switchTab(name){
   if(name==='quote') initQuote();
   if(name==='invoice') initInvoice();
   if(name==='reports') initReports();
+  if(name==='compliance') initCompliance();
   if(name==='mobile') initMobileDashboard();
 }
 
@@ -8858,6 +9144,446 @@ function bookQuoteAsRide(){
     document.getElementById('r-pickup').style.background='';
     document.getElementById('r-dropoff').style.background='';
   }, 300);
+}
+
+// Compliance tracker
+const COMPLIANCE_SEED_CATEGORIES={
+  training:{name:'training',leadDays:30},
+  medical:{name:'medical',leadDays:30},
+  license:{name:'license',leadDays:30},
+  insurance:{name:'insurance',leadDays:90},
+  vehicle:{name:'vehicle',leadDays:30},
+  business:{name:'business',leadDays:30}
+};
+const COMPLIANCE_SEED_ENTITIES={
+  david:{type:'person',name:'David Rappaport',meta:{role:'Owner'},active:true},
+  ozzy:{type:'person',name:'Ozzy',meta:{role:'Operations manager'},active:true},
+  gerson:{type:'person',name:'Gerson',meta:{role:'Driver'},active:true},
+  raul:{type:'person',name:'Raul Vasquez',meta:{role:'Driver'},active:true},
+  joel:{type:'person',name:'Joel',meta:{role:'Driver'},active:true},
+  sienna2018:{type:'vehicle',name:'2018 Toyota Sienna',meta:{year:'2018',makeModel:'Toyota Sienna 3.5L',vin:'5TDKZ3DC1JS956851'},active:true},
+  sienna2019:{type:'vehicle',name:'2019 Toyota Sienna',meta:{year:'2019',makeModel:'Toyota Sienna 3.5L',vin:'5TDKZ3DCXKS998551'},active:true},
+  sienna2020:{type:'vehicle',name:'2020 Toyota Sienna',meta:{year:'2020',makeModel:'Toyota Sienna 3.5L',vin:'5TDZZ3DC0LS043693'},active:true},
+  ablecare:{type:'company',name:'AbleCare Mobility LLC',meta:{ein:'87-3019065',npi:'1720810542'},active:true}
+};
+const COMPLIANCE_SEED_ITEMS={
+  raul_qstraint_2026:{entityId:'raul',category:'training',title:"Q'STRAINT Wheelchair Securement - Monthly Webinar",issuer:"Q'STRAINT Training Academy",issueDate:'2026-06-16',expiryDate:'2027-06-16',expiryRule:'issue+12mo',verified:true,notes:'Seeded from compliance spec. Attendance-only cert; one-year rule applied.',archived:false},
+  gerson_qstraint_missing:{entityId:'gerson',category:'training',title:"Q'STRAINT Wheelchair Securement - Missing",issuer:"Q'STRAINT Training Academy",issueDate:'',expiryDate:'2026-07-06',expiryRule:'manual',verified:false,notes:'Missing/overdue seed item. Upload or enter current certificate.',archived:false},
+  joel_qstraint_missing:{entityId:'joel',category:'training',title:"Q'STRAINT Wheelchair Securement - Missing",issuer:"Q'STRAINT Training Academy",issueDate:'',expiryDate:'2026-07-06',expiryRule:'manual',verified:false,notes:'Missing/overdue seed item. Upload or enter current certificate.',archived:false},
+  chesapeake_workers_comp:{entityId:'ablecare',category:'insurance',title:"Chesapeake Employers Workers' Comp",issuer:'Chesapeake Employers',issueDate:'',expiryDate:'',expiryRule:'manual',verified:false,notes:'Policy #8010969 per spec. Renewal date TBD.',archived:false},
+  maif_auto_policy:{entityId:'ablecare',category:'insurance',title:'MAIF Auto Liability Policy',issuer:'MAIF',issueDate:'',expiryDate:'',expiryRule:'manual',verified:false,notes:'Renewal date TBD. Add policy number and dates when obtained.',archived:false},
+  sam_pending:{entityId:'ablecare',category:'business',title:'SAM.gov Registration',issuer:'SAM.gov',issueDate:'',expiryDate:'2026-07-06',expiryRule:'manual',verified:false,notes:'Pending for VA contract.',archived:false},
+  wmatc_pending:{entityId:'ablecare',category:'business',title:'WMATC Authority',issuer:'WMATC',issueDate:'',expiryDate:'2026-07-06',expiryRule:'manual',verified:false,notes:'Pending.',archived:false}
+};
+
+async function ensureComplianceSeedData(){
+  if(!firebaseReady || !db) return;
+  const snap=await complianceRef().once('value');
+  const data=snap.val()||{};
+  const updates={};
+  if(!data.categories) Object.entries(COMPLIANCE_SEED_CATEGORIES).forEach(([k,v])=>updates[`categories/${k}`]=v);
+  if(!data.entities) Object.entries(COMPLIANCE_SEED_ENTITIES).forEach(([k,v])=>updates[`entities/${k}`]=v);
+  if(!data.items) Object.entries(COMPLIANCE_SEED_ITEMS).forEach(([k,v])=>updates[`items/${k}`]={...v,createdAt:Date.now(),createdBy:'seed'});
+  if(Object.keys(updates).length) await complianceRef().update(updates);
+}
+
+async function initCompliance(){
+  if(!firebaseReady || !db) return;
+  await ensureComplianceSeedData();
+  if(!complianceLoaded){
+    complianceRef().on('value',snap=>{
+      const c=snap.val()||{};
+      complianceCache={
+        entities:c.entities||{},
+        categories:c.categories||{},
+        items:c.items||{},
+        documents:c.documents||{},
+        maintenanceRecords:c.maintenanceRecords||{}
+      };
+      renderCompliance();
+    });
+    complianceLoaded=true;
+  }
+  renderCompliance();
+}
+
+function compTodayDate(){
+  const d=new Date();
+  d.setHours(0,0,0,0);
+  return d;
+}
+function parseComplianceDate(value){
+  if(!value) return null;
+  const d=new Date(String(value)+'T12:00:00');
+  return Number.isNaN(d.getTime())?null:d;
+}
+function daysUntilDate(value){
+  const d=parseComplianceDate(value);
+  if(!d) return null;
+  return Math.ceil((d-compTodayDate())/86400000);
+}
+function complianceCategoryLead(category){
+  const c=complianceCache.categories?.[category]||COMPLIANCE_SEED_CATEGORIES[category]||{};
+  return Number(c.leadDays||c.renewalLeadDays||(category==='insurance'?90:30));
+}
+function complianceItemStatus(item){
+  if(item?.archived) return {key:'archived',label:'Archived',rank:99};
+  if(/missing\/overdue| - missing$/i.test(String(item?.notes||'')+' '+String(item?.title||''))) return {key:'expired',label:'Expired',rank:0};
+  if(!item?.expiryDate || item.expiryRule==='none') return item?.verified ? {key:'current',label:'Current',rank:3} : {key:'unverified',label:'Unverified',rank:4};
+  const days=daysUntilDate(item.expiryDate);
+  if(days==null) return {key:'unverified',label:'Unverified',rank:4};
+  if(days<0) return {key:'expired',label:'Expired',rank:0};
+  if(days<=14) return {key:'urgent',label:'Urgent',rank:1};
+  if(days<=complianceCategoryLead(item.category)) return {key:'renew',label:'Renew Soon',rank:2};
+  if(!item?.verified) return {key:'unverified',label:'Unverified',rank:4};
+  return {key:'current',label:'Current',rank:3};
+}
+function complianceStatusClass(statusKey){
+  if(statusKey==='renew') return 'renew';
+  if(statusKey==='archived') return 'unverified';
+  return statusKey || 'unverified';
+}
+function complianceEntityName(id){
+  return complianceCache.entities?.[id]?.name || id || '';
+}
+function complianceEntityMeta(id){
+  const e=complianceCache.entities?.[id]||{};
+  const meta=e.meta||{};
+  if(e.type==='vehicle') return [meta.year,meta.makeModel,meta.vin].filter(Boolean).join(' | ');
+  if(e.type==='person') return meta.role || e.type || '';
+  if(e.type==='company') return [meta.ein?`EIN ${meta.ein}`:'',meta.npi?`NPI ${meta.npi}`:''].filter(Boolean).join(' | ');
+  return e.type || '';
+}
+function complianceDateLabel(value){
+  return value ? fmtDate(value) : 'TBD';
+}
+function complianceItemsArray(includeArchived=false){
+  return Object.entries(complianceCache.items||{}).map(([key,item])=>({...item,_key:key,status:complianceItemStatus(item)})).filter(item=>includeArchived||!item.archived);
+}
+function renderCompliance(){
+  renderComplianceSelects();
+  renderComplianceItems();
+  renderMaintenanceRecords();
+  renderComplianceCategorySettings();
+  renderComplianceDocumentDrafts();
+}
+function renderComplianceSelects(){
+  const entities=Object.entries(complianceCache.entities||{}).filter(([,e])=>e.active!==false).sort((a,b)=>String(a[1].name).localeCompare(String(b[1].name)));
+  const categories=Object.entries(complianceCache.categories||{}).sort((a,b)=>String(a[1].name||a[0]).localeCompare(String(b[1].name||b[0])));
+  const entityOptions=entities.map(([k,e])=>`<option value="${escHtml(k)}">${escHtml(e.name||k)}</option>`).join('');
+  const categoryOptions=categories.map(([k,c])=>`<option value="${escHtml(k)}">${escHtml(c.name||k)}</option>`).join('');
+  ['comp-entity-input','comp-entity-filter'].forEach(id=>{
+    const el=document.getElementById(id);
+    if(!el) return;
+    const current=el.value;
+    el.innerHTML=(id.includes('filter')?'<option value="">All entities</option>':'')+entityOptions;
+    if(current) el.value=current;
+  });
+  ['comp-category-input','comp-category-filter'].forEach(id=>{
+    const el=document.getElementById(id);
+    if(!el) return;
+    const current=el.value;
+    el.innerHTML=(id.includes('filter')?'<option value="">All categories</option>':'')+categoryOptions;
+    if(current) el.value=current;
+  });
+  const vehicleSel=document.getElementById('maint-vehicle-input');
+  if(vehicleSel){
+    const current=vehicleSel.value;
+    vehicleSel.innerHTML=entities.filter(([,e])=>e.type==='vehicle').map(([k,e])=>`<option value="${escHtml(k)}">${escHtml(e.name||k)}</option>`).join('');
+    if(current) vehicleSel.value=current;
+  }
+}
+function setComplianceStatusFilter(filter){
+  complianceFilter=filter||'all';
+  document.querySelectorAll('.comp-filter').forEach(btn=>btn.classList.remove('active'));
+  const active=document.getElementById('comp-filter-'+complianceFilter);
+  if(active) active.classList.add('active');
+  renderComplianceItems();
+}
+function renderComplianceItems(){
+  const tbody=document.getElementById('comp-items-body');
+  if(!tbody) return;
+  const entityFilter=document.getElementById('comp-entity-filter')?.value||'';
+  const categoryFilter=document.getElementById('comp-category-filter')?.value||'';
+  const all=complianceItemsArray(false);
+  const counts={expired:0,urgent:0,renew:0,current:0};
+  all.forEach(item=>{ if(counts[item.status.key]!=null) counts[item.status.key]++; });
+  Object.entries(counts).forEach(([k,v])=>{
+    const el=document.getElementById('comp-count-'+k);
+    if(el) el.textContent=v;
+  });
+  let rows=all.filter(item=>{
+    if(entityFilter && item.entityId!==entityFilter) return false;
+    if(categoryFilter && item.category!==categoryFilter) return false;
+    if(complianceFilter==='all') return true;
+    return item.status.key===complianceFilter;
+  });
+  rows.sort((a,b)=>{
+    const rank=(a.status.rank-b.status.rank);
+    if(rank) return rank;
+    const ad=daysUntilDate(a.expiryDate);
+    const bd=daysUntilDate(b.expiryDate);
+    if(ad==null && bd==null) return String(a.title||'').localeCompare(String(b.title||''));
+    if(ad==null) return 1;
+    if(bd==null) return -1;
+    return ad-bd;
+  });
+  if(!rows.length){
+    tbody.innerHTML='<tr><td colspan="7"><div class="comp-empty">No compliance items match this view.</div></td></tr>';
+    return;
+  }
+  tbody.innerHTML=rows.map(item=>{
+    const docs=Array.isArray(item.documentIds)?item.documentIds.length:0;
+    const days=daysUntilDate(item.expiryDate);
+    const daysLabel=days==null?'':`<div class="comp-meta">${days<0?Math.abs(days)+' days past due':days+' days left'}</div>`;
+    return `<tr>
+      <td><span class="comp-badge ${complianceStatusClass(item.status.key)}">${escHtml(item.status.label)}</span>${!item.verified?'<div class="comp-meta">Review required</div>':''}</td>
+      <td><div class="comp-name">${escHtml(item.title||'Untitled')}</div><div class="comp-meta">${escHtml(item.category||'')}${item.issuer?' | '+escHtml(item.issuer):''}</div></td>
+      <td><div class="comp-name">${escHtml(complianceEntityName(item.entityId))}</div><div class="comp-meta">${escHtml(complianceEntityMeta(item.entityId))}</div></td>
+      <td>${escHtml(complianceDateLabel(item.issueDate))}</td>
+      <td>${escHtml(complianceDateLabel(item.expiryDate))}${daysLabel}</td>
+      <td>${docs?docs+' linked':'No files'}</td>
+      <td><button class="comp-btn secondary" onclick="editComplianceItem('${escHtml(item._key)}')">Edit</button></td>
+    </tr>`;
+  }).join('');
+}
+function resetComplianceForm(){
+  ['comp-item-key','comp-title-input','comp-issuer-input','comp-issue-input','comp-expiry-input','comp-notes-input'].forEach(id=>{const el=document.getElementById(id);if(el)el.value='';});
+  const rule=document.getElementById('comp-expiry-rule-input'); if(rule) rule.value='manual';
+  const verified=document.getElementById('comp-verified-input'); if(verified) verified.value='yes';
+  const archived=document.getElementById('comp-archived-input'); if(archived) archived.value='no';
+  renderComplianceSelects();
+  setComplianceSideTab('item');
+}
+function editComplianceItem(key){
+  const item=complianceCache.items?.[key];
+  if(!item) return;
+  setComplianceSideTab('item');
+  document.getElementById('comp-item-key').value=key;
+  document.getElementById('comp-title-input').value=item.title||'';
+  document.getElementById('comp-entity-input').value=item.entityId||'';
+  document.getElementById('comp-category-input').value=item.category||'';
+  document.getElementById('comp-issuer-input').value=item.issuer||'';
+  document.getElementById('comp-expiry-rule-input').value=item.expiryRule||'manual';
+  document.getElementById('comp-issue-input').value=item.issueDate||'';
+  document.getElementById('comp-expiry-input').value=item.expiryDate||'';
+  document.getElementById('comp-verified-input').value=item.verified?'yes':'no';
+  document.getElementById('comp-archived-input').value=item.archived?'yes':'no';
+  document.getElementById('comp-notes-input').value=item.notes||'';
+}
+async function saveComplianceItem(){
+  const title=textTrim(document.getElementById('comp-title-input')?.value);
+  const entityId=document.getElementById('comp-entity-input')?.value||'';
+  const category=document.getElementById('comp-category-input')?.value||'';
+  const expiryRule=document.getElementById('comp-expiry-rule-input')?.value||'manual';
+  const issueDate=document.getElementById('comp-issue-input')?.value||'';
+  let expiryDate=document.getElementById('comp-expiry-input')?.value||'';
+  if(!title || !entityId || !category){alert('Title, entity, and category are required.');return;}
+  if(expiryRule==='issue+12mo' && issueDate && !expiryDate){
+    const d=parseComplianceDate(issueDate);
+    if(d){ d.setFullYear(d.getFullYear()+1); expiryDate=dateStr(d); }
+  }
+  if(expiryRule!=='none' && !expiryDate && document.getElementById('comp-verified-input')?.value==='yes'){
+    alert('Enter an expiry date, choose no expiry, or mark the item unverified.');
+    return;
+  }
+  const key=document.getElementById('comp-item-key')?.value||complianceItemsRef().push().key;
+  const now=Date.now();
+  const old=complianceCache.items?.[key]||{};
+  const item={
+    ...old,
+    entityId,category,title,
+    issuer:textTrim(document.getElementById('comp-issuer-input')?.value),
+    issueDate,expiryDate,expiryRule,
+    verified:document.getElementById('comp-verified-input')?.value==='yes',
+    archived:document.getElementById('comp-archived-input')?.value==='yes',
+    notes:textTrim(document.getElementById('comp-notes-input')?.value),
+    documentIds:old.documentIds||[],
+    createdAt:old.createdAt||now,
+    createdBy:old.createdBy||currentUserName(),
+    lastVerifiedAt:document.getElementById('comp-verified-input')?.value==='yes'?now:(old.lastVerifiedAt||null),
+    updatedAt:now,
+    updatedBy:currentUserName()
+  };
+  await complianceItemsRef().child(key).set(item);
+  document.getElementById('comp-item-key').value=key;
+  showToast('Compliance item saved.');
+}
+async function deleteOrArchiveComplianceItem(){
+  const key=document.getElementById('comp-item-key')?.value;
+  if(!key){alert('Select an item first.');return;}
+  const item=complianceCache.items?.[key];
+  if(!item) return;
+  if(isOwnerUser()){
+    if(confirm('Delete this compliance item permanently?')) await complianceItemsRef().child(key).remove();
+  }else{
+    if(confirm('Archive this compliance item? Managers cannot delete records.')){
+      await complianceItemsRef().child(key).update({archived:true,archivedAt:Date.now(),archivedBy:currentUserName()});
+    }
+  }
+  resetComplianceForm();
+}
+function setComplianceSideTab(name){
+  ['item','maintenance','settings'].forEach(tab=>{
+    document.getElementById('comp-side-'+tab)?.classList.toggle('active',tab===name);
+    document.getElementById('comp-tab-'+tab)?.classList.toggle('secondary',tab!==name);
+  });
+}
+function stageComplianceDocument(file){
+  if(!file) return;
+  complianceDocDrafts.push({name:file.name,type:file.type||'unknown',size:file.size,uploadedAt:Date.now(),uploadedBy:currentUserName()});
+  const input=document.getElementById('comp-upload-file');
+  if(input) input.value='';
+  renderComplianceDocumentDrafts();
+}
+function renderComplianceDocumentDrafts(){
+  const list=document.getElementById('comp-upload-list');
+  if(!list) return;
+  if(!complianceDocDrafts.length){list.innerHTML='<div class="comp-small">No staged documents.</div>';return;}
+  list.innerHTML=complianceDocDrafts.map((d,i)=>`<div class="comp-upload-row"><div><div class="comp-name">${escHtml(d.name)}</div><div class="comp-meta">${escHtml(d.type)} | ${Math.round((d.size||0)/1024)} KB</div></div><button class="comp-btn secondary" onclick="removeStagedComplianceDocument(${i})">Remove</button></div>`).join('');
+}
+function removeStagedComplianceDocument(index){
+  complianceDocDrafts.splice(index,1);
+  renderComplianceDocumentDrafts();
+}
+function resetMaintenanceForm(){
+  ['maint-key','maint-date-input','maint-vendor-input','maint-odometer-input','maint-cost-input','maint-work-input','maint-notes-input'].forEach(id=>{const el=document.getElementById(id);if(el)el.value='';});
+  renderComplianceSelects();
+  setComplianceSideTab('maintenance');
+}
+async function saveMaintenanceRecord(){
+  const vehicleId=document.getElementById('maint-vehicle-input')?.value||'';
+  const serviceDate=document.getElementById('maint-date-input')?.value||'';
+  const vendor=textTrim(document.getElementById('maint-vendor-input')?.value);
+  if(!vehicleId || !serviceDate || !vendor){alert('Vehicle, service date, and vendor are required.');return;}
+  const key=document.getElementById('maint-key')?.value||maintenanceRecordsRef().push().key;
+  const old=complianceCache.maintenanceRecords?.[key]||{};
+  const record={
+    ...old,
+    vehicleId,serviceDate,vendor,
+    category:document.getElementById('maint-category-input')?.value||'routine',
+    odometer:document.getElementById('maint-odometer-input')?.value?Number(document.getElementById('maint-odometer-input').value):null,
+    totalCost:document.getElementById('maint-cost-input')?.value?Number(document.getElementById('maint-cost-input').value):null,
+    workPerformed:textTrim(document.getElementById('maint-work-input')?.value).split(',').map(s=>s.trim()).filter(Boolean),
+    notes:textTrim(document.getElementById('maint-notes-input')?.value),
+    documentIds:old.documentIds||[],
+    createdAt:old.createdAt||Date.now(),
+    createdBy:old.createdBy||currentUserName(),
+    updatedAt:Date.now(),
+    updatedBy:currentUserName()
+  };
+  await maintenanceRecordsRef().child(key).set(record);
+  document.getElementById('maint-key').value=key;
+  showToast('Maintenance record saved.');
+}
+function renderMaintenanceRecords(){
+  const wrap=document.getElementById('comp-maint-list');
+  if(!wrap) return;
+  const rows=Object.entries(complianceCache.maintenanceRecords||{}).map(([key,r])=>({...r,_key:key})).sort((a,b)=>String(b.serviceDate||'').localeCompare(String(a.serviceDate||'')));
+  if(!rows.length){wrap.innerHTML='<div class="comp-empty">No maintenance records yet.</div>';return;}
+  wrap.innerHTML=rows.map(r=>`<div class="comp-maint-card">
+    <div class="comp-name">${escHtml(complianceEntityName(r.vehicleId))}</div>
+    <div class="comp-meta">${escHtml(complianceDateLabel(r.serviceDate))} | ${escHtml(r.vendor||'')}</div>
+    <div class="comp-meta">${escHtml((r.workPerformed||[]).join(', ')||r.category||'')}</div>
+    <div class="comp-meta">${r.odometer?Number(r.odometer).toLocaleString()+' mi | ':''}${r.totalCost!=null?'$'+Number(r.totalCost).toFixed(2):''}</div>
+    <button class="comp-btn secondary" style="margin-top:10px" onclick="editMaintenanceRecord('${escHtml(r._key)}')">Edit</button>
+  </div>`).join('');
+}
+function editMaintenanceRecord(key){
+  const r=complianceCache.maintenanceRecords?.[key];
+  if(!r) return;
+  setComplianceSideTab('maintenance');
+  document.getElementById('maint-key').value=key;
+  document.getElementById('maint-vehicle-input').value=r.vehicleId||'';
+  document.getElementById('maint-date-input').value=r.serviceDate||'';
+  document.getElementById('maint-vendor-input').value=r.vendor||'';
+  document.getElementById('maint-category-input').value=r.category||'routine';
+  document.getElementById('maint-odometer-input').value=r.odometer||'';
+  document.getElementById('maint-cost-input').value=r.totalCost||'';
+  document.getElementById('maint-work-input').value=(r.workPerformed||[]).join(', ');
+  document.getElementById('maint-notes-input').value=r.notes||'';
+}
+async function deleteMaintenanceRecord(){
+  const key=document.getElementById('maint-key')?.value;
+  if(!key){alert('Select a maintenance record first.');return;}
+  if(!isOwnerUser()){alert('Only the owner can delete maintenance records.');return;}
+  if(confirm('Delete this maintenance record?')){
+    await maintenanceRecordsRef().child(key).remove();
+    resetMaintenanceForm();
+  }
+}
+function renderComplianceCategorySettings(){
+  const wrap=document.getElementById('comp-category-settings');
+  if(!wrap) return;
+  const categories=Object.entries(complianceCache.categories||{}).sort((a,b)=>String(a[1].name||a[0]).localeCompare(String(b[1].name||b[0])));
+  wrap.innerHTML=categories.map(([key,c])=>`<div class="comp-upload-row">
+    <div><div class="comp-name">${escHtml(c.name||key)}</div><div class="comp-meta">${Number(c.leadDays||30)} day lead time</div></div>
+    <input type="number" class="comp-input" style="width:82px" value="${Number(c.leadDays||30)}" onchange="updateComplianceCategoryLead('${escHtml(key)}',this.value)"/>
+  </div>`).join('');
+}
+async function addComplianceCategory(){
+  const name=textTrim(document.getElementById('comp-new-category-name')?.value).toLowerCase().replace(/\s+/g,'_').replace(/[^a-z0-9_]/g,'');
+  const lead=Number(document.getElementById('comp-new-category-lead')?.value||30);
+  if(!name){alert('Enter a category name.');return;}
+  await complianceCategoriesRef().child(name).set({name,leadDays:lead||30,createdAt:Date.now(),createdBy:currentUserName()});
+  document.getElementById('comp-new-category-name').value='';
+  document.getElementById('comp-new-category-lead').value='30';
+}
+async function updateComplianceCategoryLead(key,value){
+  await complianceCategoriesRef().child(key).update({leadDays:Number(value)||30,updatedAt:Date.now(),updatedBy:currentUserName()});
+}
+function complianceExportRows(){
+  return complianceItemsArray(false).map(item=>({
+    status:item.status.label,
+    title:item.title||'',
+    entity:complianceEntityName(item.entityId),
+    category:item.category||'',
+    issuer:item.issuer||'',
+    issueDate:item.issueDate||'',
+    expiryDate:item.expiryDate||'',
+    expiryRule:item.expiryRule||'',
+    verified:item.verified?'yes':'no',
+    notes:item.notes||''
+  }));
+}
+function downloadTextFile(filename,content,type='text/plain'){
+  const blob=new Blob([content],{type});
+  const url=URL.createObjectURL(blob);
+  const a=document.createElement('a');
+  a.href=url;a.download=filename;document.body.appendChild(a);a.click();a.remove();
+  URL.revokeObjectURL(url);
+}
+function csvEscape(value){
+  const s=String(value==null?'':value);
+  return /[",\n]/.test(s)?`"${s.replace(/"/g,'""')}"`:s;
+}
+function downloadComplianceCsv(){
+  const rows=complianceExportRows();
+  const headers=['status','title','entity','category','issuer','issueDate','expiryDate','expiryRule','verified','notes'];
+  const csv=[headers.join(',')].concat(rows.map(r=>headers.map(h=>csvEscape(r[h])).join(','))).join('\n');
+  downloadTextFile(`ablecare-compliance-${dateStr(new Date())}.csv`,csv,'text/csv');
+}
+function downloadCompliancePacketIndex(){
+  const rows=complianceExportRows();
+  const lines=['AbleCare Mobility LLC - Compliance Packet Index',`Generated: ${new Date().toLocaleString()}`,'',...rows.map(r=>`${r.status} | ${r.entity} | ${r.title} | ${r.issuer || 'issuer TBD'} | issue ${r.issueDate || 'TBD'} | expiry ${r.expiryDate || 'TBD'}`)];
+  downloadTextFile(`ablecare-compliance-packet-index-${dateStr(new Date())}.txt`,lines.join('\n'));
+}
+function downloadComplianceItemIcs(){
+  const key=document.getElementById('comp-item-key')?.value;
+  const item=key?complianceCache.items?.[key]:null;
+  const title=textTrim(document.getElementById('comp-title-input')?.value)||(item?.title||'Compliance renewal');
+  const expiry=document.getElementById('comp-expiry-input')?.value||(item?.expiryDate||'');
+  if(!expiry){alert('Add an expiry date before creating a calendar file.');return;}
+  const dt=expiry.replace(/-/g,'');
+  const uid=`ablecare-compliance-${key||Date.now()}@ablecare`;
+  const ics=[
+    'BEGIN:VCALENDAR','VERSION:2.0','PRODID:-//AbleCare//Compliance Tracker//EN','BEGIN:VEVENT',
+    `UID:${uid}`,`DTSTAMP:${dateStr(new Date()).replace(/-/g,'')}T120000Z`,`DTSTART;VALUE=DATE:${dt}`,
+    `SUMMARY:Renew ${title.replace(/\n/g,' ')}`,
+    `DESCRIPTION:Compliance item for ${complianceEntityName(document.getElementById('comp-entity-input')?.value||item?.entityId)}.`,
+    'END:VEVENT','END:VCALENDAR'
+  ].join('\r\n');
+  downloadTextFile(`renew-${title.toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/^-|-$/g,'')}.ics`,ics,'text/calendar');
 }
 
 // ── HELPERS ──
