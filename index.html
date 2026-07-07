@@ -1525,7 +1525,7 @@ body[data-user-role="manager"] .owner-only-setting{display:none !important}
         <div class="comp-upload-box">
           <div class="section-title" style="margin-bottom:8px">Document Upload Queue</div>
           <input type="file" id="comp-upload-file" class="comp-input" style="width:100%" onchange="stageComplianceDocument(this.files[0])" accept=".pdf,image/*"/>
-          <div class="comp-small" style="margin-top:8px">Phase 1 stores file metadata for review. AI extraction and Storage upload are wired as the next phase.</div>
+          <div class="comp-small" style="margin-top:8px">Receipts are extracted right away, then held for your review before saving.</div>
           <div class="comp-upload-list" id="comp-upload-list"></div>
         </div>
 
@@ -9525,18 +9525,190 @@ function setComplianceSideTab(name){
     document.getElementById('comp-tab-'+tab)?.classList.toggle('secondary',tab!==name);
   });
 }
-function stageComplianceDocument(file){
+async function stageComplianceDocument(file){
   if(!file) return;
-  complianceDocDrafts.push({name:file.name,type:file.type||'unknown',size:file.size,uploadedAt:Date.now(),uploadedBy:currentUserName()});
+  const draft={name:file.name,type:file.type||'unknown',size:file.size,uploadedAt:Date.now(),uploadedBy:currentUserName(),status:'extracting',message:'Extracting receipt fields...'};
+  complianceDocDrafts.push(draft);
   const input=document.getElementById('comp-upload-file');
   if(input) input.value='';
   renderComplianceDocumentDrafts();
+  try{
+    const dataUrl=await readComplianceFileAsDataUrl(file);
+    draft.dataUrl=dataUrl;
+    const extraction=await extractComplianceDocumentWithAI(file,dataUrl);
+    draft.extractionResult=extraction;
+    draft.status='extracted';
+    draft.message=applyComplianceExtractionToForm(extraction,file);
+  }catch(e){
+    console.error('Compliance document extraction failed:',e);
+    draft.status='failed';
+    draft.message=e.message||'Extraction failed. Enter the record manually.';
+  }
+  renderComplianceDocumentDrafts();
+}
+
+function readComplianceFileAsDataUrl(file){
+  return new Promise((resolve,reject)=>{
+    const reader=new FileReader();
+    reader.onload=()=>resolve(String(reader.result||''));
+    reader.onerror=()=>reject(new Error('Could not read the selected file.'));
+    reader.readAsDataURL(file);
+  });
+}
+
+async function extractComplianceDocumentWithAI(file,dataUrl){
+  const entityContext=Object.entries(complianceCache.entities||{})
+    .filter(([,e])=>e.active!==false)
+    .map(([id,e])=>`${id}: ${e.name} (${e.type}) ${e.meta?.vin?`VIN ${e.meta.vin}`:''} ${e.meta?.year?`${e.meta.year} ${e.meta.makeModel||''}`:''}`)
+    .join('\n');
+  const prompt=`You are extracting AbleCare Mobility compliance and vehicle maintenance documents.
+
+The uploaded file is named: ${file.name}
+Known entities:
+${entityContext}
+
+Classify the document first. If it is a vehicle receipt, repair invoice, oil change receipt, inspection receipt, tire receipt, or maintenance paperwork, return maintenance_receipt.
+Extract only what is visible. Do not guess between identical Toyota Siennas unless VIN, plate, or year/model clearly identifies the vehicle.
+
+Return JSON only with this shape:
+{
+  "documentType": "maintenance_receipt",
+  "vendor": "",
+  "serviceDate": "YYYY-MM-DD or empty",
+  "vehicleHints": { "vin": "", "plate": "", "yearMakeModel": "" },
+  "odometer": null,
+  "workPerformed": [],
+  "category": "routine|repair|tires|lift_equipment|inspection|bodywork",
+  "totalCost": null,
+  "confidence": {},
+  "rawTextNotes": ""
+}
+
+If it is not maintenance, use documentType "compliance_document" and return title, issuer, personName, vehicleHints, issueDate, printedExpiryDate, category, confidence, rawTextNotes.`;
+
+  const content=[{type:'text',text:prompt}];
+  if(/^image\//i.test(file.type||'')){
+    content.push({type:'image_url',image_url:{url:dataUrl}});
+  }else{
+    throw new Error('Receipt extraction currently works for image uploads. Use JPG/PNG/phone photos.');
+  }
+
+  const response=await fetch('https://ablecare-ai.dovrapp.workers.dev',{
+    method:'POST',
+    headers:{'Content-Type':'application/json'},
+    body:JSON.stringify({
+      model:'gpt-4o-mini',
+      max_tokens:900,
+      messages:[{role:'user',content}]
+    })
+  });
+  const data=await response.json().catch(()=>({}));
+  if(!response.ok) throw new Error(data.error?.message||data.error||`AI extraction failed with HTTP ${response.status}`);
+  const text=String(data.choices?.[0]?.message?.content||'').replace(/```json|```/g,'').trim();
+  if(!text) throw new Error('AI did not return extraction text.');
+  try{
+    return JSON.parse(text);
+  }catch(e){
+    throw new Error('AI returned unreadable JSON. Try a clearer photo or enter it manually.');
+  }
+}
+
+function applyComplianceExtractionToForm(result,file){
+  const type=String(result?.documentType||'').toLowerCase();
+  if(type.includes('maintenance') || type.includes('receipt') || type.includes('repair')){
+    setComplianceSideTab('maintenance');
+    resetMaintenanceForm();
+    const vehicleId=matchComplianceVehicle(result.vehicleHints||{},result.rawTextNotes||'');
+    if(vehicleId) document.getElementById('maint-vehicle-input').value=vehicleId;
+    if(result.serviceDate) document.getElementById('maint-date-input').value=normalizeAiDate(result.serviceDate);
+    if(result.vendor) document.getElementById('maint-vendor-input').value=result.vendor;
+    if(result.category) document.getElementById('maint-category-input').value=normalizeMaintenanceCategory(result.category);
+    if(result.odometer!=null && result.odometer!=='') document.getElementById('maint-odometer-input').value=String(result.odometer).replace(/[^0-9.]/g,'');
+    if(result.totalCost!=null && result.totalCost!=='') document.getElementById('maint-cost-input').value=String(result.totalCost).replace(/[^0-9.]/g,'');
+    if(Array.isArray(result.workPerformed)) document.getElementById('maint-work-input').value=result.workPerformed.join(', ');
+    const notes=[
+      `Extracted from ${file.name}. Review before saving.`,
+      vehicleId?'': 'Vehicle was not certain. Pick the right van before saving.',
+      result.rawTextNotes||''
+    ].filter(Boolean).join('\n');
+    document.getElementById('maint-notes-input').value=notes;
+    return vehicleId?'Maintenance fields prefilled. Review and save.':'Maintenance fields prefilled. Pick the right van, then save.';
+  }
+
+  setComplianceSideTab('item');
+  resetComplianceForm();
+  const vehicleId=matchComplianceVehicle(result.vehicleHints||{},result.rawTextNotes||'');
+  const personId=matchCompliancePerson(result.personName||result.name||'');
+  if(vehicleId || personId) document.getElementById('comp-entity-input').value=vehicleId||personId;
+  if(result.title || result.certTitle || result.documentType) document.getElementById('comp-title-input').value=result.title||result.certTitle||result.documentType;
+  if(result.category && document.querySelector(`#comp-category-input option[value="${CSS.escape(result.category)}"]`)) document.getElementById('comp-category-input').value=result.category;
+  if(result.issuer) document.getElementById('comp-issuer-input').value=result.issuer;
+  if(result.issueDate) document.getElementById('comp-issue-input').value=normalizeAiDate(result.issueDate);
+  if(result.printedExpiryDate) document.getElementById('comp-expiry-input').value=normalizeAiDate(result.printedExpiryDate);
+  document.getElementById('comp-verified-input').value='no';
+  document.getElementById('comp-notes-input').value=`Extracted from ${file.name}. Review before saving.\n${result.rawTextNotes||''}`.trim();
+  return 'Compliance fields prefilled. Review and save.';
+}
+
+function normalizeAiDate(value){
+  const s=String(value||'').trim();
+  if(/^\d{4}-\d{2}-\d{2}$/.test(s)) return s;
+  const d=new Date(s);
+  return Number.isNaN(d.getTime())?'':dateStr(d);
+}
+
+function normalizeMaintenanceCategory(value){
+  const v=String(value||'').toLowerCase();
+  if(v.includes('tire')) return 'tires';
+  if(v.includes('lift')) return 'lift_equipment';
+  if(v.includes('inspect')) return 'inspection';
+  if(v.includes('body')) return 'bodywork';
+  if(v.includes('repair') || v.includes('brake') || v.includes('battery')) return 'repair';
+  return 'routine';
+}
+
+function matchComplianceVehicle(hints,rawText=''){
+  const haystack=[hints.vin,hints.plate,hints.yearMakeModel,rawText].map(v=>String(v||'').toLowerCase()).join(' ');
+  const vehicles=Object.entries(complianceCache.entities||{}).filter(([,e])=>e.type==='vehicle');
+  for(const [id,e] of vehicles){
+    const vin=String(e.meta?.vin||'').toLowerCase();
+    if(vin && haystack.includes(vin)) return id;
+  }
+  for(const [id,e] of vehicles){
+    const year=String(e.meta?.year||'').toLowerCase();
+    if(year && haystack.includes(year) && /sienna|toyota/.test(haystack)) return id;
+  }
+  return '';
+}
+
+function matchCompliancePerson(name){
+  const n=String(name||'').toLowerCase().trim();
+  if(!n) return '';
+  const people=Object.entries(complianceCache.entities||{}).filter(([,e])=>e.type==='person');
+  const exact=people.find(([,e])=>String(e.name||'').toLowerCase()===n);
+  if(exact) return exact[0];
+  const partial=people.find(([,e])=>{
+    const parts=String(e.name||'').toLowerCase().split(/\s+/).filter(Boolean);
+    return parts.some(p=>p.length>2 && n.includes(p));
+  });
+  return partial?.[0]||'';
 }
 function renderComplianceDocumentDrafts(){
   const list=document.getElementById('comp-upload-list');
   if(!list) return;
   if(!complianceDocDrafts.length){list.innerHTML='<div class="comp-small">No staged documents.</div>';return;}
-  list.innerHTML=complianceDocDrafts.map((d,i)=>`<div class="comp-upload-row"><div><div class="comp-name">${escHtml(d.name)}</div><div class="comp-meta">${escHtml(d.type)} | ${Math.round((d.size||0)/1024)} KB</div></div><button class="comp-btn secondary" onclick="removeStagedComplianceDocument(${i})">Remove</button></div>`).join('');
+  list.innerHTML=complianceDocDrafts.map((d,i)=>{
+    const color=d.status==='failed'?'#b91c1c':(d.status==='extracted'?'#15803d':'#64748b');
+    const label=d.status==='extracting'?'Extracting...':(d.status==='extracted'?'Extracted':'Needs manual entry');
+    return `<div class="comp-upload-row">
+      <div>
+        <div class="comp-name">${escHtml(d.name)}</div>
+        <div class="comp-meta">${escHtml(d.type)} | ${Math.round((d.size||0)/1024)} KB</div>
+        <div class="comp-meta" style="color:${color};font-weight:800">${escHtml(label)}${d.message?' - '+escHtml(d.message):''}</div>
+      </div>
+      <button class="comp-btn secondary" onclick="removeStagedComplianceDocument(${i})">Remove</button>
+    </div>`;
+  }).join('');
 }
 function removeStagedComplianceDocument(index){
   complianceDocDrafts.splice(index,1);
