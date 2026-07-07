@@ -975,6 +975,22 @@ body[data-user-role="manager"] .owner-only-setting{display:none !important}
 .mobile-report-stat{background:#fff;border:1px solid #e2e8f0;border-radius:18px;padding:14px}
 .mobile-report-stat-label{font-size:12px;color:#64748b;font-weight:700}
 .mobile-report-stat-value{font-size:22px;font-weight:900;color:#0f172a;margin-top:6px}
+.mobile-comp-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:8px;margin-bottom:12px}
+.mobile-comp-stat{background:#fff;border:1px solid #e2e8f0;border-radius:18px;padding:14px}
+.mobile-comp-stat strong{display:block;font-size:24px;color:#0f172a;line-height:1}
+.mobile-comp-stat span{display:block;margin-top:7px;font-size:11px;color:#64748b;font-weight:900;text-transform:uppercase;letter-spacing:.06em}
+.mobile-comp-row{background:#fff;border:1px solid #e2e8f0;border-radius:18px;padding:14px;margin-bottom:10px}
+.mobile-comp-row.expired{border-color:#fecaca;background:#fff7f7}
+.mobile-comp-row.urgent{border-color:#fed7aa;background:#fff7ed}
+.mobile-comp-row.renew{border-color:#fde68a;background:#fffbeb}
+.mobile-comp-row.current{border-color:#bbf7d0;background:#f0fdf4}
+.mobile-comp-row.unverified{border-color:#cbd5e1;background:#f8fafc}
+.mobile-comp-status{display:inline-flex;border-radius:999px;padding:5px 9px;font-size:10px;font-weight:900;text-transform:uppercase;margin-bottom:8px}
+.mobile-comp-status.expired{background:#fee2e2;color:#b91c1c}
+.mobile-comp-status.urgent{background:#ffedd5;color:#c2410c}
+.mobile-comp-status.renew{background:#fef9c3;color:#a16207}
+.mobile-comp-status.current{background:#dcfce7;color:#15803d}
+.mobile-comp-status.unverified{background:#e2e8f0;color:#475569}
 .mobile-bottom-bar{position:sticky;bottom:0;background:rgba(255,255,255,0.96);backdrop-filter:blur(10px);border-top:1px solid #e2e8f0;padding:12px 14px 14px}
 .mobile-bottom-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px}
 .mobile-bottom-primary,.mobile-bottom-secondary{border:none;border-radius:18px;padding:15px 10px;font-size:15px;font-weight:800;cursor:pointer}
@@ -1915,6 +1931,7 @@ body[data-user-role="manager"] .owner-only-setting{display:none !important}
             <button class="mobile-tab" onclick="switchMobilePanel('dispatch')" id="mobile-tab-dispatch">Dispatch</button>
             <button class="mobile-tab" onclick="switchMobilePanel('map')" id="mobile-tab-map">Live Map</button>
             <button class="mobile-tab" onclick="switchMobilePanel('quote')" id="mobile-tab-quote">Quote</button>
+            <button class="mobile-tab" onclick="switchMobilePanel('compliance')" id="mobile-tab-compliance">Compliance</button>
           </div>
 
           <div class="mobile-panel active" id="mobile-panel-rides">
@@ -2088,6 +2105,21 @@ body[data-user-role="manager"] .owner-only-setting{display:none !important}
               </div>
             </div>
             <div id="mobile-report-list"></div>
+          </div>
+
+          <div class="mobile-panel" id="mobile-panel-compliance">
+            <div class="mobile-section-title" style="margin-top:0">Compliance</div>
+            <div class="mobile-comp-grid">
+              <div class="mobile-comp-stat"><strong id="mobile-comp-expired">0</strong><span>Expired</span></div>
+              <div class="mobile-comp-stat"><strong id="mobile-comp-urgent">0</strong><span>Urgent</span></div>
+              <div class="mobile-comp-stat"><strong id="mobile-comp-renew">0</strong><span>Renew Soon</span></div>
+              <div class="mobile-comp-stat"><strong id="mobile-comp-current">0</strong><span>Current</span></div>
+            </div>
+            <button class="mobile-calc-btn" style="margin-bottom:12px" onclick="renderMobileDashboard()">Refresh Compliance</button>
+            <div class="mobile-section-title">Needs attention</div>
+            <div id="mobile-comp-list"></div>
+            <div class="mobile-section-title">Vehicle maintenance</div>
+            <div id="mobile-maint-list"></div>
           </div>
 
           <div class="mobile-panel" id="mobile-panel-settings">
@@ -5670,6 +5702,50 @@ function focusMobileDriver(name){
   },180);
 }
 
+function renderMobileCompliance(){
+  const list=document.getElementById('mobile-comp-list');
+  const maint=document.getElementById('mobile-maint-list');
+  if(!list || !maint) return;
+
+  const items=complianceItemsArray(false);
+  const counts={expired:0,urgent:0,renew:0,current:0};
+  items.forEach(item=>{ if(counts[item.status.key]!=null) counts[item.status.key]++; });
+  mobileSetText('mobile-comp-expired',counts.expired);
+  mobileSetText('mobile-comp-urgent',counts.urgent);
+  mobileSetText('mobile-comp-renew',counts.renew);
+  mobileSetText('mobile-comp-current',counts.current);
+
+  const attention=items
+    .filter(item=>['expired','urgent','renew','unverified'].includes(item.status.key))
+    .sort((a,b)=>a.status.rank-b.status.rank || String(a.expiryDate||'9999').localeCompare(String(b.expiryDate||'9999')))
+    .slice(0,12);
+
+  list.innerHTML=attention.length ? attention.map(item=>{
+    const statusClass=complianceStatusClass(item.status.key);
+    const days=daysUntilDate(item.expiryDate);
+    const daysText=days==null?'Expiry TBD':(days<0?`${Math.abs(days)} days past due`:`${days} days left`);
+    return `<div class="mobile-comp-row ${statusClass}">
+      <div class="mobile-comp-status ${statusClass}">${mobileEsc(item.status.label)}</div>
+      <div style="font-size:16px;font-weight:900;color:#0f172a">${mobileEsc(item.title||'Compliance item')}</div>
+      <div class="mobile-subtle">${mobileEsc(complianceEntityName(item.entityId))} - ${mobileEsc(item.category||'')}</div>
+      <div class="mobile-subtle">${mobileEsc(complianceDateLabel(item.expiryDate))} - ${mobileEsc(daysText)}</div>
+      ${!item.verified?'<div class="mobile-subtle" style="color:#b45309;font-weight:800">Review required</div>':''}
+    </div>`;
+  }).join('') : mobileEmpty('No compliance items need attention.');
+
+  const maintenance=Object.entries(complianceCache.maintenanceRecords||{})
+    .map(([key,r])=>({...r,_key:key}))
+    .sort((a,b)=>String(b.serviceDate||'').localeCompare(String(a.serviceDate||'')))
+    .slice(0,8);
+
+  maint.innerHTML=maintenance.length ? maintenance.map(r=>`<div class="mobile-comp-row">
+    <div style="font-size:16px;font-weight:900;color:#0f172a">${mobileEsc(complianceEntityName(r.vehicleId))}</div>
+    <div class="mobile-subtle">${mobileEsc(complianceDateLabel(r.serviceDate))} - ${mobileEsc(r.vendor||'Vendor TBD')}</div>
+    <div class="mobile-subtle">${mobileEsc((r.workPerformed||[]).join(', ')||r.category||'Service')}</div>
+    <div class="mobile-subtle">${r.odometer?Number(r.odometer).toLocaleString()+' mi - ':''}${r.totalCost!=null?'$'+Number(r.totalCost).toFixed(2):''}</div>
+  </div>`).join('') : mobileEmpty('No maintenance records yet.');
+}
+
 async function renderMobileDashboard(){
   const shell=document.getElementById('screen-mobile');
   if(!shell) return;
@@ -5686,13 +5762,15 @@ async function renderMobileDashboard(){
   }
 
   try{
-    const [drivers,rideSnap,locSnap,shiftSnap,settingsSnap,logSnap]=await Promise.all([
+    await ensureComplianceSeedData();
+    const [drivers,rideSnap,locSnap,shiftSnap,settingsSnap,logSnap,compSnap]=await Promise.all([
       loadDrivers(),
       ridesRef().once('value'),
       locsRef().once('value'),
       shiftsRef().once('value'),
       settingsRef().once('value'),
-      rideLogRef().once('value')
+      rideLogRef().once('value'),
+      complianceRef().once('value')
     ]);
 
     allRidesCache=rideSnap.val()||{};
@@ -5700,6 +5778,14 @@ async function renderMobileDashboard(){
     const shifts=shiftSnap.val()||{};
     const settings=settingsSnap.val()||{};
     const logs=logSnap.val()||{};
+    const comp=compSnap.val()||{};
+    complianceCache={
+      entities:comp.entities||{},
+      categories:comp.categories||{},
+      items:comp.items||{},
+      documents:comp.documents||{},
+      maintenanceRecords:comp.maintenanceRecords||{}
+    };
     mobileLocCache=locs;
     mobileDriversCache=drivers;
     const allRides=Object.entries(allRidesCache).map(([k,v])=>({...v,_key:k}));
@@ -5752,6 +5838,7 @@ async function renderMobileDashboard(){
     }).join('');
     document.getElementById('mobile-map-driver-list').innerHTML=mapRows||mobileEmpty('No driver location data yet.');
     if(mobilePanel==='map') setTimeout(()=>updateMobileMap(drivers,locs),0);
+    renderMobileCompliance();
 
     const range=getPPRange(ppOffset);
     let totalMs=0;
