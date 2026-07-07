@@ -1459,7 +1459,7 @@ body[data-user-role="manager"] .owner-only-setting{display:none !important}
     <div class="comp-toolbar">
       <div>
         <div class="comp-title">Compliance Tracker</div>
-        <div class="comp-subtitle">Driver, vehicle, company, and maintenance records sorted by expiration risk.</div>
+        <div class="comp-subtitle">Driver and van compliance records sorted by expiration risk.</div>
       </div>
       <div class="comp-actions">
         <button class="comp-btn secondary" onclick="downloadComplianceCsv()">Export CSV</button>
@@ -1483,7 +1483,7 @@ body[data-user-role="manager"] .owner-only-setting{display:none !important}
           <button class="comp-filter" id="comp-filter-urgent" onclick="setComplianceStatusFilter('urgent')">Urgent</button>
           <button class="comp-filter" id="comp-filter-renew" onclick="setComplianceStatusFilter('renew')">Renew Soon</button>
           <button class="comp-filter" id="comp-filter-unverified" onclick="setComplianceStatusFilter('unverified')">Unverified</button>
-          <select id="comp-entity-filter" class="comp-select" onchange="renderCompliance()"><option value="">All entities</option></select>
+          <select id="comp-entity-filter" class="comp-select" onchange="renderCompliance()"><option value="">All drivers & vans</option></select>
           <select id="comp-category-filter" class="comp-select" onchange="renderCompliance()"><option value="">All categories</option></select>
         </div>
         <div class="comp-table-wrap">
@@ -9239,8 +9239,7 @@ const COMPLIANCE_SEED_CATEGORIES={
   medical:{name:'medical',leadDays:30},
   license:{name:'license',leadDays:30},
   insurance:{name:'insurance',leadDays:90},
-  vehicle:{name:'vehicle',leadDays:30},
-  business:{name:'business',leadDays:30}
+  vehicle:{name:'vehicle',leadDays:30}
 };
 const COMPLIANCE_SEED_ENTITIES={
   david:{type:'person',name:'David Rappaport',meta:{role:'Owner'},active:true},
@@ -9250,18 +9249,20 @@ const COMPLIANCE_SEED_ENTITIES={
   joel:{type:'person',name:'Joel',meta:{role:'Driver'},active:true},
   sienna2018:{type:'vehicle',name:'2018 Toyota Sienna',meta:{year:'2018',makeModel:'Toyota Sienna 3.5L',vin:'5TDKZ3DC1JS956851'},active:true},
   sienna2019:{type:'vehicle',name:'2019 Toyota Sienna',meta:{year:'2019',makeModel:'Toyota Sienna 3.5L',vin:'5TDKZ3DCXKS998551'},active:true},
-  sienna2020:{type:'vehicle',name:'2020 Toyota Sienna',meta:{year:'2020',makeModel:'Toyota Sienna 3.5L',vin:'5TDZZ3DC0LS043693'},active:true},
-  ablecare:{type:'company',name:'AbleCare Mobility LLC',meta:{ein:'87-3019065',npi:'1720810542'},active:true}
+  sienna2020:{type:'vehicle',name:'2020 Toyota Sienna',meta:{year:'2020',makeModel:'Toyota Sienna 3.5L',vin:'5TDZZ3DC0LS043693'},active:true}
 };
 const COMPLIANCE_SEED_ITEMS={
   raul_qstraint_2026:{entityId:'raul',category:'training',title:"Q'STRAINT Wheelchair Securement - Monthly Webinar",issuer:"Q'STRAINT Training Academy",issueDate:'2026-06-16',expiryDate:'2027-06-16',expiryRule:'issue+12mo',verified:true,notes:'Seeded from compliance spec. Attendance-only cert; one-year rule applied.',archived:false},
   gerson_qstraint_missing:{entityId:'gerson',category:'training',title:"Q'STRAINT Wheelchair Securement - Missing",issuer:"Q'STRAINT Training Academy",issueDate:'',expiryDate:'2026-07-06',expiryRule:'manual',verified:false,notes:'Missing/overdue seed item. Upload or enter current certificate.',archived:false},
   joel_qstraint_missing:{entityId:'joel',category:'training',title:"Q'STRAINT Wheelchair Securement - Missing",issuer:"Q'STRAINT Training Academy",issueDate:'',expiryDate:'2026-07-06',expiryRule:'manual',verified:false,notes:'Missing/overdue seed item. Upload or enter current certificate.',archived:false},
-  chesapeake_workers_comp:{entityId:'ablecare',category:'insurance',title:"Chesapeake Employers Workers' Comp",issuer:'Chesapeake Employers',issueDate:'',expiryDate:'',expiryRule:'manual',verified:false,notes:'Policy #8010969 per spec. Renewal date TBD.',archived:false},
-  maif_auto_policy:{entityId:'ablecare',category:'insurance',title:'MAIF Auto Liability Policy',issuer:'MAIF',issueDate:'',expiryDate:'',expiryRule:'manual',verified:false,notes:'Renewal date TBD. Add policy number and dates when obtained.',archived:false},
-  sam_pending:{entityId:'ablecare',category:'business',title:'SAM.gov Registration',issuer:'SAM.gov',issueDate:'',expiryDate:'2026-07-06',expiryRule:'manual',verified:false,notes:'Pending for VA contract.',archived:false},
-  wmatc_pending:{entityId:'ablecare',category:'business',title:'WMATC Authority',issuer:'WMATC',issueDate:'',expiryDate:'2026-07-06',expiryRule:'manual',verified:false,notes:'Pending.',archived:false}
+  sienna2018_registration:{entityId:'sienna2018',category:'vehicle',title:'Vehicle Registration',issuer:'Maryland MVA',issueDate:'',expiryDate:'',expiryRule:'manual',verified:false,notes:'Add current registration expiration date and document photo.',archived:false},
+  sienna2019_registration:{entityId:'sienna2019',category:'vehicle',title:'Vehicle Registration',issuer:'Maryland MVA',issueDate:'',expiryDate:'',expiryRule:'manual',verified:false,notes:'Add current registration expiration date and document photo.',archived:false},
+  sienna2020_registration:{entityId:'sienna2020',category:'vehicle',title:'Vehicle Registration',issuer:'Maryland MVA',issueDate:'',expiryDate:'',expiryRule:'manual',verified:false,notes:'Add current registration expiration date and document photo.',archived:false},
+  sienna2018_inspection:{entityId:'sienna2018',category:'vehicle',title:'Vehicle Inspection',issuer:'Maryland inspection station',issueDate:'',expiryDate:'',expiryRule:'manual',verified:false,notes:'Add latest inspection/service document.',archived:false},
+  sienna2019_inspection:{entityId:'sienna2019',category:'vehicle',title:'Vehicle Inspection',issuer:'Maryland inspection station',issueDate:'',expiryDate:'',expiryRule:'manual',verified:false,notes:'Add latest inspection/service document.',archived:false},
+  sienna2020_inspection:{entityId:'sienna2020',category:'vehicle',title:'Vehicle Inspection',issuer:'Maryland inspection station',issueDate:'',expiryDate:'',expiryRule:'manual',verified:false,notes:'Add latest inspection/service document.',archived:false}
 };
+const COMPLIANCE_PRIMARY_ENTITY_TYPES=new Set(['person','vehicle']);
 
 async function ensureComplianceSeedData(){
   if(!firebaseReady || !db) return;
@@ -9270,7 +9271,9 @@ async function ensureComplianceSeedData(){
   const updates={};
   if(!data.categories) Object.entries(COMPLIANCE_SEED_CATEGORIES).forEach(([k,v])=>updates[`categories/${k}`]=v);
   if(!data.entities) Object.entries(COMPLIANCE_SEED_ENTITIES).forEach(([k,v])=>updates[`entities/${k}`]=v);
-  if(!data.items) Object.entries(COMPLIANCE_SEED_ITEMS).forEach(([k,v])=>updates[`items/${k}`]={...v,createdAt:Date.now(),createdBy:'seed'});
+  Object.entries(COMPLIANCE_SEED_CATEGORIES).forEach(([k,v])=>{ if(!data.categories?.[k]) updates[`categories/${k}`]=v; });
+  Object.entries(COMPLIANCE_SEED_ENTITIES).forEach(([k,v])=>{ if(!data.entities?.[k]) updates[`entities/${k}`]=v; });
+  Object.entries(COMPLIANCE_SEED_ITEMS).forEach(([k,v])=>{ if(!data.items?.[k]) updates[`items/${k}`]={...v,createdAt:Date.now(),createdBy:'seed'}; });
   if(Object.keys(updates).length) await complianceRef().update(updates);
 }
 
@@ -9345,7 +9348,13 @@ function complianceDateLabel(value){
   return value ? fmtDate(value) : 'TBD';
 }
 function complianceItemsArray(includeArchived=false){
-  return Object.entries(complianceCache.items||{}).map(([key,item])=>({...item,_key:key,status:complianceItemStatus(item)})).filter(item=>includeArchived||!item.archived);
+  return Object.entries(complianceCache.items||{})
+    .map(([key,item])=>({...item,_key:key,status:complianceItemStatus(item)}))
+    .filter(item=>includeArchived||!item.archived)
+    .filter(item=>{
+      const type=complianceCache.entities?.[item.entityId]?.type;
+      return COMPLIANCE_PRIMARY_ENTITY_TYPES.has(type);
+    });
 }
 function renderCompliance(){
   renderComplianceSelects();
@@ -9355,15 +9364,15 @@ function renderCompliance(){
   renderComplianceDocumentDrafts();
 }
 function renderComplianceSelects(){
-  const entities=Object.entries(complianceCache.entities||{}).filter(([,e])=>e.active!==false).sort((a,b)=>String(a[1].name).localeCompare(String(b[1].name)));
-  const categories=Object.entries(complianceCache.categories||{}).sort((a,b)=>String(a[1].name||a[0]).localeCompare(String(b[1].name||b[0])));
+  const entities=Object.entries(complianceCache.entities||{}).filter(([,e])=>e.active!==false && COMPLIANCE_PRIMARY_ENTITY_TYPES.has(e.type)).sort((a,b)=>String(a[1].name).localeCompare(String(b[1].name)));
+  const categories=Object.entries(complianceCache.categories||{}).filter(([k])=>k!=='business').sort((a,b)=>String(a[1].name||a[0]).localeCompare(String(b[1].name||b[0])));
   const entityOptions=entities.map(([k,e])=>`<option value="${escHtml(k)}">${escHtml(e.name||k)}</option>`).join('');
   const categoryOptions=categories.map(([k,c])=>`<option value="${escHtml(k)}">${escHtml(c.name||k)}</option>`).join('');
   ['comp-entity-input','comp-entity-filter'].forEach(id=>{
     const el=document.getElementById(id);
     if(!el) return;
     const current=el.value;
-    el.innerHTML=(id.includes('filter')?'<option value="">All entities</option>':'')+entityOptions;
+    el.innerHTML=(id.includes('filter')?'<option value="">All drivers & vans</option>':'')+entityOptions;
     if(current) el.value=current;
   });
   ['comp-category-input','comp-category-filter'].forEach(id=>{
@@ -9602,7 +9611,7 @@ async function deleteMaintenanceRecord(){
 function renderComplianceCategorySettings(){
   const wrap=document.getElementById('comp-category-settings');
   if(!wrap) return;
-  const categories=Object.entries(complianceCache.categories||{}).sort((a,b)=>String(a[1].name||a[0]).localeCompare(String(b[1].name||b[0])));
+  const categories=Object.entries(complianceCache.categories||{}).filter(([key])=>key!=='business').sort((a,b)=>String(a[1].name||a[0]).localeCompare(String(b[1].name||b[0])));
   wrap.innerHTML=categories.map(([key,c])=>`<div class="comp-upload-row">
     <div><div class="comp-name">${escHtml(c.name||key)}</div><div class="comp-meta">${Number(c.leadDays||30)} day lead time</div></div>
     <input type="number" class="comp-input" style="width:82px" value="${Number(c.leadDays||30)}" onchange="updateComplianceCategoryLead('${escHtml(key)}',this.value)"/>
