@@ -2116,6 +2116,66 @@ body[data-user-role="manager"] .owner-only-setting{display:none !important}
               <div class="mobile-comp-stat"><strong id="mobile-comp-current">0</strong><span>Current</span></div>
             </div>
             <button class="mobile-calc-btn" style="margin-bottom:12px" onclick="renderMobileDashboard()">Refresh Compliance</button>
+            <div class="mobile-comp-row" style="margin-bottom:16px">
+              <div class="mobile-section-title" style="margin-top:0">Add document</div>
+              <input type="file" class="mobile-input" id="mobile-comp-upload-file" onchange="mobileStageComplianceDocument(this.files[0])" accept="image/*"/>
+              <div class="mobile-subtle" id="mobile-comp-upload-status">Upload a receipt, registration, inspection, or training photo.</div>
+              <div id="mobile-maint-form" style="display:none;margin-top:12px">
+                <div class="mobile-input-label">Vehicle</div>
+                <select class="mobile-select" id="mobile-maint-vehicle-input"></select>
+                <div class="mobile-input-label">Service Date</div>
+                <input type="date" class="mobile-input" id="mobile-maint-date-input"/>
+                <div class="mobile-input-label">Vendor</div>
+                <input class="mobile-input" id="mobile-maint-vendor-input" placeholder="Vendor"/>
+                <div class="mobile-input-label">Category</div>
+                <select class="mobile-select" id="mobile-maint-category-input">
+                  <option value="routine">Routine</option>
+                  <option value="repair">Repair</option>
+                  <option value="tires">Tires</option>
+                  <option value="lift_equipment">Lift equipment</option>
+                  <option value="inspection">Inspection</option>
+                  <option value="bodywork">Bodywork</option>
+                </select>
+                <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+                  <div>
+                    <div class="mobile-input-label">Odometer</div>
+                    <input type="number" class="mobile-input" id="mobile-maint-odometer-input"/>
+                  </div>
+                  <div>
+                    <div class="mobile-input-label">Total Cost</div>
+                    <input type="number" step="0.01" class="mobile-input" id="mobile-maint-cost-input"/>
+                  </div>
+                </div>
+                <div class="mobile-input-label">Work Performed</div>
+                <input class="mobile-input" id="mobile-maint-work-input" placeholder="oil change, tires, inspection"/>
+                <div class="mobile-input-label">Notes</div>
+                <textarea class="mobile-input" id="mobile-maint-notes-input" rows="3"></textarea>
+                <button class="mobile-calc-btn" onclick="saveMobileMaintenanceRecord()">Save Maintenance</button>
+              </div>
+              <div id="mobile-comp-doc-form" style="display:none;margin-top:12px">
+                <div class="mobile-input-label">Title</div>
+                <input class="mobile-input" id="mobile-comp-title-input" placeholder="Vehicle registration"/>
+                <div class="mobile-input-label">Driver or Van</div>
+                <select class="mobile-select" id="mobile-comp-entity-input"></select>
+                <div class="mobile-input-label">Category</div>
+                <select class="mobile-select" id="mobile-comp-category-input"></select>
+                <div class="mobile-input-label">Issuer</div>
+                <input class="mobile-input" id="mobile-comp-issuer-input" placeholder="Issuer"/>
+                <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+                  <div>
+                    <div class="mobile-input-label">Issue Date</div>
+                    <input type="date" class="mobile-input" id="mobile-comp-issue-input"/>
+                  </div>
+                  <div>
+                    <div class="mobile-input-label">Expiry Date</div>
+                    <input type="date" class="mobile-input" id="mobile-comp-expiry-input"/>
+                  </div>
+                </div>
+                <div class="mobile-input-label">Notes</div>
+                <textarea class="mobile-input" id="mobile-comp-notes-input" rows="3"></textarea>
+                <button class="mobile-calc-btn" onclick="saveMobileComplianceItem()">Save Document</button>
+              </div>
+            </div>
             <div class="mobile-section-title">Needs attention</div>
             <div id="mobile-comp-list"></div>
             <div class="mobile-section-title">Vehicle maintenance</div>
@@ -5706,6 +5766,7 @@ function renderMobileCompliance(){
   const list=document.getElementById('mobile-comp-list');
   const maint=document.getElementById('mobile-maint-list');
   if(!list || !maint) return;
+  renderMobileComplianceSelects();
 
   const items=complianceItemsArray(false);
   const counts={expired:0,urgent:0,renew:0,current:0};
@@ -5744,6 +5805,159 @@ function renderMobileCompliance(){
     <div class="mobile-subtle">${mobileEsc((r.workPerformed||[]).join(', ')||r.category||'Service')}</div>
     <div class="mobile-subtle">${r.odometer?Number(r.odometer).toLocaleString()+' mi - ':''}${r.totalCost!=null?'$'+Number(r.totalCost).toFixed(2):''}</div>
   </div>`).join('') : mobileEmpty('No maintenance records yet.');
+}
+
+function renderMobileComplianceSelects(){
+  const entities=Object.entries(complianceCache.entities||{})
+    .filter(([,e])=>e.active!==false && COMPLIANCE_PRIMARY_ENTITY_TYPES.has(e.type))
+    .sort((a,b)=>String(a[1].name||a[0]).localeCompare(String(b[1].name||b[0])));
+  const vehicles=entities.filter(([,e])=>e.type==='vehicle');
+  const categories=Object.entries(complianceCache.categories||{})
+    .filter(([k])=>k!=='business')
+    .sort((a,b)=>String(a[1].name||a[0]).localeCompare(String(b[1].name||b[0])));
+  setMobileSelectOptions('mobile-maint-vehicle-input',vehicles);
+  setMobileSelectOptions('mobile-comp-entity-input',entities);
+  setMobileSelectOptions('mobile-comp-category-input',categories);
+}
+
+function setMobileSelectOptions(id,rows){
+  const el=document.getElementById(id);
+  if(!el) return;
+  const current=el.value;
+  el.innerHTML=rows.map(([key,val])=>`<option value="${mobileEsc(key)}">${mobileEsc(val.name||key)}</option>`).join('');
+  if(current) el.value=current;
+}
+
+function setMobileComplianceUploadStatus(message,tone='muted'){
+  const el=document.getElementById('mobile-comp-upload-status');
+  if(!el) return;
+  const color=tone==='error'?'#b91c1c':(tone==='success'?'#15803d':'#64748b');
+  el.style.color=color;
+  el.style.fontWeight=tone==='muted'?'600':'900';
+  el.textContent=message;
+}
+
+async function mobileStageComplianceDocument(file){
+  if(!file) return;
+  const input=document.getElementById('mobile-comp-upload-file');
+  if(input) input.value='';
+  document.getElementById('mobile-maint-form').style.display='none';
+  document.getElementById('mobile-comp-doc-form').style.display='none';
+  setMobileComplianceUploadStatus('Extracting document fields...', 'muted');
+  const startCount=complianceDocDrafts.length;
+  await stageComplianceDocument(file);
+  const draft=complianceDocDrafts[complianceDocDrafts.length-1];
+  if(!draft || complianceDocDrafts.length===startCount){
+    setMobileComplianceUploadStatus('No document was staged. Try the photo again.', 'error');
+    return;
+  }
+  if(draft.status==='failed'){
+    setMobileComplianceUploadStatus(draft.message||'Extraction failed. Try a clearer photo.', 'error');
+    return;
+  }
+  const docType=String(draft.extractionResult?.documentType||'').toLowerCase();
+  if(docType.includes('maintenance') || docType.includes('receipt') || docType.includes('repair')){
+    copyDesktopMaintenanceToMobile();
+    document.getElementById('mobile-maint-form').style.display='block';
+    setMobileComplianceUploadStatus(draft.message||'Maintenance fields filled. Review and save.', 'success');
+  }else{
+    copyDesktopComplianceToMobile();
+    document.getElementById('mobile-comp-doc-form').style.display='block';
+    setMobileComplianceUploadStatus(draft.message||'Document fields filled. Review and save.', 'success');
+  }
+}
+
+function copyDesktopMaintenanceToMobile(){
+  renderMobileComplianceSelects();
+  [
+    ['maint-vehicle-input','mobile-maint-vehicle-input'],
+    ['maint-date-input','mobile-maint-date-input'],
+    ['maint-vendor-input','mobile-maint-vendor-input'],
+    ['maint-category-input','mobile-maint-category-input'],
+    ['maint-odometer-input','mobile-maint-odometer-input'],
+    ['maint-cost-input','mobile-maint-cost-input'],
+    ['maint-work-input','mobile-maint-work-input'],
+    ['maint-notes-input','mobile-maint-notes-input']
+  ].forEach(([from,to])=>{
+    const src=document.getElementById(from);
+    const dest=document.getElementById(to);
+    if(src && dest) dest.value=src.value||'';
+  });
+}
+
+function copyDesktopComplianceToMobile(){
+  renderMobileComplianceSelects();
+  [
+    ['comp-title-input','mobile-comp-title-input'],
+    ['comp-entity-input','mobile-comp-entity-input'],
+    ['comp-category-input','mobile-comp-category-input'],
+    ['comp-issuer-input','mobile-comp-issuer-input'],
+    ['comp-issue-input','mobile-comp-issue-input'],
+    ['comp-expiry-input','mobile-comp-expiry-input'],
+    ['comp-notes-input','mobile-comp-notes-input']
+  ].forEach(([from,to])=>{
+    const src=document.getElementById(from);
+    const dest=document.getElementById(to);
+    if(src && dest) dest.value=src.value||'';
+  });
+}
+
+async function saveMobileMaintenanceRecord(){
+  const vehicleId=document.getElementById('mobile-maint-vehicle-input')?.value||'';
+  const serviceDate=document.getElementById('mobile-maint-date-input')?.value||'';
+  const vendor=textTrim(document.getElementById('mobile-maint-vendor-input')?.value);
+  if(!vehicleId || !serviceDate || !vendor){alert('Vehicle, service date, and vendor are required.');return;}
+  const key=maintenanceRecordsRef().push().key;
+  const record={
+    vehicleId,serviceDate,vendor,
+    category:document.getElementById('mobile-maint-category-input')?.value||'routine',
+    odometer:document.getElementById('mobile-maint-odometer-input')?.value?Number(document.getElementById('mobile-maint-odometer-input').value):null,
+    totalCost:document.getElementById('mobile-maint-cost-input')?.value?Number(document.getElementById('mobile-maint-cost-input').value):null,
+    workPerformed:textTrim(document.getElementById('mobile-maint-work-input')?.value).split(',').map(s=>s.trim()).filter(Boolean),
+    notes:textTrim(document.getElementById('mobile-maint-notes-input')?.value),
+    documentIds:[],
+    createdAt:Date.now(),
+    createdBy:currentUserName(),
+    updatedAt:Date.now(),
+    updatedBy:currentUserName()
+  };
+  await maintenanceRecordsRef().child(key).set(record);
+  complianceCache.maintenanceRecords={...(complianceCache.maintenanceRecords||{}),[key]:record};
+  document.getElementById('mobile-maint-form').style.display='none';
+  setMobileComplianceUploadStatus('Maintenance saved.', 'success');
+  renderMobileCompliance();
+  renderMaintenanceRecords();
+  showToast('Maintenance record saved.');
+}
+
+async function saveMobileComplianceItem(){
+  const title=textTrim(document.getElementById('mobile-comp-title-input')?.value);
+  const entityId=document.getElementById('mobile-comp-entity-input')?.value||'';
+  const category=document.getElementById('mobile-comp-category-input')?.value||'';
+  if(!title || !entityId || !category){alert('Title, driver/van, and category are required.');return;}
+  const key=complianceItemsRef().push().key;
+  const item={
+    entityId,category,title,
+    issuer:textTrim(document.getElementById('mobile-comp-issuer-input')?.value),
+    issueDate:document.getElementById('mobile-comp-issue-input')?.value||'',
+    expiryDate:document.getElementById('mobile-comp-expiry-input')?.value||'',
+    expiryRule:'printed',
+    verified:false,
+    archived:false,
+    notes:textTrim(document.getElementById('mobile-comp-notes-input')?.value),
+    documentIds:[],
+    createdAt:Date.now(),
+    createdBy:currentUserName(),
+    updatedAt:Date.now(),
+    updatedBy:currentUserName()
+  };
+  await complianceItemsRef().child(key).set(item);
+  complianceCache.items={...(complianceCache.items||{}),[key]:item};
+  document.getElementById('mobile-comp-doc-form').style.display='none';
+  setMobileComplianceUploadStatus('Document saved for review.', 'success');
+  renderMobileCompliance();
+  renderComplianceItems();
+  showToast('Compliance document saved.');
 }
 
 async function renderMobileDashboard(){
