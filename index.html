@@ -409,6 +409,8 @@ body[data-user-role="manager"] .owner-only-setting{display:none !important}
 .ride-block-client{font-size:11px;opacity:0.75;margin-top:2px}
 .ride-block-route{font-size:10px;line-height:1.25;margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .ride-block-route strong{font-weight:800;opacity:0.9}
+.ride-block-routes{min-width:0;display:grid;align-content:center;gap:5px}
+.ride-block-actions{margin-top:6px;padding-top:6px;border-top:1px solid rgba(0,0,0,0.07);display:flex;gap:4px}
 .ride-block-tags{display:flex;gap:4px;flex-wrap:wrap;margin-top:4px}
 .ride-block-tag{font-size:10px;font-weight:700;padding:2px 6px;border-radius:4px;background:rgba(255,255,255,0.6)}
 .ride-block-unpaid{font-size:10px;font-weight:800;color:#d97706;margin-top:3px}
@@ -754,6 +756,10 @@ body[data-user-role="manager"] .owner-only-setting{display:none !important}
   #screen-rides .ride-block-tags{gap:4px;margin-top:5px}
   #screen-rides .ride-block-tag{font-size:10px;padding:2px 6px}
   #screen-rides .ride-block > div[onclick][style*="border-top"]{display:flex !important}
+  #screen-rides .ride-block{max-width:760px;width:min(760px,100%);display:grid;grid-template-columns:190px minmax(0,1fr);column-gap:16px;align-items:center;padding:8px 12px}
+  #screen-rides .ride-block-routes{border-left:1px solid rgba(0,0,0,0.1);padding-left:14px}
+  #screen-rides .ride-block-route{font-size:11px;margin:0}
+  #screen-rides .ride-block-actions{grid-column:1 / -1;margin-top:5px;padding-top:5px}
 
   #optimizer-modal > div{max-width:1240px !important;margin:10px auto !important;height:calc(100vh - 20px) !important;border-radius:14px !important}
   #optimizer-modal > div > div:first-child{padding:18px 24px 6px !important}
@@ -5495,14 +5501,13 @@ async function renderDayView(){
       const statusBadge = r.status ? statusBadgeHtml(r.status) : '';
       const editAction=isLogged?`openLogEdit('${r._key}')`:`openRideModal('${r._key}')`;
       html+=`<div class="ride-block ${cls}" onclick="event.stopPropagation();${editAction}">
+        <div class="ride-block-summary">
         ${isLogged?`<div style="font-size:10px;font-weight:800;color:#16a34a;margin-bottom:4px">Logged in Reports</div>`:''}
         ${isReturn?`<div style="font-size:10px;font-weight:800;color:#16a34a;margin-bottom:4px">↩ RETURN RIDE — ${r.returnOfClient||r.client||''} ${r.returnOfTime?'(orig. '+fmtTime12(r.returnOfTime)+')':''}</div>`:''}
         ${statusBadge}
         <div class="ride-block-time">${r.time?fmtTime12(r.time):'Awaiting call...'}</div>
         <div class="ride-block-title">${r.facility||r.client||'—'}</div>
         ${r.client&&r.facility?`<div class="ride-block-client">${r.client}</div>`:''}
-        <div class="ride-block-route">📍 <strong>Pickup:</strong> ${escHtml(r.pickup||'Not entered')}</div>
-        <div class="ride-block-route">🏥 <strong>Dropoff:</strong> ${escHtml(r.dropoff||'Not entered')}</div>
         <div class="ride-block-tags">
           <span class="ride-block-tag">${r.ridetype==='str'?'🛏 Str':'♿ WC'}</span>
           <span class="ride-block-tag">${r.triptype==='rt'?'RT':'1 Way'}</span>
@@ -5514,10 +5519,15 @@ async function renderDayView(){
           ${r.wait==='yes'?`<span class="ride-block-tag" style="background:#fff7ed;color:#c2410c">⏳ Wait</span>`:''}
           ${r.estimatedMiles!=null&&r.estimatedMiles!==''?`<span class="ride-block-tag" style="background:#f0fdf4;color:#16a34a;font-weight:800">🗺 Client ${r.estimatedMiles} mi</span>`:''}
         </div>
+        </div>
+        <div class="ride-block-routes">
+          <div class="ride-block-route">📍 <strong>Pickup:</strong> ${escHtml(r.pickup||'Not entered')}</div>
+          <div class="ride-block-route">🏥 <strong>Dropoff:</strong> ${escHtml(r.dropoff||'Not entered')}</div>
+        </div>
         ${!isReturn?returnRequestSummaryHtml(r):''}
         ${isUnpaid&&!r.status?`<div class="ride-block-unpaid">💰 Unpaid — follow up</div>`:''}
         ${r.price&&r.paid==='yes'?`<div style="font-size:10px;color:#16a34a;font-weight:700;margin-top:3px">✓ Paid ${r.price}</div>`:''}
-        <div onclick="event.stopPropagation()" style="margin-top:6px;padding-top:6px;border-top:1px solid rgba(0,0,0,0.07);display:flex;gap:4px">
+        <div class="ride-block-actions" onclick="event.stopPropagation()">
           ${r.triptype==='rt'&&!isReturn?`<button class="add-return-btn" style="flex:1" onclick="event.stopPropagation();openReturnModal('${r._key}')">↩ Return</button>`:''}
           <button class="add-return-btn" style="flex:1;background:#f0f4ff;border-color:#6b82a8;color:#6b82a8" onclick="event.stopPropagation();logRideFromCalendar('${r._key}')">📋 Log</button>
         </div>
