@@ -2462,6 +2462,17 @@ body[data-user-role="manager"] .owner-only-setting{display:none !important}
     </div>
   </div>
 </div>
+<div class="modal-overlay" id="ride-view-modal">
+  <div class="modal-box" style="max-width:620px;width:min(620px,94vw)">
+    <div class="modal-title">Ride Details</div>
+    <div class="modal-driver" id="ride-view-subtitle"></div>
+    <div id="ride-view-content"></div>
+    <div class="modal-actions">
+      <button class="modal-save" id="ride-view-edit-btn">Edit Ride</button>
+      <button class="modal-cancel" onclick="closeRideView()">Close</button>
+    </div>
+  </div>
+</div>
 <div class="modal-overlay" id="edit-modal">
   <div class="modal-box">
     <div class="modal-title">Edit Shift</div>
@@ -5710,7 +5721,7 @@ function mobileRideCard(r){
     </div>
     <div class="mobile-ride-actions">
       ${canReturn?`<button class="mobile-action-btn light" style="background:#dcfce7;color:#15803d" onclick="openReturnModal('${key}')">Return</button>`:''}
-      <button class="mobile-action-btn dark" onclick="openRideModal('${key}')">Open</button>
+      <button class="mobile-action-btn dark" onclick="openRideView('${key}')">Open</button>
     </div>
   </div>`;
 }
@@ -7225,6 +7236,22 @@ function updateRideToggles(){
   if(payCc) payCc.classList.toggle('active',rideToggles.paymethod==='cc');
   if(payInv) payInv.classList.toggle('active',rideToggles.paymethod==='invoice');
 }
+async function openRideView(key){
+  const snap=await ridesRef().child(key).once('value');
+  const r=snap.val();
+  if(!r){ showToast('Ride not found.'); return; }
+  const status=r.status?statusLabelText(r.status):'Not started';
+  const type=`${r.ridetype==='str'?'Stretcher':'Wheelchair'} · ${r.triptype==='rt'?'Round trip':'One way'}`;
+  const row=(label,value)=>`<div style="padding:10px 0;border-bottom:1px solid #e8eef4"><div style="font-size:10px;font-weight:900;letter-spacing:.08em;color:#64748b;text-transform:uppercase">${label}</div><div style="font-size:14px;font-weight:700;color:#0d1b2a;margin-top:3px;line-height:1.35">${mobileEsc(value||'Not entered')}</div></div>`;
+  document.getElementById('ride-view-subtitle').textContent=(r.facility||'Ride')+(r.client?` — ${r.client}`:'');
+  document.getElementById('ride-view-content').innerHTML=
+    `<div style="display:grid;grid-template-columns:1fr 1fr;gap:0 16px">${row('Pickup time',r.time?fmtTime12(r.time):'Not entered')}${row('Status',status)}${row('Ride type',type)}${row('Driver',r.driver||'Unassigned')}</div>`+
+    `<div style="margin-top:12px;border-top:1px solid #e8eef4">${row('Pickup address',r.pickup)}${row('Dropoff address',r.dropoff)}${r.notes?row('Notes',r.notes):''}</div>`;
+  document.getElementById('ride-view-edit-btn').onclick=()=>{ closeRideView(); openRideModal(key); };
+  document.getElementById('ride-view-modal').style.display='flex';
+}
+function closeRideView(){ document.getElementById('ride-view-modal').style.display='none'; }
+
 async function openRideModal(key,defaultDate){
   key=key||null;rideEditKey=key;
   const drivers=await loadDrivers();
