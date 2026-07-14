@@ -946,19 +946,20 @@ body[data-user-role="manager"] .owner-only-setting{display:none !important}
 .mobile-soft-btn,.mobile-action-btn,.mobile-driver-open,.mobile-opt-btn,.mobile-calc-btn{border:none;border-radius:16px;font-weight:800;cursor:pointer}
 .mobile-soft-btn{padding:13px 10px;font-size:14px;background:#f8fafc;color:#334155;border:1px solid #e2e8f0}
 .mobile-ride-card.unassigned{background:#fffbeb;border-color:#fcd34d}
+.mobile-ride-card{padding:9px 10px;border-radius:14px;margin-bottom:6px}
 .mobile-ride-top{display:flex;align-items:flex-start;justify-content:space-between;gap:10px}
-.mobile-ride-time{color:#0891b2;font-size:15px;font-weight:800;margin-bottom:4px}
-.mobile-ride-facility{font-size:18px;font-weight:800;color:#0f172a}
-.mobile-ride-client{margin-top:2px;color:#475569;font-size:14px}
-.mobile-status{border-radius:999px;padding:6px 10px;font-size:11px;font-weight:800;white-space:nowrap}
+.mobile-ride-time{color:#0891b2;font-size:13px;font-weight:800;margin-bottom:2px}
+.mobile-ride-facility{font-size:16px;font-weight:800;color:#0f172a}
+.mobile-ride-client{margin-top:1px;color:#475569;font-size:12px}
+.mobile-status{border-radius:999px;padding:4px 7px;font-size:10px;font-weight:800;white-space:nowrap}
 .mobile-status.assigned{background:#dcfce7;color:#15803d}
 .mobile-status.unassigned{background:#fef3c7;color:#b45309}
 .mobile-status.warning{background:#fee2e2;color:#b91c1c}
-.mobile-ride-tags{display:flex;flex-wrap:wrap;gap:6px;margin-top:12px}
-.mobile-tag{background:#f1f5f9;color:#334155;padding:6px 10px;border-radius:999px;font-size:12px;font-weight:700}
-.mobile-ride-actions{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:14px}
-.mobile-action-btn.dark{background:#0f172a;color:#fff;padding:13px 10px;font-size:14px}
-.mobile-action-btn.light{background:#e2e8f0;color:#334155;padding:13px 10px;font-size:14px}
+.mobile-ride-tags{display:flex;flex-wrap:wrap;gap:4px;margin-top:6px}
+.mobile-tag{background:#f1f5f9;color:#334155;padding:3px 6px;border-radius:999px;font-size:10px;font-weight:700}
+.mobile-ride-actions{display:flex;gap:6px;margin-top:7px}
+.mobile-action-btn.dark{background:#0f172a;color:#fff;padding:7px 9px;font-size:11px;flex:1}
+.mobile-action-btn.light{background:#e2e8f0;color:#334155;padding:7px 9px;font-size:11px;flex:1}
 .mobile-driver-row{display:flex;justify-content:space-between;align-items:center;gap:10px}
 .mobile-driver-name{font-size:15px;font-weight:800}
 .mobile-driver-detail{font-size:12px;color:#64748b;margin-top:3px}
@@ -5687,12 +5688,11 @@ function mobileRideCard(r){
   const key=mobileKey(r._key);
   const rideType=r.ridetype==='str'?'Stretcher':'Wheelchair';
   const tripType=r.triptype==='1way'?'1 Way':'RT';
-  const sourceInfo=getRideEntrySourceInfo(r);
-  const unpaid=r.price&&r.paid!=='yes';
   const time=r.time?fmtTime12(r.time):'Awaiting call';
   const title=r.facility||r.client||'Ride';
   const isReturn=!!r.returnOf;
-  const canReturn=r.triptype==='rt'&&!isReturn;
+  const isCancelled=['cancelled','noshow','cancelled_pickup'].includes(r.status||'');
+  const canReturn=r.triptype==='rt'&&!isReturn&&!isCancelled;
   return `<div class="mobile-card mobile-ride-card ${assigned?'':'unassigned'}">
     <div class="mobile-ride-top">
       <div>
@@ -5705,18 +5705,12 @@ function mobileRideCard(r){
     <div class="mobile-ride-tags">
       <div class="mobile-tag">${mobileEsc(rideType)}</div>
       <div class="mobile-tag">${mobileEsc(tripType)}</div>
-      <div class="mobile-tag" style="${sourceInfo.mobileStyle}">${mobileEsc(sourceInfo.label)}</div>
       ${r.driver?`<div class="mobile-tag">${mobileEsc(r.driver)}${r.helper?' + '+mobileEsc(r.helper):''}</div>`:''}
-      ${r.van?`<div class="mobile-tag">Van #${mobileEsc(r.van)}</div>`:''}
-      ${unpaid?`<div class="mobile-tag" style="background:#fef3c7;color:#b45309">Unpaid</div>`:''}
-      ${r.status?`<div class="mobile-tag">${mobileEsc(r.status)}</div>`:''}
-      ${(r.updatedBy||r.createdBy)?`<div class="mobile-tag">By ${mobileEsc(r.updatedBy||r.createdBy)}</div>`:''}
-      ${!isReturn?returnRequestSummaryHtml(r,'mobile'):''}
+      ${isCancelled?`<div class="mobile-tag" style="background:#fee2e2;color:#b91c1c">${mobileEsc(r.status)}</div>`:''}
     </div>
     <div class="mobile-ride-actions">
       ${canReturn?`<button class="mobile-action-btn light" style="background:#dcfce7;color:#15803d" onclick="openReturnModal('${key}')">Return</button>`:''}
-      <button class="mobile-action-btn dark" onclick="openRideModal('${key}')">Open Ride</button>
-      <button class="mobile-action-btn light" onclick="openRideModal('${key}')">Edit</button>
+      <button class="mobile-action-btn dark" onclick="openRideModal('${key}')">Open</button>
     </div>
   </div>`;
 }
