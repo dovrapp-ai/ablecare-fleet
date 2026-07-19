@@ -5956,7 +5956,7 @@ function reminderChannelLabel(item){
 }
 
 function reminderRideTitle(ride){
-  const time=ride.time||'';
+  const time=fmtTime12(ride.time||'');
   const facility=String(ride.facility||'').trim();
   const client=String(ride.client||'').trim();
   const name = facility && client && facility.toLowerCase() !== client.toLowerCase()
