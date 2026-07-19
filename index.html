@@ -5828,19 +5828,34 @@ function reminderStatusPill(label, ok, detail){
   return `<div style="background:${bg};color:${color};border-radius:999px;padding:7px 10px;font-size:12px;font-weight:800">${escHtml(label)}${detail?` <span style="font-weight:600;opacity:.85">${escHtml(detail)}</span>`:''}</div>`;
 }
 
+function reminderBackendOfflineMessage(){
+  return 'Reminder backend is not connected on this page. Open the local server dashboard or deploy server.js so Outlook and RingCentral API routes can run.';
+}
+
+async function reminderApi(path, options){
+  const res=await fetch(path, options);
+  const contentType=res.headers.get('content-type')||'';
+  if(!contentType.toLowerCase().includes('application/json')){
+    throw new Error(reminderBackendOfflineMessage());
+  }
+  const data=await res.json();
+  if(!res.ok||!data.ok)throw new Error(data.error||`Reminder API returned HTTP ${res.status}.`);
+  return data;
+}
+
 async function loadReminderIntegrationStatus(){
   const el=document.getElementById('reminder-status');
   if(!el)return;
   el.innerHTML=reminderStatusPill('Checking RingCentral', false, '')+reminderStatusPill('Checking Outlook', false, '');
   const checks=await Promise.allSettled([
-    fetch('/api/ringcentral/status').then(r=>r.json().then(data=>({ok:r.ok&&data.ok,data}))),
-    fetch('/api/outlook/status').then(r=>r.json().then(data=>({ok:r.ok&&data.ok,data}))),
+    reminderApi('/api/ringcentral/status').then(data=>({ok:true,data})),
+    reminderApi('/api/outlook/status').then(data=>({ok:true,data})),
   ]);
-  const rc=checks[0].status==='fulfilled'?checks[0].value:{ok:false,data:{error:'Unavailable'}};
-  const outlook=checks[1].status==='fulfilled'?checks[1].value:{ok:false,data:{error:'Unavailable'}};
+  const rc=checks[0].status==='fulfilled'?checks[0].value:{ok:false,data:{error:checks[0].reason?.message||'Unavailable'}};
+  const outlook=checks[1].status==='fulfilled'?checks[1].value:{ok:false,data:{error:checks[1].reason?.message||'Unavailable'}};
   el.innerHTML=[
     reminderStatusPill('RingCentral SMS', rc.ok, rc.ok?(rc.data.extension?.name||'connected'):(rc.data.error||'not connected')),
-    reminderStatusPill('Outlook Email', outlook.ok, outlook.ok?(outlook.data.user?.mail||outlook.data.sender||'connected'):(outlook.data.error||'not configured')),
+    reminderStatusPill('Outlook Email', outlook.ok, outlook.ok?(outlook.data.mailbox?.displayName||outlook.data.sender||'connected'):(outlook.data.error||'not configured')),
   ].join('');
 }
 
@@ -5872,9 +5887,7 @@ async function loadReminders(){
   list.innerHTML='<div style="background:#fff;border-radius:14px;padding:18px;color:#6b82a8;border:1px solid #e8eef4">Loading reminders...</div>';
   summary.textContent='';
   try{
-    const res=await fetch(`/api/reminders/preview?date=${encodeURIComponent(date)}`);
-    const data=await res.json();
-    if(!res.ok||!data.ok)throw new Error(data.error||'Could not load reminders.');
+    const data=await reminderApi(`/api/reminders/preview?date=${encodeURIComponent(date)}`);
     summary.textContent=`${data.count} ride${data.count===1?'':'s'} for ${date}. ${data.readyCount} ready, ${data.sentCount} already sent.`;
     if(!data.candidates.length){
       list.innerHTML='<div style="background:#fff;border-radius:14px;padding:18px;color:#6b82a8;border:1px solid #e8eef4">No active rides found for this date.</div>';
@@ -5911,13 +5924,11 @@ async function sendRideReminder(rideKey){
   const date=document.getElementById('reminder-date')?.value||reminderDefaultDate();
   if(!confirm('Send this reminder now?'))return;
   try{
-    const res=await fetch('/api/reminders/send',{
+    await reminderApi('/api/reminders/send',{
       method:'POST',
       headers:{'Content-Type':'application/json'},
       body:JSON.stringify({date,rideKey})
     });
-    const data=await res.json();
-    if(!res.ok||!data.ok)throw new Error(data.error||'Could not send reminder.');
     await loadReminders();
   }catch(e){
     alert(e.message);
@@ -5926,21 +5937,25 @@ async function sendRideReminder(rideKey){
 
 async function sendAllReadyReminders(){
   const date=document.getElementById('reminder-date')?.value||reminderDefaultDate();
-  const res=await fetch(`/api/reminders/preview?date=${encodeURIComponent(date)}`);
-  const data=await res.json();
-  if(!res.ok||!data.ok){alert(data.error||'Could not load reminders.');return;}
+  let data;
+  try{
+    data=await reminderApi(`/api/reminders/preview?date=${encodeURIComponent(date)}`);
+  }catch(e){
+    alert(e.message);
+    return;
+  }
   const ready=(data.candidates||[]).filter(item=>!item.sent&&!item.blockedReason);
   if(!ready.length){alert('No ready reminders to send.');return;}
   if(!confirm(`Send ${ready.length} ready reminder${ready.length===1?'':'s'} now?`))return;
   for(const item of ready){
-    const sendRes=await fetch('/api/reminders/send',{
-      method:'POST',
-      headers:{'Content-Type':'application/json'},
-      body:JSON.stringify({date,rideKey:item.rideKey})
-    });
-    if(!sendRes.ok){
-      const err=await sendRes.json().catch(()=>({error:'Send failed.'}));
-      alert(err.error||'A reminder failed to send.');
+    try{
+      await reminderApi('/api/reminders/send',{
+        method:'POST',
+        headers:{'Content-Type':'application/json'},
+        body:JSON.stringify({date,rideKey:item.rideKey})
+      });
+    }catch(e){
+      alert(e.message||'A reminder failed to send.');
       break;
     }
   }
@@ -5950,13 +5965,11 @@ async function sendAllReadyReminders(){
 async function dryRunReminderBatch(){
   const date=document.getElementById('reminder-date')?.value||reminderDefaultDate();
   try{
-    const res=await fetch('/api/reminders/run',{
+    const data=await reminderApi('/api/reminders/run',{
       method:'POST',
       headers:{'Content-Type':'application/json'},
       body:JSON.stringify({date,dryRun:true})
     });
-    const data=await res.json();
-    if(!res.ok||!data.ok)throw new Error(data.error||'Dry run failed.');
     const run=data.run||{};
     alert(`Dry run for ${date}: ${run.candidateCount||0} candidates, ${run.readyCount||0} ready, ${run.blocked?.length||0} blocked. Nothing was sent.`);
     await loadReminders();
