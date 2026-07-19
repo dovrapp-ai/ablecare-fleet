@@ -3805,6 +3805,13 @@ function rideSourceTagHtml(ride){
   return `<span class="ride-block-tag" style="${info.badgeStyle}">${escHtml(info.label)}</span>`;
 }
 
+function rideCreatedByTagHtml(ride){
+  const sourceInfo = getRideEntrySourceInfo(ride);
+  if(sourceInfo.key !== 'manual') return '';
+  const name = ride?.updatedBy || ride?.createdBy || '';
+  return name ? `<span class="ride-block-tag" style="background:#f8fafc;color:#475569">By ${escHtml(name)}</span>` : '';
+}
+
 function extractImportedRide(record){
   const ride = record?.ride || {};
   const facility = inferFacilityNameFromImportContext(
@@ -5873,7 +5880,7 @@ async function renderDayView(){
         ${rideSourceTagHtml(r)}
         ${r.status?`<span class="ride-block-tag" style="background:#e0f2fe;color:#0369a1;font-weight:800">App: ${statusLabelText(r.status)}</span>`:''}
         <span class="ride-block-tag" style="${r.driver?'':'color:#f59e0b'}">${driver}</span>
-        ${(r.updatedBy||r.createdBy)?`<span class="ride-block-tag" style="background:#f8fafc;color:#475569">By ${escHtml(r.updatedBy||r.createdBy)}</span>`:''}
+        ${rideCreatedByTagHtml(r)}
         ${r.van?`<span class="ride-block-tag">Van #${escHtml(r.van)}</span>`:''}
         ${r.wait==='yes'?`<span class="ride-block-tag" style="background:#fff7ed;color:#c2410c">Wait</span>`:''}
         ${r.estimatedMiles!=null&&r.estimatedMiles!==''?`<span class="ride-block-tag" style="background:#f0fdf4;color:#16a34a;font-weight:800">${escHtml(r.estimatedMiles)} mi</span>`:''}
@@ -6296,7 +6303,7 @@ function mobileRideCard(r){
       ${r.van?`<div class="mobile-tag">Van #${mobileEsc(r.van)}</div>`:''}
       ${unpaid?`<div class="mobile-tag" style="background:#fef3c7;color:#b45309">Unpaid</div>`:''}
       ${r.status?`<div class="mobile-tag">${mobileEsc(r.status)}</div>`:''}
-      ${(r.updatedBy||r.createdBy)?`<div class="mobile-tag">By ${mobileEsc(r.updatedBy||r.createdBy)}</div>`:''}
+      ${getRideEntrySourceInfo(r).key === 'manual' && (r.updatedBy||r.createdBy)?`<div class="mobile-tag">By ${mobileEsc(r.updatedBy||r.createdBy)}</div>`:''}
       ${!isReturn?returnRequestSummaryHtml(r,'mobile'):''}
     </div>
     <div class="mobile-ride-actions">
