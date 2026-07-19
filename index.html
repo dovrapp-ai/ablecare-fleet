@@ -991,6 +991,15 @@ body[data-user-role="manager"] .owner-only-setting{display:none !important}
 .mobile-comp-status.renew{background:#fef9c3;color:#a16207}
 .mobile-comp-status.current{background:#dcfce7;color:#15803d}
 .mobile-comp-status.unverified{background:#e2e8f0;color:#475569}
+.mobile-reminder-card{border-radius:18px;padding:13px 14px;margin-bottom:10px;background:#fff;border:1px solid #e2e8f0;box-shadow:0 2px 10px rgba(15,23,42,.05)}
+.mobile-reminder-top{display:flex;justify-content:space-between;gap:10px;align-items:flex-start}
+.mobile-reminder-title{font-size:15px;font-weight:900;color:#0f172a;line-height:1.2}
+.mobile-reminder-route{font-size:12px;color:#64748b;margin-top:4px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.mobile-reminder-meta{display:flex;gap:7px;flex-wrap:wrap;margin-top:9px;font-size:12px;color:#334155;font-weight:800}
+.mobile-reminder-message{font-size:12px;color:#334155;background:#f8fafc;border:1px solid #e2e8f0;border-radius:12px;padding:10px;margin-top:10px;line-height:1.4}
+.mobile-reminder-contact{display:grid;grid-template-columns:92px 1fr auto;gap:7px;margin-top:9px;align-items:center;background:#fff7ed;border:1px solid #fed7aa;border-radius:12px;padding:8px}
+.mobile-reminder-contact select,.mobile-reminder-contact input{width:100%;border:1px solid #fdba74;border-radius:9px;padding:9px 8px;font-size:13px;background:#fff;color:#0f172a}
+.mobile-reminder-contact button{border:none;border-radius:10px;background:#0ea5e9;color:#fff;font-weight:900;padding:10px 11px;font-size:12px}
 .mobile-bottom-bar{position:sticky;bottom:0;background:rgba(255,255,255,0.96);backdrop-filter:blur(10px);border-top:1px solid #e2e8f0;padding:12px 14px 14px}
 .mobile-bottom-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px}
 .mobile-bottom-primary,.mobile-bottom-secondary{border:none;border-radius:18px;padding:15px 10px;font-size:15px;font-weight:800;cursor:pointer}
@@ -2157,6 +2166,7 @@ body[data-user-role="manager"] .owner-only-setting{display:none !important}
         <div class="mobile-content">
           <div class="mobile-tabs">
             <button class="mobile-tab active" onclick="switchMobilePanel('rides')" id="mobile-tab-rides">Rides</button>
+            <button class="mobile-tab" onclick="switchMobilePanel('reminders')" id="mobile-tab-reminders">Reminders</button>
             <button class="mobile-tab" onclick="switchMobilePanel('reports')" id="mobile-tab-reports">Reports</button>
             <button class="mobile-tab" onclick="switchMobilePanel('hours')" id="mobile-tab-hours">Hours</button>
             <button class="mobile-tab" onclick="switchMobilePanel('dispatch')" id="mobile-tab-dispatch">Dispatch</button>
@@ -2195,6 +2205,26 @@ body[data-user-role="manager"] .owner-only-setting{display:none !important}
 
             <div class="mobile-section-title">Assigned rides</div>
             <div id="mobile-assigned-list"></div>
+          </div>
+
+          <div class="mobile-panel" id="mobile-panel-reminders">
+            <div class="mobile-card">
+              <div style="font-size:15px;font-weight:800">Ride Reminders</div>
+              <div class="mobile-subtle">Preview, edit contact, and send reminders.</div>
+              <div class="mobile-date-jump">
+                <div>
+                  <div class="mobile-input-label">Reminder Date</div>
+                  <input class="mobile-date-input" id="mobile-reminder-date" type="date" />
+                </div>
+                <button class="mobile-top-btn primary" style="padding:12px 14px" onclick="mobileLoadReminders()">Load</button>
+              </div>
+              <div class="mobile-quick-actions">
+                <button class="mobile-soft-btn" onclick="mobileSendAllReadyReminders()">Send Ready</button>
+                <button class="mobile-soft-btn" onclick="mobileDryRunReminders()">Dry Run</button>
+              </div>
+              <div id="mobile-reminder-summary" class="mobile-subtle" style="margin-top:10px"></div>
+            </div>
+            <div id="mobile-reminder-list"></div>
           </div>
 
           <div class="mobile-panel" id="mobile-panel-drivers">
@@ -6087,6 +6117,170 @@ async function saveReminderContact(rideKey){
   }
 }
 
+function mobileReminderContactInputId(rideKey){
+  return `mobile-reminder-contact-${String(rideKey||'').replace(/[^a-zA-Z0-9_-]/g,'_')}`;
+}
+
+function mobileReminderMethodInputId(rideKey){
+  return `mobile-reminder-method-${String(rideKey||'').replace(/[^a-zA-Z0-9_-]/g,'_')}`;
+}
+
+function mobileReminderDateValue(){
+  const input=document.getElementById('mobile-reminder-date');
+  if(input && input.value) return input.value;
+  const value=dateStr(selectedDate || new Date());
+  if(input) input.value=value;
+  return value;
+}
+
+function mobileReminderContactEditor(item){
+  if(item.sent) return '';
+  const methodId=mobileReminderMethodInputId(item.rideKey);
+  const inputId=mobileReminderContactInputId(item.rideKey);
+  const currentMethod=item.channel==='email'?'email':(item.channel==='sms'?'sms':'sms');
+  const currentValue=currentMethod==='email' ? (item.toEmail||'') : (item.toPhone||'');
+  return `<div class="mobile-reminder-contact">
+    <select id="${escHtml(methodId)}">
+      <option value="sms"${currentMethod==='sms'?' selected':''}>Text</option>
+      <option value="email"${currentMethod==='email'?' selected':''}>Email</option>
+    </select>
+    <input id="${escHtml(inputId)}" value="${escHtml(currentValue)}" placeholder="Phone or email">
+    <button onclick="mobileSaveReminderContact(${jsString(item.rideKey)})">Save</button>
+  </div>`;
+}
+
+function mobileReminderCard(item){
+  const ride=item.ride||{};
+  const badge=item.sent
+    ? '<span class="mobile-status assigned">Sent</span>'
+    : item.blockedReason
+      ? '<span class="mobile-status warning">Needs review</span>'
+      : '<span class="mobile-status assigned">Ready</span>';
+  const sendDisabled=item.sent||item.blockedReason?'disabled':'';
+  return `<div class="mobile-reminder-card">
+    <div class="mobile-reminder-top">
+      <div>
+        <div class="mobile-reminder-title">${escHtml(reminderRideTitle(ride))}</div>
+        <div class="mobile-reminder-route">${escHtml(ride.pickup||'No pickup saved')}</div>
+      </div>
+      ${badge}
+    </div>
+    <div class="mobile-reminder-meta">
+      <span>${escHtml(reminderChannelLabel(item))}</span>
+      ${ride.driver?`<span>Driver: ${escHtml(ride.driver)}</span>`:''}
+      ${item.blockedReason?`<span style="color:#c2410c">${escHtml(item.blockedReason)}</span>`:''}
+    </div>
+    ${mobileReminderContactEditor(item)}
+    <div class="mobile-reminder-message">${escHtml(item.text)}</div>
+    <div class="mobile-ride-actions">
+      <button class="mobile-action-btn dark" ${sendDisabled} onclick="mobileSendRideReminder(${jsString(item.rideKey)})">${item.sent?'Sent':'Send'}</button>
+    </div>
+  </div>`;
+}
+
+async function mobileLoadReminders(){
+  const date=mobileReminderDateValue();
+  const list=document.getElementById('mobile-reminder-list');
+  const summary=document.getElementById('mobile-reminder-summary');
+  if(!list || !summary) return;
+  list.innerHTML=mobileEmpty('Loading reminders...');
+  summary.textContent='';
+  try{
+    const data=await reminderApi(`/api/reminders/preview?date=${encodeURIComponent(date)}`);
+    summary.textContent=`${data.count} ride${data.count===1?'':'s'}. ${data.readyCount} ready, ${data.sentCount} sent.`;
+    list.innerHTML=data.candidates?.length ? data.candidates.map(mobileReminderCard).join('') : mobileEmpty('No active rides found for this date.');
+  }catch(e){
+    list.innerHTML=mobileEmpty(e.message||'Could not load reminders.');
+  }
+}
+
+async function mobileSaveReminderContact(rideKey){
+  const input=document.getElementById(mobileReminderContactInputId(rideKey));
+  const methodEl=document.getElementById(mobileReminderMethodInputId(rideKey));
+  const raw=String(input?.value||'').trim();
+  const method=String(methodEl?.value||'sms').toLowerCase();
+  if(!raw){alert(method==='email'?'Enter an email address.':'Enter a phone number.');return;}
+  if(!firebaseReady || !db){alert('Database is still loading. Try again in a moment.');return;}
+  const isEmail=/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(raw);
+  const phoneDigits=raw.replace(/\D/g,'');
+  const patch={
+    updatedAt:Date.now(),
+    updatedBy:currentUserName(),
+    updatedByRole:currentUserRole(),
+    missingReminderContact:null,
+    reviewFlag:null,
+    contactSource:'manual-mobile-reminder-entry'
+  };
+  if(method==='email'){
+    if(!isEmail){alert('Enter a valid email address.');return;}
+    patch.clientEmail=raw;
+    patch.reminderMethod='email';
+    patch.communicationSource='manual_email';
+  }else{
+    if(phoneDigits.length<10){alert('Enter a valid phone number.');return;}
+    patch.clientPhone=phoneDigits.length===11 && phoneDigits.startsWith('1') ? phoneDigits.slice(1) : phoneDigits;
+    patch.reminderMethod='sms';
+    patch.communicationSource='ringcentral_sms';
+  }
+  try{
+    await ridesRef().child(rideKey).update(patch);
+    await mobileLoadReminders();
+  }catch(e){
+    alert(e.message||'Could not save reminder contact.');
+  }
+}
+
+async function mobileSendRideReminder(rideKey){
+  const date=mobileReminderDateValue();
+  if(!confirm('Send this reminder now?')) return;
+  try{
+    await reminderApi('/api/reminders/send',{
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({date,rideKey})
+    });
+    await mobileLoadReminders();
+  }catch(e){
+    alert(e.message||'Reminder failed.');
+  }
+}
+
+async function mobileSendAllReadyReminders(){
+  const date=mobileReminderDateValue();
+  try{
+    const data=await reminderApi(`/api/reminders/preview?date=${encodeURIComponent(date)}`);
+    const ready=(data.candidates||[]).filter(item=>!item.sent&&!item.blockedReason);
+    if(!ready.length){alert('No ready reminders to send.');return;}
+    if(!confirm(`Send ${ready.length} ready reminder${ready.length===1?'':'s'} now?`)) return;
+    for(const item of ready){
+      await reminderApi('/api/reminders/send',{
+        method:'POST',
+        headers:{'Content-Type':'application/json'},
+        body:JSON.stringify({date,rideKey:item.rideKey})
+      });
+    }
+    await mobileLoadReminders();
+  }catch(e){
+    alert(e.message||'Reminder send failed.');
+  }
+}
+
+async function mobileDryRunReminders(){
+  const date=mobileReminderDateValue();
+  try{
+    const data=await reminderApi('/api/reminders/run',{
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({date,dryRun:true})
+    });
+    const run=data.run||{};
+    alert(`Dry run complete. Ready: ${run.readyCount||0}. Would send: ${run.sentCount||0}. Failed/blocked: ${run.failedCount||0}.`);
+    await mobileLoadReminders();
+  }catch(e){
+    alert(e.message||'Dry run failed.');
+  }
+}
+
 async function sendRideReminder(rideKey){
   const date=document.getElementById('reminder-date')?.value||reminderDefaultDate();
   if(!confirm('Send this reminder now?'))return;
@@ -6183,6 +6377,9 @@ function switchMobilePanel(name){
     loadQuotePricing();
     renderQuoteRateInputs();
   }
+  if(name==='reminders'){
+    mobileLoadReminders();
+  }
   renderMobileDashboard();
 }
 
@@ -6201,9 +6398,12 @@ function mobileSelectDate(ds){
   if(!ds)return;
   selectedDate=new Date(ds+'T12:00:00');
   miniMonthOffset=(selectedDate.getFullYear()-new Date().getFullYear())*12+(selectedDate.getMonth()-new Date().getMonth());
+  const reminderDate=document.getElementById('mobile-reminder-date');
+  if(reminderDate) reminderDate.value=ds;
   renderMobileDashboard();
   renderDayView();
   renderMiniCal();
+  if(mobilePanel==='reminders') mobileLoadReminders();
 }
 
 function renderMobileWeekStrip(rideDates){
