@@ -3125,6 +3125,51 @@ function normalizePhoneValue(value){
   return String(value || '').trim();
 }
 
+function cleanImportedEmail(value){
+  const email=String(value||'').trim();
+  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)?email:'';
+}
+
+function extractImportContactDetails(item, facility){
+  const text=[
+    item?.rawEmail,
+    item?.rawMessage,
+    item?.message,
+    item?.body,
+    item?.bodyPreview,
+    item?.notes,
+    item?.subject
+  ].filter(Boolean).join('\n');
+  const emails=[...text.matchAll(/[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}/gi)]
+    .map(match=>cleanImportedEmail(match[0]))
+    .filter(Boolean);
+  const phones=[];
+  for(const match of text.matchAll(/(?:\+?1[\s.-]?)?\(?\d{3}\)?[\s.-]?\d{3}[\s.-]?\d{4}/g)){
+    const value=match[0];
+    const index=match.index || 0;
+    const before=text[index-1] || '';
+    const after=text[index + value.length] || '';
+    const nearby=text.slice(Math.max(0,index-8), Math.min(text.length,index+value.length+8));
+    if(/[\d-]/.test(before) || /[\d-]/.test(after)) continue;
+    if((nearby.match(/\d/g)||[]).length > 11) continue;
+    phones.push(value.trim());
+  }
+  const lowerFacility=String(facility||'').toLowerCase();
+  const facilityEmail=emails.find(email=>/waap|mdwaap|facility|scheduler|clinic|pace/i.test(email)) || '';
+  const clientEmail=emails.find(email=>email!==facilityEmail) || '';
+  const facilityPhone=phones.find(phone=>{
+    const pos=text.indexOf(phone);
+    const near=text.slice(Math.max(0,pos-12), pos).toLowerCase();
+    return /(^|\b)(p|phone|office|main)[:\s]*$/.test(near) && !/(^|\b)(c|cell)[:\s]*$/.test(near);
+  }) || '';
+  const clientPhone=phones.find(phone=>{
+    const pos=text.indexOf(phone);
+    const near=text.slice(Math.max(0,pos-18), pos).toLowerCase();
+    return /(^|\b)(c|cell|mobile|client phone|participant phone|phone)[:\s()]*$/.test(near) && phone!==facilityPhone;
+  }) || (!lowerFacility || lowerFacility === 'private pay' ? phones.find(phone=>phone!==facilityPhone) || '' : '');
+  return {clientPhone, clientEmail, facilityPhone, facilityEmail};
+}
+
 function findFacilityByName(facilityName){
   const name = String(facilityName || '').toLowerCase().trim();
   if(!name) return null;
@@ -3871,11 +3916,16 @@ function buildChatgptImportRecord(item){
   );
   const priceValue = inferImportedPriceValue(item);
   const paymentFields = inferImportedPaymentFields(item, priceValue);
+  const contactDetails = extractImportContactDetails(item, facility);
   const ride = {
     date: String(item.date || '').trim(),
     time: normalizeImportedTimeValue(item.time || item.pickupTime || item.pickup_time || ''),
     facility,
     client: String(item.client || '').trim(),
+    clientPhone: normalizePhoneValue(item.clientPhone || item.client_phone || item.phone || contactDetails.clientPhone || ''),
+    clientEmail: item.clientEmail || item.client_email || item.email || contactDetails.clientEmail || '',
+    facilityPhone: normalizePhoneValue(item.facilityPhone || item.facility_phone || contactDetails.facilityPhone || ''),
+    facilityEmail: item.facilityEmail || item.facility_email || contactDetails.facilityEmail || '',
     pickup: normalizeFacilityPickupAddress(facility, rawPickup),
     dropoff: rawDropoff,
     ridetype: normalizeRideType(item.ridetype || item.rideType || item.ride_type),
@@ -3948,6 +3998,7 @@ function buildApprovedRideFromImport(rideDraft, record){
     reminderContactName: rideDraft.reminderContactName || rideDraft.requesterName || record?.requesterName || '',
     communicationSource: normalizeCommunicationSource(rideDraft.communicationSource) || inferCommunicationSourceForRide(rideDraft, record?.source || ''),
     facilityPhone: normalizePhoneValue(rideDraft.facilityPhone || rideDraft.facility_phone || record?.requesterPhone || facilityPhoneForRide(facility)),
+    facilityEmail: rideDraft.facilityEmail || rideDraft.facility_email || '',
     pickup: normalizeFacilityPickupAddress(facility, rideDraft.pickup || ''),
     dropoff: rideDraft.dropoff || '',
     ridetype: normalizeRideType(rideDraft.ridetype),
