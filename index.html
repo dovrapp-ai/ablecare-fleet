@@ -1083,13 +1083,34 @@ body[data-user-role="manager"] .owner-only-setting{display:none !important}
   border-radius:0 !important;
   border-left:0 !important;
   border-right:0 !important;
-  grid-template-columns:178px minmax(0,1fr) !important;
+  grid-template-columns:240px minmax(0,1fr) !important;
 }
 #screen-rides .rides-sidebar{
-  padding:10px 8px !important;
+  padding:12px 10px !important;
 }
 #screen-rides .mini-cal{
-  display:none !important;
+  display:block !important;
+  padding:0 0 10px !important;
+  border-bottom:1px solid #e8eef4 !important;
+  margin-bottom:10px !important;
+}
+#screen-rides .mini-cal-header{
+  margin-bottom:10px !important;
+  padding:0 2px !important;
+}
+#screen-rides .mini-cal-header span{
+  font-size:13px !important;
+  letter-spacing:.8px !important;
+}
+#screen-rides .mini-cal-grid{
+  gap:4px !important;
+}
+#screen-rides .mini-day-name{
+  font-size:9px !important;
+}
+#screen-rides .mini-date{
+  font-size:11px !important;
+  padding:2px !important;
 }
 #screen-rides .rides-sidebar > div[style*="padding:0 12px"]{
   padding:0 !important;
@@ -1100,7 +1121,7 @@ body[data-user-role="manager"] .owner-only-setting{display:none !important}
   font-size:12px !important;
 }
 #screen-rides .import-review-alert{
-  margin:8px 0 !important;
+  margin:7px 0 !important;
   padding:9px 10px !important;
   font-size:12px !important;
 }
@@ -1235,7 +1256,9 @@ body[data-user-role="manager"] .owner-only-setting{display:none !important}
     height:auto !important;
   }
   #screen-rides .rides-sidebar{
-    display:none !important;
+    display:block !important;
+    border-bottom:1px solid #e8eef4 !important;
+    max-height:none !important;
   }
   .ride-focus-card{
     grid-template-columns:1fr;
