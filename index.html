@@ -6035,7 +6035,7 @@ function reminderContactEditor(item){
       <option value="email"${currentMethod==='email'?' selected':''}>Email</option>
     </select>
     <input id="${escHtml(inputId)}" type="text" value="${escHtml(currentValue)}" placeholder="Phone number or email address" style="min-width:240px;flex:1;padding:9px 11px;border:1px solid #fdba74;border-radius:8px;font-size:13px;color:#0f172a;background:#fff">
-    <button class="add-btn" style="padding:8px 12px;font-size:12px;background:#0ea5e9" onclick="saveReminderContact(${jsString(item.rideKey)})">Save</button>
+    <button class="add-btn" style="padding:8px 12px;font-size:12px;background:#0ea5e9" onclick="saveReminderContact(${jsString(item.rideKey)}, this)">Save</button>
   </div>`;
 }
 
@@ -6081,7 +6081,7 @@ async function loadReminders(){
   }
 }
 
-async function saveReminderContact(rideKey){
+async function saveReminderContact(rideKey, button){
   const input=document.getElementById(reminderContactInputId(rideKey));
   const methodEl=document.getElementById(reminderMethodInputId(rideKey));
   const raw=String(input?.value||'').trim();
@@ -6095,13 +6095,16 @@ async function saveReminderContact(rideKey){
     if(phoneDigits.length<10){alert('Enter a valid phone number or email address.');return;}
   }
   try{
+    if(button){button.disabled=true;button.textContent='Saving...';}
     await reminderApi('/api/reminders/contact',{
       method:'POST',
       headers:{'Content-Type':'application/json'},
       body:JSON.stringify({rideKey,method,contact:raw})
     });
+    if(button) button.textContent='Saved';
     await loadReminders();
   }catch(e){
+    if(button){button.disabled=false;button.textContent='Save';}
     alert(e.message||'Could not save reminder contact.');
   }
 }
@@ -6134,7 +6137,7 @@ function mobileReminderContactEditor(item){
       <option value="email"${currentMethod==='email'?' selected':''}>Email</option>
     </select>
     <input id="${escHtml(inputId)}" value="${escHtml(currentValue)}" placeholder="Phone or email">
-    <button onclick="mobileSaveReminderContact(${jsString(item.rideKey)})">Save</button>
+    <button onclick="mobileSaveReminderContact(${jsString(item.rideKey)}, this)">Save</button>
   </div>`;
 }
 
@@ -6183,7 +6186,7 @@ async function mobileLoadReminders(){
   }
 }
 
-async function mobileSaveReminderContact(rideKey){
+async function mobileSaveReminderContact(rideKey, button){
   const input=document.getElementById(mobileReminderContactInputId(rideKey));
   const methodEl=document.getElementById(mobileReminderMethodInputId(rideKey));
   const raw=String(input?.value||'').trim();
@@ -6197,13 +6200,16 @@ async function mobileSaveReminderContact(rideKey){
     if(phoneDigits.length<10){alert('Enter a valid phone number.');return;}
   }
   try{
+    if(button){button.disabled=true;button.textContent='Saving...';}
     await reminderApi('/api/reminders/contact',{
       method:'POST',
       headers:{'Content-Type':'application/json'},
       body:JSON.stringify({rideKey,method,contact:raw})
     });
+    if(button) button.textContent='Saved';
     await mobileLoadReminders();
   }catch(e){
+    if(button){button.disabled=false;button.textContent='Save';}
     alert(e.message||'Could not save reminder contact.');
   }
 }
