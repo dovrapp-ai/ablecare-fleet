@@ -5989,14 +5989,23 @@ function reminderContactInputId(rideKey){
   return `reminder-contact-${String(rideKey||'').replace(/[^a-zA-Z0-9_-]/g,'_')}`;
 }
 
-function reminderNeedsContactEditor(item){
-  if(!item.blockedReason || item.sent) return '';
-  const reason=String(item.blockedReason||'').toLowerCase();
-  if(!/(email|phone|sms|contact|choose method|where to send)/.test(reason)) return '';
+function reminderMethodInputId(rideKey){
+  return `reminder-method-${String(rideKey||'').replace(/[^a-zA-Z0-9_-]/g,'_')}`;
+}
+
+function reminderContactEditor(item){
+  if(item.sent) return '';
   const inputId=reminderContactInputId(item.rideKey);
+  const methodId=reminderMethodInputId(item.rideKey);
+  const currentMethod=item.channel==='email'?'email':(item.channel==='sms'?'sms':'sms');
+  const currentValue=currentMethod==='email' ? (item.toEmail||'') : (item.toPhone||'');
   return `<div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-top:10px;background:#fff7ed;border:1px solid #fed7aa;border-radius:10px;padding:10px">
-    <input id="${escHtml(inputId)}" type="text" placeholder="Add phone or email for this ride" style="min-width:240px;flex:1;padding:9px 11px;border:1px solid #fdba74;border-radius:8px;font-size:13px;color:#0f172a;background:#fff">
-    <button class="add-btn" style="padding:8px 12px;font-size:12px;background:#0ea5e9" onclick="saveReminderContact(${jsString(item.rideKey)})">Save Contact</button>
+    <select id="${escHtml(methodId)}" style="padding:9px 10px;border:1px solid #fdba74;border-radius:8px;font-size:13px;color:#0f172a;background:#fff">
+      <option value="sms"${currentMethod==='sms'?' selected':''}>Text</option>
+      <option value="email"${currentMethod==='email'?' selected':''}>Email</option>
+    </select>
+    <input id="${escHtml(inputId)}" type="text" value="${escHtml(currentValue)}" placeholder="Phone number or email address" style="min-width:240px;flex:1;padding:9px 11px;border:1px solid #fdba74;border-radius:8px;font-size:13px;color:#0f172a;background:#fff">
+    <button class="add-btn" style="padding:8px 12px;font-size:12px;background:#0ea5e9" onclick="saveReminderContact(${jsString(item.rideKey)})">Save</button>
   </div>`;
 }
 
@@ -6032,7 +6041,7 @@ async function loadReminders(){
           ${ride.driver?`<span>Driver: ${escHtml(ride.driver)}</span>`:''}
           ${item.blockedReason?`<span style="color:#c2410c;font-weight:700">${escHtml(item.blockedReason)}</span>`:''}
         </div>
-        ${reminderNeedsContactEditor(item)}
+        ${reminderContactEditor(item)}
         <div style="font-size:13px;color:#334155;background:#f8fafc;border:1px solid #e8eef4;border-radius:10px;padding:10px 12px;margin-top:10px;line-height:1.45">${escHtml(item.text)}</div>
       </div>`;
     }).join('');
@@ -6044,8 +6053,10 @@ async function loadReminders(){
 
 async function saveReminderContact(rideKey){
   const input=document.getElementById(reminderContactInputId(rideKey));
+  const methodEl=document.getElementById(reminderMethodInputId(rideKey));
   const raw=String(input?.value||'').trim();
-  if(!raw){alert('Enter a phone number or email address.');return;}
+  const method=String(methodEl?.value||'sms').toLowerCase();
+  if(!raw){alert(method==='email'?'Enter an email address.':'Enter a phone number.');return;}
   if(!firebaseReady || !db){alert('Database is still loading. Try again in a moment.');return;}
   const isEmail=/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(raw);
   const phoneDigits=raw.replace(/\D/g,'');
@@ -6057,7 +6068,8 @@ async function saveReminderContact(rideKey){
     reviewFlag:null,
     contactSource:'manual-reminder-entry'
   };
-  if(isEmail){
+  if(method==='email'){
+    if(!isEmail){alert('Enter a valid email address.');return;}
     patch.clientEmail=raw;
     patch.reminderMethod='email';
     patch.communicationSource='manual_email';
