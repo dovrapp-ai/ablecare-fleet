@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="en">
 <head>
 <meta charset="UTF-8"/>
@@ -407,10 +407,6 @@ body[data-user-role="manager"] .owner-only-setting{display:none !important}
 .ride-block-time{font-size:11px;font-weight:700;opacity:0.7;margin-bottom:2px;font-family:monospace}
 .ride-block-title{font-size:13px;font-weight:800;line-height:1.2}
 .ride-block-client{font-size:11px;opacity:0.75;margin-top:2px}
-.ride-block-route{font-size:10px;line-height:1.25;margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.ride-block-route strong{font-weight:800;opacity:0.9}
-.ride-block-routes{min-width:0;display:grid;align-content:center;gap:5px}
-.ride-block-actions{margin-top:6px;padding-top:6px;border-top:1px solid rgba(0,0,0,0.07);display:flex;gap:4px}
 .ride-block-tags{display:flex;gap:4px;flex-wrap:wrap;margin-top:4px}
 .ride-block-tag{font-size:10px;font-weight:700;padding:2px 6px;border-radius:4px;background:rgba(255,255,255,0.6)}
 .ride-block-unpaid{font-size:10px;font-weight:800;color:#d97706;margin-top:3px}
@@ -723,43 +719,40 @@ body[data-user-role="manager"] .owner-only-setting{display:none !important}
   .map-status-card .driver-detail{font-size:11px}
   .map-status-card .status-badge{font-size:10px;padding:5px 9px}
 
-  #screen-rides.active{margin:4px auto !important;height:calc(100vh - 94px) !important;grid-template-columns:180px minmax(0,1fr)}
-  #screen-rides .rides-sidebar{padding:7px 7px}
+  #screen-rides.active{margin:12px auto !important;height:calc(100vh - 126px) !important;grid-template-columns:250px minmax(0,1fr)}
+  #screen-rides .rides-sidebar{padding:14px 12px}
   #screen-rides .mini-cal-header span{font-size:12px}
   #screen-rides .mini-cal-grid{gap:5px}
   #screen-rides .mini-date{font-size:11px;padding:2px}
   #screen-rides .sidebar-filter{padding:8px 11px;font-size:12px}
-  #screen-rides .day-header{padding:5px 10px;gap:5px}
-  #screen-rides .day-title{font-size:15px}
-  #screen-rides .cal-nav{width:28px;height:28px;font-size:16px}
-  #screen-rides .cal-today-btn{padding:5px 9px;font-size:11px}
-  #screen-rides .schedule-sync-bar{padding:3px 10px;min-height:24px;gap:6px}
-  #screen-rides .schedule-sync-title{font-size:10px}
-  #screen-rides .schedule-sync-meta{font-size:9px}
-  #screen-rides .schedule-sync-pill{padding:2px 6px;font-size:8px}
-  #screen-rides .driver-activity-panel{padding:3px 10px}
-  #screen-rides .driver-activity-head{display:none}
-  #screen-rides .driver-activity-list{grid-template-columns:repeat(3,minmax(0,1fr));gap:4px}
-  #screen-rides .driver-activity-card{padding:3px 6px;border-radius:6px;min-height:28px;display:flex;align-items:center;gap:4px;overflow:hidden}
-  #screen-rides .driver-activity-driver{font-size:10px;margin:0;white-space:nowrap}
-  #screen-rides .driver-activity-status{font-size:7px;padding:2px 5px;margin:0;white-space:nowrap}
-  #screen-rides .driver-activity-ride{font-size:10px;line-height:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin:0;min-width:0}
+  #screen-rides .day-header{padding:9px 14px}
+  #screen-rides .day-title{font-size:18px}
+  #screen-rides .schedule-sync-bar{padding:7px 14px}
+  #screen-rides .schedule-sync-title{font-size:12px}
+  #screen-rides .schedule-sync-meta{font-size:11px}
+  #screen-rides .schedule-sync-pill{padding:4px 8px;font-size:10px}
+  #screen-rides .driver-activity-panel{padding:8px 14px}
+  #screen-rides .driver-activity-head{margin-bottom:6px}
+  #screen-rides .driver-activity-title{font-size:11px}
+  #screen-rides .driver-activity-note{font-size:10px}
+  #screen-rides .driver-activity-list{grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}
+  #screen-rides .driver-activity-card{padding:8px 10px;border-radius:8px;min-height:70px;overflow:hidden}
+  #screen-rides .driver-activity-driver{font-size:12px;margin-bottom:3px}
+  #screen-rides .driver-activity-status{font-size:9px;padding:3px 7px;margin-bottom:4px}
+  #screen-rides .driver-activity-ride{font-size:11px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
   #screen-rides .driver-activity-meta{display:none}
-  #screen-rides .time-row{min-height:88px}
+  #screen-rides .driver-activity-meta:last-child{display:block;font-size:10px;margin-top:3px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  #screen-rides .time-row{min-height:58px}
   #screen-rides .time-label{width:76px;font-size:12px;padding-top:10px}
   #screen-rides .time-content{padding:5px 8px}
-  #screen-rides .ride-block{padding:12px 16px;border-radius:10px;max-width:400px}
-  #screen-rides .ride-block-title{font-size:17px}
-  #screen-rides .ride-block-time{font-size:13px;margin-bottom:3px}
+  #screen-rides .ride-block{padding:8px 12px;border-radius:9px}
+  #screen-rides .ride-block-title{font-size:15px}
+  #screen-rides .ride-block-time{font-size:12px;margin-bottom:1px}
   #screen-rides .ride-block-client{font-size:12px;margin-top:1px}
   #screen-rides .ride-block-title + .ride-block-client ~ .ride-block-client{display:none}
   #screen-rides .ride-block-tags{gap:4px;margin-top:5px}
   #screen-rides .ride-block-tag{font-size:10px;padding:2px 6px}
   #screen-rides .ride-block > div[onclick][style*="border-top"]{display:flex !important}
-  #screen-rides .ride-block{max-width:none;width:100%;flex:0 0 100%;display:grid;grid-template-columns:205px minmax(0,1fr);column-gap:16px;align-items:center;padding:6px 10px}
-  #screen-rides .ride-block-routes{border-left:1px solid rgba(0,0,0,0.1);padding-left:14px}
-  #screen-rides .ride-block-route{font-size:11px;margin:0}
-  #screen-rides .ride-block-actions{grid-column:1 / -1;margin-top:5px;padding-top:5px}
 
   #optimizer-modal > div{max-width:1240px !important;margin:10px auto !important;height:calc(100vh - 20px) !important;border-radius:14px !important}
   #optimizer-modal > div > div:first-child{padding:18px 24px 6px !important}
@@ -946,20 +939,19 @@ body[data-user-role="manager"] .owner-only-setting{display:none !important}
 .mobile-soft-btn,.mobile-action-btn,.mobile-driver-open,.mobile-opt-btn,.mobile-calc-btn{border:none;border-radius:16px;font-weight:800;cursor:pointer}
 .mobile-soft-btn{padding:13px 10px;font-size:14px;background:#f8fafc;color:#334155;border:1px solid #e2e8f0}
 .mobile-ride-card.unassigned{background:#fffbeb;border-color:#fcd34d}
-.mobile-ride-card{padding:9px 10px;border-radius:14px;margin-bottom:6px}
 .mobile-ride-top{display:flex;align-items:flex-start;justify-content:space-between;gap:10px}
-.mobile-ride-time{color:#0891b2;font-size:13px;font-weight:800;margin-bottom:2px}
-.mobile-ride-facility{font-size:16px;font-weight:800;color:#0f172a}
-.mobile-ride-client{margin-top:1px;color:#475569;font-size:12px}
-.mobile-status{border-radius:999px;padding:4px 7px;font-size:10px;font-weight:800;white-space:nowrap}
+.mobile-ride-time{color:#0891b2;font-size:15px;font-weight:800;margin-bottom:4px}
+.mobile-ride-facility{font-size:18px;font-weight:800;color:#0f172a}
+.mobile-ride-client{margin-top:2px;color:#475569;font-size:14px}
+.mobile-status{border-radius:999px;padding:6px 10px;font-size:11px;font-weight:800;white-space:nowrap}
 .mobile-status.assigned{background:#dcfce7;color:#15803d}
 .mobile-status.unassigned{background:#fef3c7;color:#b45309}
 .mobile-status.warning{background:#fee2e2;color:#b91c1c}
-.mobile-ride-tags{display:flex;flex-wrap:wrap;gap:4px;margin-top:6px}
-.mobile-tag{background:#f1f5f9;color:#334155;padding:3px 6px;border-radius:999px;font-size:10px;font-weight:700}
-.mobile-ride-actions{display:flex;gap:6px;margin-top:7px}
-.mobile-action-btn.dark{background:#0f172a;color:#fff;padding:7px 9px;font-size:11px;flex:1}
-.mobile-action-btn.light{background:#e2e8f0;color:#334155;padding:7px 9px;font-size:11px;flex:1}
+.mobile-ride-tags{display:flex;flex-wrap:wrap;gap:6px;margin-top:12px}
+.mobile-tag{background:#f1f5f9;color:#334155;padding:6px 10px;border-radius:999px;font-size:12px;font-weight:700}
+.mobile-ride-actions{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:14px}
+.mobile-action-btn.dark{background:#0f172a;color:#fff;padding:13px 10px;font-size:14px}
+.mobile-action-btn.light{background:#e2e8f0;color:#334155;padding:13px 10px;font-size:14px}
 .mobile-driver-row{display:flex;justify-content:space-between;align-items:center;gap:10px}
 .mobile-driver-name{font-size:15px;font-weight:800}
 .mobile-driver-detail{font-size:12px;color:#64748b;margin-top:3px}
@@ -1083,6 +1075,180 @@ body[data-user-role="manager"] .owner-only-setting{display:none !important}
   .comp-actions .comp-btn{flex:1}
 }
 
+/* Ride-first daily view */
+#screen-rides.active{
+  max-width:none !important;
+  margin:0 !important;
+  height:calc(100vh - 82px) !important;
+  border-radius:0 !important;
+  border-left:0 !important;
+  border-right:0 !important;
+  grid-template-columns:178px minmax(0,1fr) !important;
+}
+#screen-rides .rides-sidebar{
+  padding:10px 8px !important;
+}
+#screen-rides .mini-cal{
+  display:none !important;
+}
+#screen-rides .rides-sidebar > div[style*="padding:0 12px"]{
+  padding:0 !important;
+  gap:5px !important;
+}
+#screen-rides .sidebar-filter{
+  padding:9px 10px !important;
+  font-size:12px !important;
+}
+#screen-rides .import-review-alert{
+  margin:8px 0 !important;
+  padding:9px 10px !important;
+  font-size:12px !important;
+}
+#screen-rides .rides-sidebar .add-btn{
+  padding:9px 8px !important;
+  font-size:11px !important;
+}
+#screen-rides .day-header{
+  min-height:48px !important;
+  padding:8px 14px !important;
+  align-items:center !important;
+}
+#screen-rides .day-title{
+  font-size:18px !important;
+  min-width:0 !important;
+  flex:1 !important;
+}
+#screen-rides .cal-nav{
+  width:30px !important;
+  height:30px !important;
+}
+#screen-rides .schedule-sync-bar.show{
+  display:flex !important;
+  padding:5px 14px !important;
+  min-height:28px !important;
+}
+#screen-rides .schedule-sync-title,
+#screen-rides .schedule-sync-meta{
+  display:inline !important;
+  font-size:11px !important;
+}
+#screen-rides .schedule-sync-title::after{
+  content:"  ";
+}
+#screen-rides .schedule-sync-pill{
+  padding:3px 7px !important;
+  font-size:10px !important;
+}
+#screen-rides .driver-activity-panel.show{
+  display:none !important;
+}
+#screen-rides .time-grid{
+  background:#f6f9fc !important;
+  padding:10px 14px 18px !important;
+}
+.rides-focus-list{
+  display:grid;
+  grid-template-columns:1fr;
+  gap:10px;
+  max-width:1180px;
+  margin:0 auto;
+}
+.ride-focus-card{
+  display:grid;
+  grid-template-columns:96px minmax(220px,1fr) minmax(360px,1.35fr) auto;
+  gap:14px;
+  align-items:center;
+  background:#fff;
+  border:1px solid #d9e5f0;
+  border-left:6px solid #00b4d8;
+  border-radius:8px;
+  padding:13px 14px;
+  cursor:pointer;
+  box-shadow:0 1px 3px rgba(15,23,42,0.06);
+}
+.ride-focus-card:hover{
+  border-color:#a9c4dc;
+  box-shadow:0 5px 18px rgba(15,23,42,0.1);
+}
+.ride-focus-card.str{border-left-color:#f97316}
+.ride-focus-card.unpaid-block{border-left-color:#f59e0b;background:#fffbf3}
+.ride-focus-card.logged-block,
+.ride-focus-card.return-ride{border-left-color:#16a34a}
+.ride-focus-time{
+  font-size:20px;
+  font-weight:900;
+  color:#0d1b2a;
+  font-family:monospace;
+  white-space:nowrap;
+}
+.ride-focus-main{min-width:0}
+.ride-focus-title{
+  font-size:20px;
+  line-height:1.15;
+  font-weight:900;
+  color:#0d1b2a;
+  white-space:nowrap;
+  overflow:hidden;
+  text-overflow:ellipsis;
+}
+.ride-focus-sub{
+  margin-top:3px;
+  font-size:14px;
+  font-weight:800;
+  color:#475569;
+  white-space:nowrap;
+  overflow:hidden;
+  text-overflow:ellipsis;
+}
+.ride-focus-route{
+  display:grid;
+  gap:4px;
+  min-width:0;
+  color:#334155;
+  font-size:13px;
+  line-height:1.25;
+}
+.ride-focus-route div{
+  white-space:normal;
+  overflow:visible;
+}
+.ride-focus-tags{
+  display:flex;
+  gap:5px;
+  flex-wrap:wrap;
+  justify-content:flex-end;
+  min-width:160px;
+}
+.ride-focus-actions{
+  grid-column:2 / -1;
+  display:flex;
+  gap:6px;
+  padding-top:8px;
+  border-top:1px solid #edf2f7;
+}
+.ride-focus-actions .add-return-btn{
+  max-width:180px;
+}
+@media(max-width:900px){
+  #screen-rides.active{
+    grid-template-columns:1fr !important;
+    height:auto !important;
+  }
+  #screen-rides .rides-sidebar{
+    display:none !important;
+  }
+  .ride-focus-card{
+    grid-template-columns:1fr;
+    gap:8px;
+  }
+  .ride-focus-tags{
+    justify-content:flex-start;
+  }
+  .ride-focus-actions{
+    grid-column:1;
+  }
+}
+
 </style>
 </head>
 <body>
@@ -1146,6 +1312,7 @@ body[data-user-role="manager"] .owner-only-setting{display:none !important}
     <div class="tab" onclick="switchTab('hours')" id="tab-hours"><span class="tab-icon">🕐</span> Hours</div>
     <div class="tab" onclick="switchTab('drivers')" id="tab-drivers"><span class="tab-icon">👥</span> Drivers</div>
     <div class="tab" onclick="switchTab('rides')" id="tab-rides"><span class="tab-icon">🚐</span> Rides</div>
+    <div class="tab" onclick="switchTab('reminders')" id="tab-reminders"><span class="tab-icon">!</span> Reminders</div>
     <div class="tab" onclick="switchTab('quote')" id="tab-quote"><span class="tab-icon">💰</span> Quote</div>
     <div class="tab" onclick="switchTab('invoice')" id="tab-invoice"><span class="tab-icon">📄</span> Invoice</div>
     <div class="tab" onclick="switchTab('reports')" id="tab-reports"><span class="tab-icon">📊</span> Reports</div>
@@ -1904,6 +2071,30 @@ body[data-user-role="manager"] .owner-only-setting{display:none !important}
   </div>
 
 
+  <!-- REMINDERS TAB -->
+  <div class="screen" id="screen-reminders">
+    <div style="max-width:1100px;margin:0 auto">
+      <div style="background:#fff;border-radius:16px;padding:20px;box-shadow:0 1px 6px rgba(0,0,0,0.05);margin-bottom:16px">
+        <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap">
+          <div>
+            <div class="section-title" style="margin-bottom:4px">Ride Reminders</div>
+            <div style="font-size:12px;color:#6b82a8">Preview client reminders before sending. SMS uses RingCentral; email uses Outlook when Microsoft Graph is configured.</div>
+          </div>
+          <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+            <input type="date" id="reminder-date" class="date-input" style="font-size:13px"/>
+            <button class="add-btn" style="padding:9px 14px;font-size:13px" onclick="loadReminders()">Load Preview</button>
+            <button class="add-btn" style="padding:9px 14px;font-size:13px;background:#0d1b2a" onclick="sendAllReadyReminders()">Send Ready</button>
+            <button class="add-btn" style="padding:9px 14px;font-size:13px;background:#243b63" onclick="dryRunReminderBatch()">Dry Run</button>
+          </div>
+        </div>
+        <div id="reminder-status" style="display:flex;gap:8px;flex-wrap:wrap;margin-top:14px"></div>
+        <div id="reminder-summary" style="font-size:13px;color:#334155;margin-top:14px"></div>
+      </div>
+      <div id="reminder-list" style="display:grid;gap:12px">
+        <div style="background:#fff;border-radius:14px;padding:18px;color:#6b82a8;border:1px solid #e8eef4">Load a date to preview reminders.</div>
+      </div>
+    </div>
+  </div>
   <!-- MOBILE DASHBOARD TAB -->
   <div class="screen" id="screen-mobile">
     <div class="mobile-dashboard-wrap">
@@ -2322,6 +2513,30 @@ body[data-user-role="manager"] .owner-only-setting{display:none !important}
       <label>Client Phone</label>
       <input type="tel" id="r-client-phone" placeholder="e.g. (443) 555-0123"/>
     </div>
+    <div class="modal-grid" style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+      <div class="modal-field">
+        <label>Client Email</label>
+        <input type="email" id="r-client-email" placeholder="client@example.com"/>
+      </div>
+      <div class="modal-field">
+        <label>Reminder Method</label>
+        <select id="r-reminder-method" style="width:100%;padding:10px 14px;border:2px solid #e8eef4;border-radius:10px;font-size:14px;color:#0d1b2a;outline:none;font-family:inherit;background:#fff">
+          <option value="auto">Auto</option>
+          <option value="sms">SMS/Text</option>
+          <option value="email">Email</option>
+          <option value="off">Off</option>
+        </select>
+      </div>
+    </div>
+    <div class="modal-field">
+      <label>Communication Source</label>
+      <select id="r-communication-source" style="width:100%;padding:10px 14px;border:2px solid #e8eef4;border-radius:10px;font-size:14px;color:#0d1b2a;outline:none;font-family:inherit;background:#fff">
+        <option value="manual">Manual / unknown</option>
+        <option value="outlook_email">Email via Outlook</option>
+        <option value="ringcentral_sms">Text via RingCentral</option>
+        <option value="outlook_calendar_only">Outlook calendar only</option>
+      </select>
+    </div>
 
     <div class="modal-field">
       <label>📍 Pickup Address</label>
@@ -2459,17 +2674,6 @@ body[data-user-role="manager"] .owner-only-setting{display:none !important}
       <button class="modal-save" onclick="saveRide()">Save Ride</button>
       <button class="modal-delete" id="ride-delete-btn" onclick="deleteRide()" style="display:none">Delete</button>
       <button class="modal-cancel" onclick="closeRideModal()">Cancel</button>
-    </div>
-  </div>
-</div>
-<div class="modal-overlay" id="ride-view-modal">
-  <div class="modal-box" style="max-width:620px;width:min(620px,94vw)">
-    <div class="modal-title">Ride Details</div>
-    <div class="modal-driver" id="ride-view-subtitle"></div>
-    <div id="ride-view-content"></div>
-    <div class="modal-actions">
-      <button class="modal-save" id="ride-view-edit-btn">Edit Ride</button>
-      <button class="modal-cancel" onclick="closeRideView()">Close</button>
     </div>
   </div>
 </div>
@@ -3229,6 +3433,8 @@ function normalizeImportRecord(key, raw){
     source: raw.source || raw.importSource || 'claude-outlook',
     subject: raw.subject || raw.emailSubject || '',
     sourceMessageId: raw.sourceMessageId || raw.messageId || raw.outlookMessageId || '',
+    sourceOutlookMessageId: raw.sourceOutlookMessageId || raw.outlookMessageId || raw.messageId || raw.ride?.sourceOutlookMessageId || raw.ride?.outlookMessageId || '',
+    sourceOutlookConversationId: raw.sourceOutlookConversationId || raw.outlookConversationId || raw.conversationId || raw.ride?.sourceOutlookConversationId || raw.ride?.outlookConversationId || '',
     importedRideKey: raw.importedRideKey || raw.imported_ride_key || '',
     rawEmail: raw.rawEmail || raw.emailText || raw.rawText || '',
     reviewFlag: raw.reviewFlag || raw.review_flag || raw.ride?.reviewFlag || raw.ride?.review_flag || 'ok',
@@ -3450,6 +3656,9 @@ function inferImportedPaymentFields(item, priceValue){
 
 function inferImportedEntrySource(source){
   const src = String(source || '').toLowerCase().trim();
+  if(src.includes('ringcentral') || src.includes('sms') || src.includes('text')){
+    return 'ringcentral_request';
+  }
   if(src.includes('calendar')){
     return (src.includes('chatgpt') || src.includes('paste')) ? 'calendar_paste' : 'calendar_import';
   }
@@ -3466,6 +3675,34 @@ function inferRideEntrySource(ride){
   return 'manual';
 }
 
+function normalizeCommunicationSource(value){
+  const raw = String(value || '').toLowerCase().trim();
+  if(!raw) return '';
+  if(['ringcentral_sms','ringcentral','sms','text'].includes(raw)) return 'ringcentral_sms';
+  if(['outlook_email','outlook','email','mail'].includes(raw)) return 'outlook_email';
+  if(['outlook_calendar_only','calendar','calendar_import','outlook_calendar'].includes(raw)) return 'outlook_calendar_only';
+  if(['manual','phone','unknown'].includes(raw)) return raw;
+  return raw;
+}
+
+function inferCommunicationSourceForRide(ride, fallbackSource){
+  const explicit = normalizeCommunicationSource(ride?.communicationSource || ride?.contactSource || ride?.originalCommunicationSource || '');
+  if(explicit) return explicit;
+  const method = String(ride?.reminderMethod || ride?.communicationChannel || '').toLowerCase().trim();
+  const source = [
+    fallbackSource || '',
+    ride?.entrySource || '',
+    ride?.importSource || '',
+    ride?.source || '',
+    ride?.sourceEmailSubject || '',
+    ride?.notes || ''
+  ].filter(Boolean).join(' ').toLowerCase();
+  if(source.includes('ringcentral') || source.includes('sms') || source.includes('text') || method === 'sms') return 'ringcentral_sms';
+  if(source.includes('email') || source.includes('mail') || method === 'email') return 'outlook_email';
+  if(source.includes('outlook') || source.includes('calendar')) return 'outlook_calendar_only';
+  return 'manual';
+}
+
 function getRideEntrySourceInfo(sourceOrRide){
   const source = typeof sourceOrRide === 'string' ? sourceOrRide : inferRideEntrySource(sourceOrRide);
   switch(source){
@@ -3479,6 +3716,8 @@ function getRideEntrySourceInfo(sourceOrRide){
       return { key: source, label: 'Email Import', badgeStyle: 'background:#fff7ed;color:#c2410c', mobileStyle: 'background:#fff7ed;color:#c2410c' };
     case 'portal_request':
       return { key: source, label: 'Facility Portal', badgeStyle: 'background:#ecfeff;color:#0d3a52', mobileStyle: 'background:#ecfeff;color:#0d3a52' };
+    case 'ringcentral_request':
+      return { key: source, label: 'RingCentral', badgeStyle: 'background:#eef2ff;color:#3730a3', mobileStyle: 'background:#eef2ff;color:#3730a3' };
     default:
       return { key: 'manual', label: 'Manual', badgeStyle: 'background:rgba(255,255,255,0.72);color:#475569', mobileStyle: 'background:#f8fafc;color:#475569' };
   }
@@ -3524,6 +3763,13 @@ function extractImportedRide(record){
     status: ride.status || '',
     estimatedMiles: parseFloat(ride.estimatedMiles) || 0,
     reviewFlag: (ride.reviewFlag || ride.review_flag || record?.reviewFlag || 'ok'),
+    clientPhone: normalizePhoneValue(ride.clientPhone || ride.client_phone || ride.phone || record?.requesterPhone || ''),
+    clientEmail: ride.clientEmail || ride.client_email || ride.email || record?.requesterEmail || '',
+    reminderMethod: ride.reminderMethod || ride.communicationChannel || (record?.requesterEmail ? 'email' : (record?.requesterPhone ? 'sms' : 'auto')),
+    reminderContactName: ride.reminderContactName || ride.requesterName || record?.requesterName || '',
+    communicationSource: inferCommunicationSourceForRide(ride, record?.source || ''),
+    sourceOutlookMessageId: ride.sourceOutlookMessageId || ride.outlookMessageId || record?.sourceOutlookMessageId || '',
+    sourceOutlookConversationId: ride.sourceOutlookConversationId || ride.outlookConversationId || record?.sourceOutlookConversationId || '',
     entrySource: ride.entrySource || inferImportedEntrySource(record?.source || '')
   };
 }
@@ -3636,6 +3882,8 @@ function buildChatgptImportRecord(item){
     source: 'chatgpt-outlook-calendar',
     subject,
     sourceMessageId: String(item.outlook_event_id || item.sourceMessageId || item.messageId || item.id || '').trim(),
+    sourceOutlookMessageId: String(item.sourceOutlookMessageId || item.outlookMessageId || item.outlook_message_id || '').trim(),
+    sourceOutlookConversationId: String(item.sourceOutlookConversationId || item.outlookConversationId || item.conversationId || item.outlook_conversation_id || '').trim(),
     rawEmail: JSON.stringify(item, null, 2),
     reviewFlag,
     ride
@@ -3672,6 +3920,10 @@ function buildApprovedRideFromImport(rideDraft, record){
     facility,
     client: rideDraft.client || '',
     clientPhone: normalizePhoneValue(rideDraft.clientPhone || rideDraft.client_phone || rideDraft.phone || ''),
+    clientEmail: rideDraft.clientEmail || rideDraft.client_email || rideDraft.email || record?.requesterEmail || '',
+    reminderMethod: rideDraft.reminderMethod || rideDraft.communicationChannel || (record?.requesterEmail ? 'email' : 'auto'),
+    reminderContactName: rideDraft.reminderContactName || rideDraft.requesterName || record?.requesterName || '',
+    communicationSource: normalizeCommunicationSource(rideDraft.communicationSource) || inferCommunicationSourceForRide(rideDraft, record?.source || ''),
     facilityPhone: normalizePhoneValue(rideDraft.facilityPhone || rideDraft.facility_phone || record?.requesterPhone || facilityPhoneForRide(facility)),
     pickup: normalizeFacilityPickupAddress(facility, rideDraft.pickup || ''),
     dropoff: rideDraft.dropoff || '',
@@ -3695,6 +3947,8 @@ function buildApprovedRideFromImport(rideDraft, record){
     importReviewStatus: 'approved',
     sourceImportKey: record?._key || '',
     sourceMessageId: record?.sourceMessageId || '',
+    sourceOutlookMessageId: record?.sourceOutlookMessageId || rideDraft.sourceOutlookMessageId || '',
+    sourceOutlookConversationId: record?.sourceOutlookConversationId || rideDraft.sourceOutlookConversationId || '',
     sourceEmailSubject: record?.subject || ''
   };
   if(rideDraft.estimatedMiles){
@@ -3943,6 +4197,10 @@ async function saveRideRequestResponse(){
         facility: rideDraft.facility || record.facility || '',
         client: rideDraft.client || '',
         clientPhone: normalizePhoneValue(rideDraft.clientPhone || rideDraft.client_phone || ''),
+        clientEmail: rideDraft.clientEmail || rideDraft.client_email || record.requesterEmail || '',
+        reminderMethod: rideDraft.reminderMethod || rideDraft.communicationChannel || (record.requesterEmail ? 'email' : 'auto'),
+        reminderContactName: rideDraft.reminderContactName || record.requesterName || '',
+        communicationSource: normalizeCommunicationSource(rideDraft.communicationSource) || (record.source === 'ringcentral' ? 'ringcentral_sms' : (record.requesterEmail ? 'outlook_email' : 'manual')),
         facilityPhone: normalizePhoneValue(rideDraft.facilityPhone || rideDraft.facility_phone || record.requesterPhone || facilityPhoneForRide(rideDraft.facility || record.facility || '')),
         pickup: normalizeFacilityPickupAddress(rideDraft.facility || record.facility || '', rideDraft.pickup || ''),
         dropoff: rideDraft.dropoff || '',
@@ -4217,6 +4475,8 @@ async function editImportedRide(importKey){
   pendingImportReviewMeta = {
     source: record.source || 'claude-outlook',
     sourceMessageId: record.sourceMessageId || '',
+    sourceOutlookMessageId: record.sourceOutlookMessageId || '',
+    sourceOutlookConversationId: record.sourceOutlookConversationId || '',
     subject: record.subject || '',
     rideDraft
   };
@@ -4238,6 +4498,10 @@ function fillRideModalFromImport(rideDraft){
   document.getElementById('r-time').value = rideDraft.time || '';
   document.getElementById('r-client').value = rideDraft.client || '';
   document.getElementById('r-client-phone').value = rideDraft.clientPhone || rideDraft.client_phone || rideDraft.phone || '';
+  document.getElementById('r-client-email').value = rideDraft.clientEmail || rideDraft.client_email || '';
+  document.getElementById('r-reminder-method').value = rideDraft.reminderMethod || rideDraft.communicationChannel || (rideDraft.clientEmail ? 'email' : (rideDraft.clientPhone ? 'sms' : 'auto'));
+  const sourceEl = document.getElementById('r-communication-source');
+  if(sourceEl) sourceEl.value = normalizeCommunicationSource(rideDraft.communicationSource) || inferCommunicationSourceForRide(rideDraft, pendingImportReviewMeta?.source || '');
   document.getElementById('r-pickup').value = rideDraft.pickup || '';
   document.getElementById('r-dropoff').value = rideDraft.dropoff || '';
   document.getElementById('r-price').value = rideDraft.price || '';
@@ -4333,6 +4597,7 @@ function switchTab(name){
   if(name==='drivers') renderManage();
   if(name==='dispatch') initDispatchMap();
   if(name==='rides') initRides();
+  if(name==='reminders') initReminders();
   if(name==='settings') initSettings();
   if(name==='quote') initQuote();
   if(name==='invoice') initInvoice();
@@ -5495,62 +5760,210 @@ async function renderDayView(){
   renderDriverActivityPanel(ds, dayRides);
   const grid=document.getElementById('time-grid');
   if(!dayRides.length){grid.innerHTML=`<div class="no-rides-msg"><div>🚐</div><div style="font-size:15px;font-weight:700;color:#6b82a8;margin-bottom:8px">No rides scheduled</div><div style="font-size:13px">Click "+ Add Ride" or tap a time slot to add a ride</div></div>`;return;}
-  const byHour={};
-  dayRides.forEach(r=>{const h=r.time?parseInt(r.time.split(':')[0]):8;if(!byHour[h])byHour[h]=[];byHour[h].push(r);});
-  const hours=Object.keys(byHour).map(Number);
-  const minHour=Math.max(5,Math.min(...hours)-1);
-  const maxHour=Math.min(23,Math.max(...hours)+2);
-  let html='';
-  for(let h=minHour;h<=maxHour;h++){
-    const label=h===0?'12 AM':h<12?`${h} AM`:h===12?'12 PM':`${h-12} PM`;
-    const rides=byHour[h]||[];
-    html+=`<div class="time-row hour"><div class="time-label">${label}</div><div class="time-content" onclick="openRideModal(null,'${ds}')">`;
-    rides.sort((a,b)=>(a.time||'').localeCompare(b.time||'')).forEach(r=>{
-      const isUnpaid=r.price&&r.price!==''&&r.paid!=='yes';
-      const isReturn=!!r.returnOf;
-      const isLogged=r._source==='log';
-      const cls=isLogged?'logged-block':(isReturn?'return-ride':(isUnpaid?'unpaid-block':(r.ridetype==='str'?'str':'wc')));
-      const statusBadge = r.status ? statusBadgeHtml(r.status) : '';
-      const editAction=isLogged?`openLogEdit('${r._key}')`:`openRideModal('${r._key}')`;
-      html+=`<div class="ride-block ${cls}" onclick="event.stopPropagation();${editAction}">
-        <div class="ride-block-summary">
-        ${isLogged?`<div style="font-size:10px;font-weight:800;color:#16a34a;margin-bottom:4px">Logged in Reports</div>`:''}
-        ${isReturn?`<div style="font-size:10px;font-weight:800;color:#16a34a;margin-bottom:4px">↩ RETURN RIDE — ${r.returnOfClient||r.client||''} ${r.returnOfTime?'(orig. '+fmtTime12(r.returnOfTime)+')':''}</div>`:''}
+  const sorted=dayRides.slice().sort((a,b)=>(a.time||'99:99').localeCompare(b.time||'99:99'));
+  const html=sorted.map(r=>{
+    const isUnpaid=r.price&&r.price!==''&&r.paid!=='yes';
+    const isReturn=!!r.returnOf;
+    const isLogged=r._source==='log';
+    const cls=isLogged?'logged-block':(isReturn?'return-ride':(isUnpaid?'unpaid-block':(r.ridetype==='str'?'str':'wc')));
+    const statusBadge = r.status ? statusBadgeHtml(r.status) : '';
+    const editAction=isLogged?`openLogEdit('${r._key}')`:`openRideModal('${r._key}')`;
+    const title=escHtml(r.facility||r.client||'-');
+    const client=r.client&&r.facility?escHtml(r.client):'';
+    const driver=r.driver?`${escHtml(r.driver)}${r.helper?' + '+escHtml(r.helper):''}`:'No driver yet';
+    return `<div class="ride-focus-card ${cls}" onclick="event.stopPropagation();${editAction}">
+      <div class="ride-focus-time">${r.time?fmtTime12(r.time):'Call'}</div>
+      <div class="ride-focus-main">
+        ${isLogged?`<div style="font-size:11px;font-weight:900;color:#16a34a;margin-bottom:4px">Logged in Reports</div>`:''}
+        ${isReturn?`<div style="font-size:11px;font-weight:900;color:#16a34a;margin-bottom:4px">Return ride${r.returnOfTime?' from '+fmtTime12(r.returnOfTime):''}</div>`:''}
         ${statusBadge}
-        <div class="ride-block-time">${r.time?fmtTime12(r.time):'Awaiting call...'}</div>
-        <div class="ride-block-title">${r.facility||r.client||'—'}</div>
-        ${r.client&&r.facility?`<div class="ride-block-client">${r.client}</div>`:''}
-        <div class="ride-block-tags">
-          <span class="ride-block-tag">${r.ridetype==='str'?'🛏 Str':'♿ WC'}</span>
-          <span class="ride-block-tag">${r.triptype==='rt'?'RT':'1 Way'}</span>
-          ${rideSourceTagHtml(r)}
-          ${r.status?`<span class="ride-block-tag" style="background:#e0f2fe;color:#0369a1;font-weight:800">App: ${statusLabelText(r.status)}</span>`:''}
-          ${r.driver?`<span class="ride-block-tag">👤 ${r.driver}${r.helper?' + '+r.helper:''}</span>`:'<span class="ride-block-tag" style="color:#f59e0b">No driver yet</span>'}
-          ${(r.updatedBy||r.createdBy)?`<span class="ride-block-tag" style="background:#f8fafc;color:#475569">By ${escHtml(r.updatedBy||r.createdBy)}</span>`:''}
-          ${r.van?`<span class="ride-block-tag">Van #${r.van}</span>`:''}
-          ${r.wait==='yes'?`<span class="ride-block-tag" style="background:#fff7ed;color:#c2410c">⏳ Wait</span>`:''}
-          ${r.estimatedMiles!=null&&r.estimatedMiles!==''?`<span class="ride-block-tag" style="background:#f0fdf4;color:#16a34a;font-weight:800">🗺 Client ${r.estimatedMiles} mi</span>`:''}
-        </div>
-        </div>
-        <div class="ride-block-routes">
-          <div class="ride-block-route">📍 <strong>Pickup:</strong> ${escHtml(r.pickup||'Not entered')}</div>
-          <div class="ride-block-route">🏥 <strong>Dropoff:</strong> ${escHtml(r.dropoff||'Not entered')}</div>
-        </div>
-        ${!isReturn?returnRequestSummaryHtml(r):''}
-        ${isUnpaid&&!r.status?`<div class="ride-block-unpaid">💰 Unpaid — follow up</div>`:''}
-        ${r.price&&r.paid==='yes'?`<div style="font-size:10px;color:#16a34a;font-weight:700;margin-top:3px">✓ Paid ${r.price}</div>`:''}
-        <div class="ride-block-actions" onclick="event.stopPropagation()">
-          ${r.triptype==='rt'&&!isReturn?`<button class="add-return-btn" style="flex:1" onclick="event.stopPropagation();openReturnModal('${r._key}')">↩ Return</button>`:''}
-          <button class="add-return-btn" style="flex:1;background:#f0f4ff;border-color:#6b82a8;color:#6b82a8" onclick="event.stopPropagation();logRideFromCalendar('${r._key}')">📋 Log</button>
-        </div>
-      </div>`;
-    });
-    html+=`</div></div><div class="time-row"><div class="time-label" style="opacity:0.35;font-size:10px">${h}:30</div><div class="time-content" onclick="openRideModal(null,'${ds}')"></div></div>`;
-  }
-  grid.innerHTML=html;
+        <div class="ride-focus-title">${title}</div>
+        ${client?`<div class="ride-focus-sub">${client}</div>`:''}
+      </div>
+      <div class="ride-focus-route">
+        ${r.pickup?`<div><strong>Pickup:</strong> ${escHtml(r.pickup)}</div>`:'<div style="color:#94a3b8"><strong>Pickup:</strong> not saved</div>'}
+        ${r.dropoff?`<div><strong>Dropoff:</strong> ${escHtml(r.dropoff)}</div>`:'<div style="color:#94a3b8"><strong>Dropoff:</strong> not saved</div>'}
+      </div>
+      <div class="ride-focus-tags">
+        <span class="ride-block-tag">${r.ridetype==='str'?'Str':'WC'}</span>
+        <span class="ride-block-tag">${r.triptype==='rt'?'RT':'1 Way'}</span>
+        ${rideSourceTagHtml(r)}
+        ${r.status?`<span class="ride-block-tag" style="background:#e0f2fe;color:#0369a1;font-weight:800">App: ${statusLabelText(r.status)}</span>`:''}
+        <span class="ride-block-tag" style="${r.driver?'':'color:#f59e0b'}">${driver}</span>
+        ${(r.updatedBy||r.createdBy)?`<span class="ride-block-tag" style="background:#f8fafc;color:#475569">By ${escHtml(r.updatedBy||r.createdBy)}</span>`:''}
+        ${r.van?`<span class="ride-block-tag">Van #${escHtml(r.van)}</span>`:''}
+        ${r.wait==='yes'?`<span class="ride-block-tag" style="background:#fff7ed;color:#c2410c">Wait</span>`:''}
+        ${r.estimatedMiles!=null&&r.estimatedMiles!==''?`<span class="ride-block-tag" style="background:#f0fdf4;color:#16a34a;font-weight:800">${escHtml(r.estimatedMiles)} mi</span>`:''}
+        ${isUnpaid&&!r.status?`<span class="ride-block-tag" style="background:#fff7ed;color:#c2410c">Unpaid</span>`:''}
+        ${r.price&&r.paid==='yes'?`<span class="ride-block-tag" style="background:#f0fdf4;color:#16a34a">Paid ${escHtml(r.price)}</span>`:''}
+      </div>
+      ${!isReturn?returnRequestSummaryHtml(r):''}
+      <div class="ride-focus-actions" onclick="event.stopPropagation()">
+        ${r.triptype==='rt'&&!isReturn?`<button class="add-return-btn" onclick="event.stopPropagation();openReturnModal('${r._key}')">Return</button>`:''}
+        <button class="add-return-btn" style="background:#f0f4ff;border-color:#6b82a8;color:#6b82a8" onclick="event.stopPropagation();logRideFromCalendar('${r._key}')">Log</button>
+      </div>
+    </div>`;
+  }).join('');
+  grid.innerHTML=`<div class="rides-focus-list">${html}</div>`;
 }
 
 function initRides(){selectedDate=new Date();miniMonthOffset=0;ridesFilter='all';renderDayView();}
+
+function reminderDefaultDate(){
+  const d=new Date();
+  d.setDate(d.getDate()+1);
+  return dateStr(d);
+}
+
+function initReminders(){
+  const input=document.getElementById('reminder-date');
+  if(input&&!input.value) input.value=reminderDefaultDate();
+  loadReminderIntegrationStatus();
+  loadReminders();
+}
+
+function reminderStatusPill(label, ok, detail){
+  const bg=ok?'#dcfce7':'#fff7ed';
+  const color=ok?'#166534':'#9a3412';
+  return `<div style="background:${bg};color:${color};border-radius:999px;padding:7px 10px;font-size:12px;font-weight:800">${escHtml(label)}${detail?` <span style="font-weight:600;opacity:.85">${escHtml(detail)}</span>`:''}</div>`;
+}
+
+async function loadReminderIntegrationStatus(){
+  const el=document.getElementById('reminder-status');
+  if(!el)return;
+  el.innerHTML=reminderStatusPill('Checking RingCentral', false, '')+reminderStatusPill('Checking Outlook', false, '');
+  const checks=await Promise.allSettled([
+    fetch('/api/ringcentral/status').then(r=>r.json().then(data=>({ok:r.ok&&data.ok,data}))),
+    fetch('/api/outlook/status').then(r=>r.json().then(data=>({ok:r.ok&&data.ok,data}))),
+  ]);
+  const rc=checks[0].status==='fulfilled'?checks[0].value:{ok:false,data:{error:'Unavailable'}};
+  const outlook=checks[1].status==='fulfilled'?checks[1].value:{ok:false,data:{error:'Unavailable'}};
+  el.innerHTML=[
+    reminderStatusPill('RingCentral SMS', rc.ok, rc.ok?(rc.data.extension?.name||'connected'):(rc.data.error||'not connected')),
+    reminderStatusPill('Outlook Email', outlook.ok, outlook.ok?(outlook.data.user?.mail||outlook.data.sender||'connected'):(outlook.data.error||'not configured')),
+  ].join('');
+}
+
+function reminderBadge(item){
+  if(item.sent) return '<span style="background:#dcfce7;color:#166534;border-radius:999px;padding:5px 9px;font-size:11px;font-weight:800">Sent</span>';
+  if(item.blockedReason) return '<span style="background:#fff7ed;color:#9a3412;border-radius:999px;padding:5px 9px;font-size:11px;font-weight:800">Needs review</span>';
+  return '<span style="background:#ecfeff;color:#155e75;border-radius:999px;padding:5px 9px;font-size:11px;font-weight:800">Ready</span>';
+}
+
+function reminderChannelLabel(item){
+  const source = normalizeCommunicationSource(item.communicationSource || item.ride?.communicationSource || '');
+  if(item.channel==='sms'){
+    const label = source === 'ringcentral_sms' ? 'Text via RingCentral' : 'SMS/Text';
+    return `${label} ${item.toPhone?`to ${escHtml(item.toPhone)}`:''}`;
+  }
+  if(item.channel==='email'){
+    const label = source === 'outlook_email' ? 'Email via Outlook' : 'Email';
+    return `${label} ${item.toEmail?`to ${escHtml(item.toEmail)}`:''}`;
+  }
+  if(item.channel==='off') return 'Off';
+  return 'Choose method';
+}
+
+async function loadReminders(){
+  const date=document.getElementById('reminder-date')?.value||reminderDefaultDate();
+  const list=document.getElementById('reminder-list');
+  const summary=document.getElementById('reminder-summary');
+  if(!list||!summary)return;
+  list.innerHTML='<div style="background:#fff;border-radius:14px;padding:18px;color:#6b82a8;border:1px solid #e8eef4">Loading reminders...</div>';
+  summary.textContent='';
+  try{
+    const res=await fetch(`/api/reminders/preview?date=${encodeURIComponent(date)}`);
+    const data=await res.json();
+    if(!res.ok||!data.ok)throw new Error(data.error||'Could not load reminders.');
+    summary.textContent=`${data.count} ride${data.count===1?'':'s'} for ${date}. ${data.readyCount} ready, ${data.sentCount} already sent.`;
+    if(!data.candidates.length){
+      list.innerHTML='<div style="background:#fff;border-radius:14px;padding:18px;color:#6b82a8;border:1px solid #e8eef4">No active rides found for this date.</div>';
+      return;
+    }
+    list.innerHTML=data.candidates.map(item=>{
+      const ride=item.ride||{};
+      const title=[ride.time,ride.client||ride.facility||'Ride'].filter(Boolean).join(' - ');
+      const disabled=item.sent||item.blockedReason?'disabled':'';
+      const actionLabel=item.sent?'Sent':'Send';
+      return `<div style="background:#fff;border-radius:14px;padding:16px 18px;border:1px solid #e8eef4;box-shadow:0 1px 4px rgba(0,0,0,0.04)">
+        <div style="display:flex;justify-content:space-between;gap:12px;align-items:flex-start;flex-wrap:wrap">
+          <div>
+            <div style="font-size:15px;font-weight:900;color:#0d1b2a">${escHtml(title)}</div>
+            <div style="font-size:12px;color:#6b82a8;margin-top:3px">${escHtml(ride.pickup||'No pickup saved')}</div>
+          </div>
+          <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">${reminderBadge(item)}<button class="add-btn" style="padding:8px 12px;font-size:12px;background:#0d1b2a" ${disabled} onclick="sendRideReminder('${escHtml(item.rideKey)}')">${actionLabel}</button></div>
+        </div>
+        <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-top:10px;font-size:12px;color:#334155">
+          <span style="font-weight:800">${escHtml(reminderChannelLabel(item))}</span>
+          ${ride.driver?`<span>Driver: ${escHtml(ride.driver)}</span>`:''}
+          ${item.blockedReason?`<span style="color:#c2410c;font-weight:700">${escHtml(item.blockedReason)}</span>`:''}
+        </div>
+        <div style="font-size:13px;color:#334155;background:#f8fafc;border:1px solid #e8eef4;border-radius:10px;padding:10px 12px;margin-top:10px;line-height:1.45">${escHtml(item.text)}</div>
+      </div>`;
+    }).join('');
+  }catch(e){
+    summary.textContent='';
+    list.innerHTML=`<div style="background:#fff7ed;border:1px solid #fed7aa;border-radius:14px;padding:18px;color:#c2410c;font-weight:700">${escHtml(e.message)}</div>`;
+  }
+}
+
+async function sendRideReminder(rideKey){
+  const date=document.getElementById('reminder-date')?.value||reminderDefaultDate();
+  if(!confirm('Send this reminder now?'))return;
+  try{
+    const res=await fetch('/api/reminders/send',{
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({date,rideKey})
+    });
+    const data=await res.json();
+    if(!res.ok||!data.ok)throw new Error(data.error||'Could not send reminder.');
+    await loadReminders();
+  }catch(e){
+    alert(e.message);
+  }
+}
+
+async function sendAllReadyReminders(){
+  const date=document.getElementById('reminder-date')?.value||reminderDefaultDate();
+  const res=await fetch(`/api/reminders/preview?date=${encodeURIComponent(date)}`);
+  const data=await res.json();
+  if(!res.ok||!data.ok){alert(data.error||'Could not load reminders.');return;}
+  const ready=(data.candidates||[]).filter(item=>!item.sent&&!item.blockedReason);
+  if(!ready.length){alert('No ready reminders to send.');return;}
+  if(!confirm(`Send ${ready.length} ready reminder${ready.length===1?'':'s'} now?`))return;
+  for(const item of ready){
+    const sendRes=await fetch('/api/reminders/send',{
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({date,rideKey:item.rideKey})
+    });
+    if(!sendRes.ok){
+      const err=await sendRes.json().catch(()=>({error:'Send failed.'}));
+      alert(err.error||'A reminder failed to send.');
+      break;
+    }
+  }
+  await loadReminders();
+}
+
+async function dryRunReminderBatch(){
+  const date=document.getElementById('reminder-date')?.value||reminderDefaultDate();
+  try{
+    const res=await fetch('/api/reminders/run',{
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({date,dryRun:true})
+    });
+    const data=await res.json();
+    if(!res.ok||!data.ok)throw new Error(data.error||'Dry run failed.');
+    const run=data.run||{};
+    alert(`Dry run for ${date}: ${run.candidateCount||0} candidates, ${run.readyCount||0} ready, ${run.blocked?.length||0} blocked. Nothing was sent.`);
+    await loadReminders();
+  }catch(e){
+    alert(e.message);
+  }
+}
 
 // ── RETURN RIDE ──
 // Mobile dashboard merged from the standalone phone test file
@@ -5699,11 +6112,12 @@ function mobileRideCard(r){
   const key=mobileKey(r._key);
   const rideType=r.ridetype==='str'?'Stretcher':'Wheelchair';
   const tripType=r.triptype==='1way'?'1 Way':'RT';
+  const sourceInfo=getRideEntrySourceInfo(r);
+  const unpaid=r.price&&r.paid!=='yes';
   const time=r.time?fmtTime12(r.time):'Awaiting call';
   const title=r.facility||r.client||'Ride';
   const isReturn=!!r.returnOf;
-  const isCancelled=['cancelled','noshow','cancelled_pickup'].includes(r.status||'');
-  const canReturn=r.triptype==='rt'&&!isReturn&&!isCancelled;
+  const canReturn=r.triptype==='rt'&&!isReturn;
   return `<div class="mobile-card mobile-ride-card ${assigned?'':'unassigned'}">
     <div class="mobile-ride-top">
       <div>
@@ -5716,12 +6130,18 @@ function mobileRideCard(r){
     <div class="mobile-ride-tags">
       <div class="mobile-tag">${mobileEsc(rideType)}</div>
       <div class="mobile-tag">${mobileEsc(tripType)}</div>
+      <div class="mobile-tag" style="${sourceInfo.mobileStyle}">${mobileEsc(sourceInfo.label)}</div>
       ${r.driver?`<div class="mobile-tag">${mobileEsc(r.driver)}${r.helper?' + '+mobileEsc(r.helper):''}</div>`:''}
-      ${isCancelled?`<div class="mobile-tag" style="background:#fee2e2;color:#b91c1c">${mobileEsc(r.status)}</div>`:''}
+      ${r.van?`<div class="mobile-tag">Van #${mobileEsc(r.van)}</div>`:''}
+      ${unpaid?`<div class="mobile-tag" style="background:#fef3c7;color:#b45309">Unpaid</div>`:''}
+      ${r.status?`<div class="mobile-tag">${mobileEsc(r.status)}</div>`:''}
+      ${(r.updatedBy||r.createdBy)?`<div class="mobile-tag">By ${mobileEsc(r.updatedBy||r.createdBy)}</div>`:''}
+      ${!isReturn?returnRequestSummaryHtml(r,'mobile'):''}
     </div>
     <div class="mobile-ride-actions">
       ${canReturn?`<button class="mobile-action-btn light" style="background:#dcfce7;color:#15803d" onclick="openReturnModal('${key}')">Return</button>`:''}
-      <button class="mobile-action-btn dark" onclick="openRideView('${key}')">Open</button>
+      <button class="mobile-action-btn dark" onclick="openRideModal('${key}')">Open Ride</button>
+      <button class="mobile-action-btn light" onclick="openRideModal('${key}')">Edit</button>
     </div>
   </div>`;
 }
@@ -7236,22 +7656,6 @@ function updateRideToggles(){
   if(payCc) payCc.classList.toggle('active',rideToggles.paymethod==='cc');
   if(payInv) payInv.classList.toggle('active',rideToggles.paymethod==='invoice');
 }
-async function openRideView(key){
-  const snap=await ridesRef().child(key).once('value');
-  const r=snap.val();
-  if(!r){ showToast('Ride not found.'); return; }
-  const status=r.status?statusLabelText(r.status):'Not started';
-  const type=`${r.ridetype==='str'?'Stretcher':'Wheelchair'} · ${r.triptype==='rt'?'Round trip':'One way'}`;
-  const row=(label,value)=>`<div style="padding:10px 0;border-bottom:1px solid #e8eef4"><div style="font-size:10px;font-weight:900;letter-spacing:.08em;color:#64748b;text-transform:uppercase">${label}</div><div style="font-size:14px;font-weight:700;color:#0d1b2a;margin-top:3px;line-height:1.35">${mobileEsc(value||'Not entered')}</div></div>`;
-  document.getElementById('ride-view-subtitle').textContent=(r.facility||'Ride')+(r.client?` — ${r.client}`:'');
-  document.getElementById('ride-view-content').innerHTML=
-    `<div style="display:grid;grid-template-columns:1fr 1fr;gap:0 16px">${row('Pickup time',r.time?fmtTime12(r.time):'Not entered')}${row('Status',status)}${row('Ride type',type)}${row('Driver',r.driver||'Unassigned')}</div>`+
-    `<div style="margin-top:12px;border-top:1px solid #e8eef4">${row('Pickup address',r.pickup)}${row('Dropoff address',r.dropoff)}${r.notes?row('Notes',r.notes):''}</div>`;
-  document.getElementById('ride-view-edit-btn').onclick=()=>{ closeRideView(); openRideModal(key); };
-  document.getElementById('ride-view-modal').style.display='flex';
-}
-function closeRideView(){ document.getElementById('ride-view-modal').style.display='none'; }
-
 async function openRideModal(key,defaultDate){
   key=key||null;rideEditKey=key;
   const drivers=await loadDrivers();
@@ -7271,6 +7675,10 @@ async function openRideModal(key,defaultDate){
     document.getElementById('r-facility').value=r.facility||'';
     document.getElementById('r-client').value=r.client||'';
     document.getElementById('r-client-phone').value=r.clientPhone||r.phone||'';
+    document.getElementById('r-client-email').value=r.clientEmail||r.email||r.requesterEmail||'';
+    document.getElementById('r-reminder-method').value=r.reminderMethod||r.communicationChannel||'auto';
+    const sourceEl=document.getElementById('r-communication-source');
+    if(sourceEl) sourceEl.value=normalizeCommunicationSource(r.communicationSource)||inferCommunicationSourceForRide(r);
     document.getElementById('r-pickup').value=r.pickup||'';
     document.getElementById('r-dropoff').value=r.dropoff||'';
     document.getElementById('r-price').value=r.price||'';
@@ -7295,6 +7703,10 @@ async function openRideModal(key,defaultDate){
     document.getElementById('r-facility').value='';
     document.getElementById('r-client').value='';
     document.getElementById('r-client-phone').value='';
+    document.getElementById('r-client-email').value='';
+    document.getElementById('r-reminder-method').value=rideSourceContext==='email_paste'?'email':'auto';
+    const sourceEl=document.getElementById('r-communication-source');
+    if(sourceEl) sourceEl.value=rideSourceContext==='email_paste'?'outlook_email':'manual';
     document.getElementById('r-pickup').value='';
     document.getElementById('r-dropoff').value='';
     document.getElementById('r-price').value='';
@@ -7330,6 +7742,9 @@ async function saveRide(){
     date,time:document.getElementById('r-time').value||'',
     facility,client:document.getElementById('r-client').value.trim(),
     clientPhone:normalizePhoneValue(document.getElementById('r-client-phone').value),
+    clientEmail:document.getElementById('r-client-email').value.trim(),
+    reminderMethod:document.getElementById('r-reminder-method').value||'auto',
+    communicationSource:document.getElementById('r-communication-source')?.value||'manual',
     facilityPhone:facilityPhoneForRide(facility),
     pickup:document.getElementById('r-pickup').value.trim(),
     dropoff:document.getElementById('r-dropoff').value.trim(),
@@ -7357,6 +7772,8 @@ async function saveRide(){
     ride.importReviewStatus = 'approved';
     ride.sourceImportKey = pendingImportReviewKey || '';
     ride.sourceMessageId = pendingImportReviewMeta.sourceMessageId || '';
+    ride.sourceOutlookMessageId = pendingImportReviewMeta.sourceOutlookMessageId || pendingImportReviewMeta.rideDraft?.sourceOutlookMessageId || '';
+    ride.sourceOutlookConversationId = pendingImportReviewMeta.sourceOutlookConversationId || pendingImportReviewMeta.rideDraft?.sourceOutlookConversationId || '';
     ride.sourceEmailSubject = pendingImportReviewMeta.subject || '';
     if(pendingImportReviewMeta.rideDraft?.estimatedMiles){
       ride.estimatedMiles = parseFloat(pendingImportReviewMeta.rideDraft.estimatedMiles) || 0;
@@ -9091,6 +9508,7 @@ ${emailText}
 IMPORTANT EXTRACTION RULES:
 - "client" = the PATIENT name only. If no name is given, return empty string. A phone number is NOT a client name.
 - "clientPhone" = the patient/client phone number if given. If the phone number belongs to the facility/requester instead of the patient, leave clientPhone empty and keep that number in notes.
+- "clientEmail" = the email address to use for client ride reminders if the request came by email and a usable client/requester email is visible.
 - "facility" = ONLY return a facility name if the text EXPLICITLY mentions the known facility name (e.g. "Meadow Park", "Chapel Hill", "WAAP"). NEVER match a facility based on street address similarity or partial word matches. These are ALWAYS private home addresses, never facilities: "6518 Meadowridge" (not Meadow Park), "Eldridge" (a street, not a facility), any address with a house number like "2507 Cherry Tree Rd". If no known facility name is explicitly mentioned by name in the text, return empty string "" for facility.
 - "pickup" = the full pickup address. If city/state is missing, append ", MD" since we operate in Maryland.
 - "dropoff" = the full drop-off address. If city/state is missing, append ", MD". A phone number listed after an address is NOT part of the address.
@@ -9105,6 +9523,7 @@ Respond ONLY with valid JSON, no markdown, no explanation:
 {
   "client": "",
   "clientPhone": "",
+  "clientEmail": "",
   "facility": "",
   "pickup": "",
   "dropoff": "",
@@ -9149,6 +9568,8 @@ Respond ONLY with valid JSON, no markdown, no explanation:
       // Fill in extracted fields
       if(parsed.client) document.getElementById('r-client').value = parsed.client;
       if(parsed.clientPhone || parsed.client_phone || parsed.phone) document.getElementById('r-client-phone').value = parsed.clientPhone || parsed.client_phone || parsed.phone;
+      if(parsed.clientEmail || parsed.client_email || parsed.email) document.getElementById('r-client-email').value = parsed.clientEmail || parsed.client_email || parsed.email;
+      document.getElementById('r-reminder-method').value = (parsed.clientEmail || parsed.client_email || parsed.email) ? 'email' : 'auto';
       if(parsed.notes) document.getElementById('r-notes').value = parsed.notes;
       if(parsed.time) document.getElementById('r-time').value = parsed.time;
       if(parsed.date) document.getElementById('r-date').value = parsed.date;
