@@ -440,7 +440,8 @@ function displayTime(value) {
 function buildReminderText(ride) {
   const client = String(ride.client || 'your ride').trim();
   const facility = String(ride.facility || '').trim();
-  const rideLabel = facility && client && client.toLowerCase() !== facility.toLowerCase()
+  const isPrivatePay = /^private\s*pay$/i.test(facility);
+  const rideLabel = facility && !isPrivatePay && client && client.toLowerCase() !== facility.toLowerCase()
     ? `${facility} patient ${client}`
     : client;
   const time = displayTime(ride.time);
