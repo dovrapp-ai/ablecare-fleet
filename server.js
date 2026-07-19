@@ -1159,6 +1159,57 @@ const server = http.createServer(async (req, res) => {
       return;
     }
 
+    if (url.pathname === '/api/reminders/contact' && req.method === 'POST') {
+      const body = await readRequestBody(req);
+      const rideKey = String(body.rideKey || '').trim();
+      const method = String(body.method || '').toLowerCase().trim();
+      const contact = String(body.contact || '').trim();
+      if (!rideKey) {
+        sendJson(res, 400, { ok: false, error: 'rideKey is required.' });
+        return;
+      }
+      if (!['sms', 'email'].includes(method)) {
+        sendJson(res, 400, { ok: false, error: 'Choose Text or Email.' });
+        return;
+      }
+      if (!contact) {
+        sendJson(res, 400, { ok: false, error: method === 'email' ? 'Enter an email address.' : 'Enter a phone number.' });
+        return;
+      }
+
+      const patch = {
+        updatedAt: Date.now(),
+        updatedBy: 'Dashboard',
+        updatedByRole: 'owner',
+        missingReminderContact: null,
+        reviewFlag: null,
+        contactSource: 'manual-reminder-entry',
+      };
+      if (method === 'email') {
+        const email = cleanEmail(contact);
+        if (!email) {
+          sendJson(res, 400, { ok: false, error: 'Enter a valid email address.' });
+          return;
+        }
+        patch.clientEmail = email;
+        patch.reminderMethod = 'email';
+        patch.communicationSource = 'manual_email';
+      } else {
+        const digits = cleanPhone(contact);
+        if (digits.length < 10) {
+          sendJson(res, 400, { ok: false, error: 'Enter a valid phone number.' });
+          return;
+        }
+        patch.clientPhone = digits.length === 11 && digits.startsWith('1') ? digits.slice(1) : digits;
+        patch.reminderMethod = 'sms';
+        patch.communicationSource = 'ringcentral_sms';
+      }
+
+      await patchFirebase(`rides/${safeFirebaseKey(rideKey)}`, patch);
+      sendJson(res, 200, { ok: true, rideKey, method, contact: method === 'email' ? patch.clientEmail : patch.clientPhone });
+      return;
+    }
+
     if (url.pathname === '/api/reminders/send' && req.method === 'POST') {
       const body = await readRequestBody(req);
       const date = validateDateString(body.date);

@@ -6087,30 +6087,19 @@ async function saveReminderContact(rideKey){
   const raw=String(input?.value||'').trim();
   const method=String(methodEl?.value||'sms').toLowerCase();
   if(!raw){alert(method==='email'?'Enter an email address.':'Enter a phone number.');return;}
-  if(!firebaseReady || !db){alert('Database is still loading. Try again in a moment.');return;}
   const isEmail=/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(raw);
   const phoneDigits=raw.replace(/\D/g,'');
-  const patch={
-    updatedAt:Date.now(),
-    updatedBy:currentUserName(),
-    updatedByRole:currentUserRole(),
-    missingReminderContact:null,
-    reviewFlag:null,
-    contactSource:'manual-reminder-entry'
-  };
   if(method==='email'){
     if(!isEmail){alert('Enter a valid email address.');return;}
-    patch.clientEmail=raw;
-    patch.reminderMethod='email';
-    patch.communicationSource='manual_email';
   }else{
     if(phoneDigits.length<10){alert('Enter a valid phone number or email address.');return;}
-    patch.clientPhone=phoneDigits.length===11 && phoneDigits.startsWith('1') ? phoneDigits.slice(1) : phoneDigits;
-    patch.reminderMethod='sms';
-    patch.communicationSource='ringcentral_sms';
   }
   try{
-    await ridesRef().child(rideKey).update(patch);
+    await reminderApi('/api/reminders/contact',{
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({rideKey,method,contact:raw})
+    });
     await loadReminders();
   }catch(e){
     alert(e.message||'Could not save reminder contact.');
@@ -6200,30 +6189,19 @@ async function mobileSaveReminderContact(rideKey){
   const raw=String(input?.value||'').trim();
   const method=String(methodEl?.value||'sms').toLowerCase();
   if(!raw){alert(method==='email'?'Enter an email address.':'Enter a phone number.');return;}
-  if(!firebaseReady || !db){alert('Database is still loading. Try again in a moment.');return;}
   const isEmail=/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(raw);
   const phoneDigits=raw.replace(/\D/g,'');
-  const patch={
-    updatedAt:Date.now(),
-    updatedBy:currentUserName(),
-    updatedByRole:currentUserRole(),
-    missingReminderContact:null,
-    reviewFlag:null,
-    contactSource:'manual-mobile-reminder-entry'
-  };
   if(method==='email'){
     if(!isEmail){alert('Enter a valid email address.');return;}
-    patch.clientEmail=raw;
-    patch.reminderMethod='email';
-    patch.communicationSource='manual_email';
   }else{
     if(phoneDigits.length<10){alert('Enter a valid phone number.');return;}
-    patch.clientPhone=phoneDigits.length===11 && phoneDigits.startsWith('1') ? phoneDigits.slice(1) : phoneDigits;
-    patch.reminderMethod='sms';
-    patch.communicationSource='ringcentral_sms';
   }
   try{
-    await ridesRef().child(rideKey).update(patch);
+    await reminderApi('/api/reminders/contact',{
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({rideKey,method,contact:raw})
+    });
     await mobileLoadReminders();
   }catch(e){
     alert(e.message||'Could not save reminder contact.');
