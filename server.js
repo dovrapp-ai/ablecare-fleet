@@ -995,6 +995,15 @@ const server = http.createServer(async (req, res) => {
   const url = new URL(req.url, `http://${req.headers.host || 'localhost'}`);
 
   try {
+    if (url.pathname === '/api/health') {
+      sendJson(res, 200, {
+        ok: true,
+        service: 'ablecare-fleet-dashboard',
+        checkedAt: new Date().toISOString(),
+      });
+      return;
+    }
+
     if (url.pathname === '/api/square/status') {
       const locations = await squareGet('/v2/locations');
       sendJson(res, 200, {

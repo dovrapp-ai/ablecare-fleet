@@ -1,0 +1,43 @@
+services:
+  - type: web
+    name: ablecare-fleet-dashboard
+    runtime: node
+    plan: starter
+    buildCommand: npm install
+    startCommand: npm start
+    healthCheckPath: /api/health
+    envVars:
+      - key: FIREBASE_DATABASE_URL
+        value: https://ablecare-fleet-default-rtdb.firebaseio.com
+      - key: SQUARE_ENVIRONMENT
+        value: production
+      - key: SQUARE_ACCESS_TOKEN
+        sync: false
+      - key: RC_SERVER_URL
+        value: https://platform.ringcentral.com
+      - key: RC_CLIENT_ID
+        sync: false
+      - key: RC_CLIENT_SECRET
+        sync: false
+      - key: RC_JWT
+        sync: false
+      - key: RC_FROM_NUMBER
+        sync: false
+      - key: RC_WEBHOOK_URL
+        sync: false
+      - key: MS_GRAPH_TENANT_ID
+        sync: false
+      - key: MS_GRAPH_CLIENT_ID
+        sync: false
+      - key: MS_GRAPH_CLIENT_SECRET
+        sync: false
+      - key: OUTLOOK_SENDER_EMAIL
+        value: info@ablecaremobility.com
+      - key: REMINDER_AUTOSEND_ENABLED
+        value: "false"
+      - key: REMINDER_SEND_HOUR
+        value: "17"
+      - key: REMINDER_SEND_MINUTE
+        value: "0"
+      - key: REMINDER_LOOKAHEAD_DAYS
+        value: "1"
