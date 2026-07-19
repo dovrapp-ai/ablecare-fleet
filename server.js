@@ -341,6 +341,32 @@ function firstEmail(...values) {
   return '';
 }
 
+function normalizeNameKey(value) {
+  return String(value || '').toLowerCase().replace(/[^a-z0-9]/g, '');
+}
+
+function settingsFacilityList(settings) {
+  const raw = settings?.facilities || settings?.facilityList || [];
+  if (Array.isArray(raw)) return raw;
+  if (raw && typeof raw === 'object') return Object.values(raw);
+  return [];
+}
+
+function facilityEmailForRide(settings, ride) {
+  const facilityKey = normalizeNameKey(ride?.facility || '');
+  if (!facilityKey) return '';
+  const facility = settingsFacilityList(settings).find((item) => normalizeNameKey(item?.name || item?.facility || '') === facilityKey);
+  if (!facility) return '';
+  return firstEmail(
+    facility.email,
+    facility.facilityEmail,
+    facility.contactEmail,
+    facility.schedulerEmail,
+    facility.billingEmail,
+    facility.requesterEmail
+  );
+}
+
 function normalizeCommunicationSource(value) {
   const raw = String(value || '').toLowerCase().trim();
   if (!raw) return '';
@@ -388,7 +414,7 @@ function inferReminderChannel(ride) {
   if (source.includes('ringcentral') || source.includes('sms') || source.includes('text')) return 'sms';
   if (source.includes('outlook') || source.includes('email') || source.includes('mail')) return 'email';
   if (cleanPhone(ride?.clientPhone || ride?.phone || ride?.requesterPhone)) return 'sms';
-  if (firstEmail(ride?.clientEmail, ride?.requesterEmail, ride?.email)) return 'email';
+  if (firstEmail(ride?.clientEmail, ride?.requesterEmail, ride?.email, ride?.facilityEmail)) return 'email';
   return 'review';
 }
 
@@ -406,11 +432,15 @@ function displayTime(value) {
 
 function buildReminderText(ride) {
   const client = String(ride.client || 'your ride').trim();
+  const facility = String(ride.facility || '').trim();
+  const rideLabel = facility && client && client.toLowerCase() !== facility.toLowerCase()
+    ? `${facility} patient ${client}`
+    : client;
   const time = displayTime(ride.time);
   const pickup = String(ride.pickup || '').trim();
   const dropoff = String(ride.dropoff || '').trim();
   const parts = [
-    `Reminder from AbleCare Mobility: ${client}${time ? ` is scheduled for pickup tomorrow at ${time}` : ' has transportation scheduled for tomorrow'}.`,
+    `Reminder from AbleCare Mobility: ${rideLabel}${time ? ` is scheduled for pickup tomorrow at ${time}` : ' has transportation scheduled for tomorrow'}.`,
   ];
   if (pickup) parts.push(`Pickup: ${pickup}.`);
   if (dropoff) parts.push(`Drop off: ${dropoff}.`);
@@ -439,25 +469,31 @@ async function patchFirebase(pathname, value) {
 }
 
 async function listReminderCandidates(date) {
-  const [ridesRaw, sentRaw] = await Promise.all([
+  const [ridesRaw, sentRaw, settingsRaw] = await Promise.all([
     firebaseGetJson('rides').catch(() => ({})),
     firebaseGetJson(`reminderLogs/${date}`).catch(() => ({})),
+    firebaseGetJson('settings').catch(() => ({})),
   ]);
   const sent = sentRaw || {};
   const rides = Object.entries(ridesRaw || {})
     .filter(([, ride]) => ride && ride.date === date && !isCancelledRide(ride))
     .map(([key, ride]) => {
-      const channel = inferReminderChannel(ride);
-      const communicationSource = inferCommunicationSource(ride, channel);
+      const facilityEmail = facilityEmailForRide(settingsRaw, ride);
+      const enrichedRide = { ...ride, facilityEmail };
+      const channel = inferReminderChannel(enrichedRide);
+      const communicationSource = inferCommunicationSource(enrichedRide, channel);
       const toPhone = cleanPhone(ride.clientPhone || ride.phone || ride.requesterPhone || '');
-      const toEmail = firstEmail(ride.clientEmail, ride.requesterEmail, ride.email);
+      const toEmail = firstEmail(ride.clientEmail, ride.requesterEmail, ride.email, facilityEmail);
+      const sourceOutlookMessageId = ride.sourceOutlookMessageId || ride.outlookMessageId || '';
+      const sourceOutlookConversationId = ride.sourceOutlookConversationId || ride.outlookConversationId || '';
+      const canReplyToOutlookThread = channel === 'email' && Boolean(sourceOutlookMessageId);
       const sentRecord = sent[reminderLogKey(date, key)] || null;
       const blockedReason = channel === 'off'
         ? 'Reminder off for this ride.'
         : channel === 'sms' && !toPhone
           ? 'SMS selected but no client phone is saved.'
-          : channel === 'email' && !toEmail
-            ? 'Email selected but no client email is saved.'
+          : channel === 'email' && !toEmail && !canReplyToOutlookThread
+            ? 'Email selected but no client email is saved and no original Outlook thread is linked.'
             : channel === 'review'
               ? 'Choose email or SMS before sending.'
               : '';
@@ -466,11 +502,11 @@ async function listReminderCandidates(date) {
         date,
         channel,
         communicationSource,
-        sourceOutlookMessageId: ride.sourceOutlookMessageId || ride.outlookMessageId || '',
-        sourceOutlookConversationId: ride.sourceOutlookConversationId || ride.outlookConversationId || '',
+        sourceOutlookMessageId,
+        sourceOutlookConversationId,
         toPhone,
         toEmail,
-        text: buildReminderText(ride),
+        text: buildReminderText(enrichedRide),
         sent: Boolean(sentRecord),
         sentRecord,
         blockedReason,
@@ -481,11 +517,12 @@ async function listReminderCandidates(date) {
           pickup: ride.pickup || '',
           dropoff: ride.dropoff || '',
           driver: ride.driver || '',
+          facilityEmail,
           entrySource: ride.entrySource || '',
           communicationSource,
           sourceMessageId: ride.sourceMessageId || '',
-          sourceOutlookMessageId: ride.sourceOutlookMessageId || ride.outlookMessageId || '',
-          sourceOutlookConversationId: ride.sourceOutlookConversationId || ride.outlookConversationId || '',
+          sourceOutlookMessageId,
+          sourceOutlookConversationId,
         },
       };
     })
@@ -625,7 +662,8 @@ async function sendReminder(candidate, requestedChannel) {
   }
 
   if (channel === 'email') {
-    if (!candidate.toEmail) {
+    const sourceMessageId = String(candidate.sourceOutlookMessageId || candidate.ride?.sourceOutlookMessageId || '').trim();
+    if (!candidate.toEmail && !sourceMessageId) {
       const err = new Error('Cannot send email reminder because no client email is saved.');
       err.status = 400;
       throw err;

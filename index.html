@@ -5896,10 +5896,22 @@ function reminderChannelLabel(item){
   }
   if(item.channel==='email'){
     const label = source === 'outlook_email' ? 'Email via Outlook' : 'Email';
-    return `${label} ${item.toEmail?`to ${escHtml(item.toEmail)}`:''}`;
+    if(item.toEmail) return `${label} to ${escHtml(item.toEmail)}`;
+    if(item.sourceOutlookMessageId || item.ride?.sourceOutlookMessageId) return `${label} - replies to original Outlook thread`;
+    return label;
   }
   if(item.channel==='off') return 'Off';
   return 'Choose method';
+}
+
+function reminderRideTitle(ride){
+  const time=ride.time||'';
+  const facility=String(ride.facility||'').trim();
+  const client=String(ride.client||'').trim();
+  const name = facility && client && facility.toLowerCase() !== client.toLowerCase()
+    ? `${facility} - ${client}`
+    : (client || facility || 'Ride');
+  return [time,name].filter(Boolean).join(' - ');
 }
 
 async function loadReminders(){
@@ -5918,7 +5930,7 @@ async function loadReminders(){
     }
     list.innerHTML=data.candidates.map(item=>{
       const ride=item.ride||{};
-      const title=[ride.time,ride.client||ride.facility||'Ride'].filter(Boolean).join(' - ');
+      const title=reminderRideTitle(ride);
       const disabled=item.sent||item.blockedReason?'disabled':'';
       const actionLabel=item.sent?'Sent':'Send';
       return `<div style="background:#fff;border-radius:14px;padding:16px 18px;border:1px solid #e8eef4;box-shadow:0 1px 4px rgba(0,0,0,0.04)">
