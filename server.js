@@ -410,11 +410,18 @@ function inferReminderChannel(ride) {
     ride?.sourceImportKey,
     ride?.sourceEmailSubject,
   ].filter(Boolean).join(' ').toLowerCase();
+  const hasOutlookEmailThread = Boolean(ride?.sourceOutlookMessageId || ride?.outlookMessageId);
+  const hasCalendarOnlySource = source.includes('outlook-ical')
+    || source.includes('outlook_calendar_only')
+    || source.includes('outlook calendar')
+    || source.includes('calendar_import');
 
   if (source.includes('ringcentral') || source.includes('sms') || source.includes('text')) return 'sms';
-  if (source.includes('outlook') || source.includes('email') || source.includes('mail')) return 'email';
+  if (source.includes('email') || source.includes('mail') || hasOutlookEmailThread) return 'email';
   if (cleanPhone(ride?.clientPhone || ride?.phone || ride?.requesterPhone)) return 'sms';
   if (firstEmail(ride?.clientEmail, ride?.requesterEmail, ride?.email, ride?.facilityEmail)) return 'email';
+  if (hasCalendarOnlySource) return 'review';
+  if (source.includes('outlook')) return 'review';
   return 'review';
 }
 
@@ -495,7 +502,9 @@ async function listReminderCandidates(date) {
           : channel === 'email' && !toEmail && !canReplyToOutlookThread
             ? 'Email selected but no client email is saved and no original Outlook thread is linked.'
             : channel === 'review'
-              ? 'Choose email or SMS before sending.'
+              ? (communicationSource === 'outlook_calendar_only'
+                ? 'Imported from Outlook Calendar only; add/link an email or phone before sending.'
+                : 'Choose email or SMS before sending.')
               : '';
       return {
         rideKey: key,
