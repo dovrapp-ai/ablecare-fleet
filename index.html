@@ -6035,7 +6035,7 @@ function reminderContactEditor(item){
       <option value="email"${currentMethod==='email'?' selected':''}>Email</option>
     </select>
     <input id="${escHtml(inputId)}" type="text" value="${escHtml(currentValue)}" placeholder="Phone number or email address" style="min-width:240px;flex:1;padding:9px 11px;border:1px solid #fdba74;border-radius:8px;font-size:13px;color:#0f172a;background:#fff">
-    <button class="add-btn" style="padding:8px 12px;font-size:12px;background:#0ea5e9" onclick="saveReminderContact(${jsString(item.rideKey)}, this)">Save</button>
+    <button class="add-btn" data-reminder-save="desktop" data-ride-key="${escHtml(item.rideKey)}" style="padding:8px 12px;font-size:12px;background:#0ea5e9">Save</button>
   </div>`;
 }
 
@@ -6137,7 +6137,7 @@ function mobileReminderContactEditor(item){
       <option value="email"${currentMethod==='email'?' selected':''}>Email</option>
     </select>
     <input id="${escHtml(inputId)}" value="${escHtml(currentValue)}" placeholder="Phone or email">
-    <button onclick="mobileSaveReminderContact(${jsString(item.rideKey)}, this)">Save</button>
+    <button data-reminder-save="mobile" data-ride-key="${escHtml(item.rideKey)}">Save</button>
   </div>`;
 }
 
@@ -6264,6 +6264,19 @@ async function mobileDryRunReminders(){
     alert(e.message||'Dry run failed.');
   }
 }
+
+document.addEventListener('click', (event)=>{
+  const button=event.target.closest('[data-reminder-save]');
+  if(!button) return;
+  event.preventDefault();
+  event.stopPropagation();
+  const rideKey=button.getAttribute('data-ride-key')||'';
+  if(button.getAttribute('data-reminder-save')==='mobile'){
+    mobileSaveReminderContact(rideKey, button);
+  }else{
+    saveReminderContact(rideKey, button);
+  }
+});
 
 async function sendRideReminder(rideKey){
   const date=document.getElementById('reminder-date')?.value||reminderDefaultDate();
