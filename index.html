@@ -5965,6 +5965,25 @@ function reminderRideTitle(ride){
   return [time,name].filter(Boolean).join(' - ');
 }
 
+function jsString(value){
+  return JSON.stringify(String(value||'')).replace(/</g,'\\u003c');
+}
+
+function reminderContactInputId(rideKey){
+  return `reminder-contact-${String(rideKey||'').replace(/[^a-zA-Z0-9_-]/g,'_')}`;
+}
+
+function reminderNeedsContactEditor(item){
+  if(!item.blockedReason || item.sent) return '';
+  const reason=String(item.blockedReason||'').toLowerCase();
+  if(!/(email|phone|sms|contact|choose method|where to send)/.test(reason)) return '';
+  const inputId=reminderContactInputId(item.rideKey);
+  return `<div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-top:10px;background:#fff7ed;border:1px solid #fed7aa;border-radius:10px;padding:10px">
+    <input id="${escHtml(inputId)}" type="text" placeholder="Add phone or email for this ride" style="min-width:240px;flex:1;padding:9px 11px;border:1px solid #fdba74;border-radius:8px;font-size:13px;color:#0f172a;background:#fff">
+    <button class="add-btn" style="padding:8px 12px;font-size:12px;background:#0ea5e9" onclick="saveReminderContact(${jsString(item.rideKey)})">Save Contact</button>
+  </div>`;
+}
+
 async function loadReminders(){
   const date=document.getElementById('reminder-date')?.value||reminderDefaultDate();
   const list=document.getElementById('reminder-list');
@@ -5997,12 +6016,46 @@ async function loadReminders(){
           ${ride.driver?`<span>Driver: ${escHtml(ride.driver)}</span>`:''}
           ${item.blockedReason?`<span style="color:#c2410c;font-weight:700">${escHtml(item.blockedReason)}</span>`:''}
         </div>
+        ${reminderNeedsContactEditor(item)}
         <div style="font-size:13px;color:#334155;background:#f8fafc;border:1px solid #e8eef4;border-radius:10px;padding:10px 12px;margin-top:10px;line-height:1.45">${escHtml(item.text)}</div>
       </div>`;
     }).join('');
   }catch(e){
     summary.textContent='';
     list.innerHTML=`<div style="background:#fff7ed;border:1px solid #fed7aa;border-radius:14px;padding:18px;color:#c2410c;font-weight:700">${escHtml(e.message)}</div>`;
+  }
+}
+
+async function saveReminderContact(rideKey){
+  const input=document.getElementById(reminderContactInputId(rideKey));
+  const raw=String(input?.value||'').trim();
+  if(!raw){alert('Enter a phone number or email address.');return;}
+  if(!firebaseReady || !db){alert('Database is still loading. Try again in a moment.');return;}
+  const isEmail=/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(raw);
+  const phoneDigits=raw.replace(/\D/g,'');
+  const patch={
+    updatedAt:Date.now(),
+    updatedBy:currentUserName(),
+    updatedByRole:currentUserRole(),
+    missingReminderContact:null,
+    reviewFlag:null,
+    contactSource:'manual-reminder-entry'
+  };
+  if(isEmail){
+    patch.clientEmail=raw;
+    patch.reminderMethod='email';
+    patch.communicationSource='manual_email';
+  }else{
+    if(phoneDigits.length<10){alert('Enter a valid phone number or email address.');return;}
+    patch.clientPhone=phoneDigits.length===11 && phoneDigits.startsWith('1') ? phoneDigits.slice(1) : phoneDigits;
+    patch.reminderMethod='sms';
+    patch.communicationSource='ringcentral_sms';
+  }
+  try{
+    await ridesRef().child(rideKey).update(patch);
+    await loadReminders();
+  }catch(e){
+    alert(e.message||'Could not save reminder contact.');
   }
 }
 
