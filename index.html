@@ -4151,9 +4151,9 @@ async function renderImportReviewList(){
     const duplicates = findRideDuplicates(rideDraft, allRides, record);
     const reviewFlag = String(record.reviewFlag || rideDraft.reviewFlag || 'ok').toLowerCase() === 'needs_review' ? 'needs_review' : 'ok';
     const duplicateDetail = duplicates.length
-      ? `<div class="import-review-field" style="margin-bottom:10px"><strong>Possible Duplicate</strong>${escHtml(duplicates.slice(0,2).map(r=>`${r.client||r.facility||'Ride'} ${r.date||''} ${r.time||''}`.trim()).join(' • '))}</div>`
+      ? `<div class="import-review-field" style="margin-bottom:10px"><strong>Possible Duplicate</strong>${escHtml(duplicates.slice(0,2).map(r=>`${r.client||r.facility||'Ride'} ${fmtDateMDY(r.date)||''} ${r.time||''}`.trim()).join(' • '))}</div>`
       : '';
-    const metaLine = [rideDraft.date || '', rideDraft.time || '', rideDraft.facility || 'Private'].filter(Boolean).join(' • ');
+    const metaLine = [fmtDateMDY(rideDraft.date) || '', rideDraft.time || '', rideDraft.facility || 'Private'].filter(Boolean).join(' • ');
     return `<div class="import-review-card${duplicates.length?' duplicate':''}">
       <div class="import-review-top">
         <div>
@@ -4219,7 +4219,7 @@ async function renderRideRequestReviewList(){
       : returnStatus === 'no_return'
         ? 'No return'
         : returnTime || '';
-    const metaLine = [ride.date || '', ride.time || '', facility].filter(Boolean).join(' â€¢ ');
+    const metaLine = [fmtDateMDY(ride.date) || '', ride.time || '', facility].filter(Boolean).join(' â€¢ ');
     const notes = ride.notes || '';
     const raw = req.rawMessage || '';
     const sourceLabel = String(req.source || '').toLowerCase().includes('ringcentral') ? 'Phone/Text' : 'Portal';
@@ -4293,8 +4293,8 @@ function openRideRequestResponseModal(requestKey, presetStatus){
   setReqRespStatus(presetStatus || 'accepted');
 
   const defaultMsg = reqRespStatus === 'accepted'
-    ? `Accepted. Pickup is scheduled for ${ride.date || ''} at ${ride.time || ''}.`
-    : `We do not have availability for ${ride.date || ''} at ${ride.time || ''}.`;
+    ? `Accepted. Pickup is scheduled for ${fmtDateMDY(ride.date) || ''} at ${ride.time || ''}.`
+    : `We do not have availability for ${fmtDateMDY(ride.date) || ''} at ${ride.time || ''}.`;
   document.getElementById('req-resp-message').value = defaultMsg.trim();
 
   document.getElementById('request-response-modal').style.display = 'flex';
@@ -4783,7 +4783,7 @@ function dashboardUserKey(name){
 function formatLoginTime(ts){
   const n=Number(ts||0);
   if(!n) return 'Never';
-  return new Date(n).toLocaleString('en-US',{month:'short',day:'numeric',year:'numeric',hour:'numeric',minute:'2-digit'});
+  return new Date(n).toLocaleString('en-US',{month:'2-digit',day:'2-digit',year:'numeric',hour:'numeric',minute:'2-digit'});
 }
 async function recordDashboardSignIn(user){
   if(!user?.name) return;
@@ -5435,7 +5435,7 @@ function statusBadgeTableHtml(statusVal){
 
 function fmtScheduleStamp(ts){
   if(!ts) return '';
-  return new Date(ts).toLocaleString('en-US',{month:'short',day:'numeric',hour:'numeric',minute:'2-digit'});
+  return new Date(ts).toLocaleString('en-US',{month:'2-digit',day:'2-digit',year:'numeric',hour:'numeric',minute:'2-digit'});
 }
 
 async function renderScheduleSyncBar(ds, dayRides){
@@ -5925,6 +5925,12 @@ function toggleMobileMenu(){
 }
 
 function dateStr(d){return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');}
+function fmtDateMDY(value){
+  const raw=String(value||'').trim();
+  const match=raw.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+  if(!match) return raw;
+  return `${match[2]}/${match[3]}/${match[1]}`;
+}
 function fmtTime12(t){if(!t)return'—';const[h,m]=t.split(':').map(Number);const ap=h>=12?'PM':'AM';const h12=h%12||12;return`${h12}:${String(m).padStart(2,'0')} ${ap}`;}
 
 function setRidesFilter(f){
@@ -6657,7 +6663,7 @@ function confirmationRideLabel(ride){
 
 function buildRideConfirmationMessage(ride){
   const name=ride.client||ride.facility||'the rider';
-  const date=ride.date?new Date(`${ride.date}T12:00:00`).toLocaleDateString('en-US',{month:'long',day:'numeric',year:'numeric'}):'not set';
+  const date=fmtDateMDY(ride.date)||'not set';
   const time=ride.time?fmtTime12(ride.time):'not set';
   const pickup=ride.pickup||'not saved';
   const dropoff=ride.dropoff||'not saved';
@@ -7187,7 +7193,7 @@ async function renderMobileDashboard(){
             return `<div style="border-top:1px solid #eef2f7;padding-top:10px;margin-top:10px;cursor:pointer" onclick="openLogEdit('${editKey}')">
               <div style="display:flex;justify-content:space-between;gap:10px;align-items:flex-start">
                 <div style="min-width:0">
-                  <div style="font-size:13px;font-weight:900;color:#0f172a;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${mobileEsc(r.date||'')} ${timeLabel?('• '+mobileEsc(timeLabel)):''}</div>
+                  <div style="font-size:13px;font-weight:900;color:#0f172a;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${mobileEsc(fmtDateMDY(r.date)||'')} ${timeLabel?('• '+mobileEsc(timeLabel)):''}</div>
                   <div style="font-size:16px;font-weight:900;color:#0f172a;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${mobileEsc(title)}</div>
                   ${sub?`<div style="font-size:13px;color:#64748b;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${mobileEsc(sub)}</div>`:''}
                   <div style="font-size:12px;color:#64748b;margin-top:6px">${mobileEsc(typeLabel)} · ${mobileEsc(milesLabel)} · ${mobileEsc(paidLabel)} · ${mobileEsc(priceLabel)}</div>
@@ -8901,7 +8907,7 @@ function formatSquareDate(value){
   if(!value) return '';
   const d = new Date(value);
   if(Number.isNaN(d.getTime())) return '';
-  return d.toLocaleString('en-US',{month:'short',day:'numeric',hour:'numeric',minute:'2-digit'});
+  return d.toLocaleString('en-US',{month:'2-digit',day:'2-digit',year:'numeric',hour:'numeric',minute:'2-digit'});
 }
 
 function renderSquareSales(data){
@@ -9515,7 +9521,7 @@ function getReportDuplicateGroups(){
 async function deleteDuplicateReportRide(key){
   if(!key) return;
   const ride=repRides.find(r=>r._key===key);
-  const label=ride ? `${ride.date||''} ${ride.time||''} ${ride.client||ride.facility||'ride'}`.trim() : 'this report row';
+  const label=ride ? `${fmtDateMDY(ride.date)||''} ${ride.time||''} ${ride.client||ride.facility||'ride'}`.trim() : 'this report row';
   if(!confirm(`Delete duplicate report row?\n\n${label}\n\nThis removes it from Reports only.`)) return;
   await rideLogRef().child(key).remove();
   await loadReports();
@@ -9567,7 +9573,7 @@ function renderReportDuplicates(){
           <button title="Edit" onclick="openLogEdit('${r._key||''}')" style="margin-left:6px;background:#f4f7fb;border:1px solid #e8eef4;border-radius:6px;padding:4px 7px;font-size:11px;font-weight:800;color:#6b82a8;cursor:pointer">Edit</button>
           ${i>0?`<button title="Delete duplicate row" onclick="deleteDuplicateReportRide('${r._key||''}')" style="margin-left:4px;background:#fef2f2;border:1px solid #fecaca;border-radius:6px;padding:4px 7px;font-size:11px;font-weight:800;color:#dc2626;cursor:pointer">Delete</button>`:''}
         </td>
-        <td style="padding:8px 10px;white-space:nowrap;color:#0d1b2a;font-weight:700">${escHtml(r.date||'')} ${escHtml(r.time||'')}</td>
+        <td style="padding:8px 10px;white-space:nowrap;color:#0d1b2a;font-weight:700">${escHtml(fmtDateMDY(r.date)||'')} ${escHtml(r.time||'')}</td>
         <td style="padding:8px 10px;color:#0d1b2a"><strong>${escHtml(r.client||'')}</strong><div style="color:#64748b">${escHtml(r.facility||'')}</div></td>
         <td style="padding:8px 10px;color:#64748b">${escHtml(r.driver||'')}</td>
         <td style="padding:8px 10px;text-align:right;font-weight:800;color:#0d1b2a">${escHtml(r.price||'')}</td>
@@ -10058,8 +10064,7 @@ function renderInvoicePreview(data){
 
 function formatInvDate(ds){
   if(!ds) return '—';
-  const d = new Date(ds+'T12:00:00');
-  return d.toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'});
+  return fmtDateMDY(ds);
 }
 
 function printInvoice(){
@@ -11168,7 +11173,7 @@ function downloadComplianceItemIcs(){
 
 // ── HELPERS ──
 function fmtTime(ts){if(!ts)return'—';const d=new Date(ts);let h=d.getHours(),m=d.getMinutes(),ap=h>=12?'PM':'AM';h=h%12||12;return`${h}:${String(m).padStart(2,'0')} ${ap}`;}
-function fmtDate(s){return new Date(s+'T12:00:00').toLocaleDateString('en-US',{weekday:'short',month:'short',day:'numeric'});}
+function fmtDate(s){return fmtDateMDY(s);}
 function fmtDur(ms){const h=Math.floor(ms/3600000),m=Math.floor((ms%3600000)/60000);return h>0?`${h}h ${m}m`:`${m}m`;}
 function fmtH(ms){return(ms/3600000).toFixed(1)+'h';}
 function fmtHDecimal(ms){return(ms/3600000).toFixed(2);}

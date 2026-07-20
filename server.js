@@ -437,6 +437,13 @@ function displayTime(value) {
   return `${hour}:${minute} ${suffix}`;
 }
 
+function displayDate(value) {
+  const raw = String(value || '').trim();
+  const match = raw.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+  if (!match) return raw;
+  return `${match[2]}/${match[3]}/${match[1]}`;
+}
+
 function buildReminderText(ride) {
   const client = String(ride.client || 'your ride').trim();
   const facility = String(ride.facility || '').trim();
@@ -458,7 +465,7 @@ function buildReminderText(ride) {
 
 function buildRideConfirmationText(ride) {
   const client = String(ride.client || ride.facility || 'the rider').trim();
-  const date = String(ride.date || '').trim();
+  const date = displayDate(ride.date);
   const time = displayTime(ride.time) || String(ride.time || '').trim() || 'not set';
   const pickup = String(ride.pickup || '').trim() || 'not saved';
   const dropoff = String(ride.dropoff || '').trim() || 'not saved';
