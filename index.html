@@ -3054,6 +3054,7 @@ let rideToggles={ridetype:'wc',triptype:'rt',van:'',paid:'no',wait:'no',paymetho
 let selectedDate=new Date();
 let miniMonthOffset=0;
 let ridesFilter='all';
+let lastRenderedRideDate='';
 let allRidesCache={};
 let allRideLogCache={};
 let facEditKey=null;
@@ -4400,6 +4401,31 @@ async function commitApprovedImportedRide(record){
     importedRideKey:newRef.key
   });
   return newRef.key;
+}
+
+function captureRidesScrollState(ds){
+  const screen=document.getElementById('screen-rides');
+  if(!screen?.classList.contains('active') || lastRenderedRideDate !== ds) return null;
+  const grid=document.getElementById('time-grid');
+  const sidebar=document.querySelector('#screen-rides .rides-sidebar');
+  return {
+    ds,
+    gridTop:grid ? grid.scrollTop : 0,
+    sidebarTop:sidebar ? sidebar.scrollTop : 0,
+    windowX:window.scrollX || 0,
+    windowY:window.scrollY || 0
+  };
+}
+
+function restoreRidesScrollState(state){
+  if(!state || lastRenderedRideDate !== state.ds) return;
+  requestAnimationFrame(()=>{
+    const grid=document.getElementById('time-grid');
+    const sidebar=document.querySelector('#screen-rides .rides-sidebar');
+    if(grid) grid.scrollTop=state.gridTop || 0;
+    if(sidebar) sidebar.scrollTop=state.sidebarTop || 0;
+    if(state.windowY || state.windowX) window.scrollTo(state.windowX || 0, state.windowY || 0);
+  });
 }
 
 function refreshImportedRideViews(){
@@ -5850,11 +5876,15 @@ function renderMiniCal(){
 }
 
 async function renderDayView(){
+  const ds=dateStr(selectedDate);
+  const scrollState=captureRidesScrollState(ds);
   if(!db){
     document.getElementById('time-grid').innerHTML='<div style="padding:40px;text-align:center;color:#ef4444;font-weight:800">⚠️ Not connected to database. Please refresh.</div>';
     return;
   }
-  document.getElementById('time-grid').innerHTML='<div style="padding:40px;text-align:center;color:#6b82a8">Loading rides...</div>';
+  if(!scrollState){
+    document.getElementById('time-grid').innerHTML='<div style="padding:40px;text-align:center;color:#6b82a8">Loading rides...</div>';
+  }
   let allRides = [];
   try{
     const [ridesSnap, logSnap]=await Promise.all([
@@ -5874,7 +5904,7 @@ async function renderDayView(){
   if(unpaid.length>0){unpaidBar.style.display='block';document.getElementById('unpaid-count').textContent=unpaid.length;}
   else{unpaidBar.style.display='none';}
   renderMiniCal();
-  const ds=dateStr(selectedDate);const today=dateStr(new Date());const isToday=ds===today;
+  const today=dateStr(new Date());const isToday=ds===today;
   document.getElementById('day-title').textContent=(isToday?'Today — ':'')+selectedDate.toLocaleDateString('en-US',{weekday:'long',month:'long',day:'numeric',year:'numeric'});
   let dayRides=allRides.filter(r=>r.date===ds);
   if(ridesFilter==='unpaid') dayRides=dayRides.filter(r=>r.price&&r.price!==''&&r.paid!=='yes');
@@ -5882,7 +5912,12 @@ async function renderDayView(){
   await renderScheduleSyncBar(ds, dayRides);
   renderDriverActivityPanel(ds, dayRides);
   const grid=document.getElementById('time-grid');
-  if(!dayRides.length){grid.innerHTML=`<div class="no-rides-msg"><div>🚐</div><div style="font-size:15px;font-weight:700;color:#6b82a8;margin-bottom:8px">No rides scheduled</div><div style="font-size:13px">Click "+ Add Ride" or tap a time slot to add a ride</div></div>`;return;}
+  if(!dayRides.length){
+    grid.innerHTML=`<div class="no-rides-msg"><div>🚐</div><div style="font-size:15px;font-weight:700;color:#6b82a8;margin-bottom:8px">No rides scheduled</div><div style="font-size:13px">Click "+ Add Ride" or tap a time slot to add a ride</div></div>`;
+    lastRenderedRideDate=ds;
+    restoreRidesScrollState(scrollState);
+    return;
+  }
   const sorted=dayRides.slice().sort((a,b)=>(a.time||'99:99').localeCompare(b.time||'99:99'));
   const html=sorted.map(r=>{
     const isUnpaid=r.price&&r.price!==''&&r.paid!=='yes';
@@ -5928,6 +5963,8 @@ async function renderDayView(){
     </div>`;
   }).join('');
   grid.innerHTML=`<div class="rides-focus-list">${html}</div>`;
+  lastRenderedRideDate=ds;
+  restoreRidesScrollState(scrollState);
 }
 
 function initRides(){selectedDate=new Date();miniMonthOffset=0;ridesFilter='all';renderDayView();}
@@ -6783,6 +6820,9 @@ async function saveMobileComplianceItem(){
 async function renderMobileDashboard(){
   const shell=document.getElementById('screen-mobile');
   if(!shell) return;
+  const preserveMobileScroll=shell.classList.contains('active') && !document.body.classList.contains('modal-open')
+    ? {x:window.scrollX||0,y:window.scrollY||0,panel:mobilePanel}
+    : null;
   const ds=dateStr(selectedDate||new Date());
   mobileSetText('mobile-dashboard-date',selectedDate.toLocaleDateString('en-US',{weekday:'long',month:'long',day:'numeric'}));
   const picker=document.getElementById('mobile-ride-date-picker');
@@ -6873,6 +6913,9 @@ async function renderMobileDashboard(){
     document.getElementById('mobile-map-driver-list').innerHTML=mapRows||mobileEmpty('No driver location data yet.');
     if(mobilePanel==='map') setTimeout(()=>updateMobileMap(drivers,locs),0);
     renderMobileCompliance();
+    if(preserveMobileScroll && preserveMobileScroll.panel===mobilePanel){
+      requestAnimationFrame(()=>window.scrollTo(preserveMobileScroll.x, preserveMobileScroll.y));
+    }
 
     const range=getPPRange(ppOffset);
     let totalMs=0;
