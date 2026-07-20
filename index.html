@@ -2811,6 +2811,36 @@ body[data-user-role="manager"] .owner-only-setting{display:none !important}
 </div>
 
 
+<!-- Ride Confirmation Modal -->
+<div class="modal-overlay" id="confirmation-modal">
+  <div class="modal-box" style="max-width:560px;max-height:92vh;overflow-y:auto">
+    <div class="modal-title">Send Ride Confirmation</div>
+    <div class="modal-driver" id="confirmation-ride-ref"></div>
+    <div class="modal-grid" style="display:grid;grid-template-columns:140px 1fr;gap:12px">
+      <div class="modal-field">
+        <label>Send by</label>
+        <select id="confirmation-channel" onchange="syncConfirmationContactPlaceholder()" style="width:100%;padding:10px 14px;border:2px solid #e8eef4;border-radius:10px;font-size:14px;color:#0d1b2a;outline:none;font-family:inherit;background:#fff">
+          <option value="sms">Text</option>
+          <option value="email">Email</option>
+        </select>
+      </div>
+      <div class="modal-field">
+        <label>Phone or Email</label>
+        <input id="confirmation-contact" placeholder="Phone number or email"/>
+      </div>
+    </div>
+    <div class="modal-field">
+      <label>Message Preview</label>
+      <textarea id="confirmation-message" rows="9" style="width:100%;padding:12px 14px;border:2px solid #e8eef4;border-radius:10px;font-size:14px;color:#0d1b2a;outline:none;font-family:inherit;line-height:1.45;resize:vertical"></textarea>
+    </div>
+    <div id="confirmation-status" style="font-size:12px;font-weight:800;margin-bottom:10px;display:none"></div>
+    <div class="modal-actions">
+      <button class="modal-save" id="confirmation-send-btn" onclick="sendRideConfirmation()">Send Confirmation</button>
+      <button class="modal-cancel" onclick="closeRideConfirmationModal()">Cancel</button>
+    </div>
+  </div>
+</div>
+
 <div class="modal-overlay" id="facility-modal">
   <div class="modal-box" style="max-width:480px">
     <div class="modal-title" id="fac-modal-title">Add Facility</div>
@@ -6043,6 +6073,7 @@ async function renderDayView(){
       ${!isReturn?returnRequestSummaryHtml(r):''}
       <div class="ride-focus-actions" onclick="event.stopPropagation()">
         ${r.triptype==='rt'&&!isReturn?`<button class="add-return-btn" onclick="event.stopPropagation();openReturnModal('${r._key}')">Return</button>`:''}
+        <button class="add-return-btn" style="background:#ecfeff;border-color:#06b6d4;color:#0369a1" onclick="event.stopPropagation();openRideConfirmationModal('${r._key}')">Confirm</button>
         <button class="add-return-btn" style="background:#f0f4ff;border-color:#6b82a8;color:#6b82a8" onclick="event.stopPropagation();logRideFromCalendar('${r._key}')">Log</button>
       </div>
     </div>`;
@@ -6471,6 +6502,7 @@ let mobileDriversCache=[];
 let mobileReportsShowAll=false;
 let mobileReportFrom='';
 let mobileReportTo='';
+let confirmationRideKey=null;
 
 function mobileSetText(id,value){
   const el=document.getElementById(id);
@@ -6614,6 +6646,95 @@ function initMobileDashboard(){
   renderMobileDashboard();
 }
 
+function confirmationRideLabel(ride){
+  const name=ride.client||ride.facility||'Ride';
+  const facility=ride.facility&&ride.client?` - ${ride.facility}`:'';
+  const time=ride.time?fmtTime12(ride.time):'Call';
+  return `${time} - ${name}${facility}`;
+}
+
+function buildRideConfirmationMessage(ride){
+  const name=ride.client||ride.facility||'the rider';
+  const date=ride.date?new Date(`${ride.date}T12:00:00`).toLocaleDateString('en-US',{month:'long',day:'numeric',year:'numeric'}):'not set';
+  const time=ride.time?fmtTime12(ride.time):'not set';
+  const pickup=ride.pickup||'not saved';
+  const dropoff=ride.dropoff||'not saved';
+  return [
+    'Is this all correct?',
+    '',
+    `Name: ${name}`,
+    `Pickup date: ${date}`,
+    `Pickup time: ${time}`,
+    `Pickup address: ${pickup}`,
+    `Dropoff address: ${dropoff}`,
+    '',
+    'Please reply yes if everything is correct, or send any changes.'
+  ].join('\n');
+}
+
+function syncConfirmationContactPlaceholder(){
+  const channel=document.getElementById('confirmation-channel')?.value||'sms';
+  const input=document.getElementById('confirmation-contact');
+  if(input) input.placeholder=channel==='email'?'client@example.com':'Phone number';
+}
+
+async function openRideConfirmationModal(rideKey){
+  confirmationRideKey=rideKey;
+  const snap=await ridesRef().child(rideKey).once('value');
+  const ride=snap.val();
+  if(!ride){alert('Ride was not found.');return;}
+  const channel=(ride.reminderMethod==='email'||ride.communicationSource==='outlook_email')?'email':'sms';
+  const contact=channel==='email'
+    ? (ride.clientEmail||ride.requesterEmail||ride.email||ride.facilityEmail||'')
+    : (ride.clientPhone||ride.phone||ride.requesterPhone||'');
+  document.getElementById('confirmation-ride-ref').textContent=confirmationRideLabel(ride);
+  document.getElementById('confirmation-channel').value=channel;
+  document.getElementById('confirmation-contact').value=contact;
+  document.getElementById('confirmation-message').value=buildRideConfirmationMessage(ride);
+  const status=document.getElementById('confirmation-status');
+  if(status){status.style.display='none';status.textContent='';}
+  syncConfirmationContactPlaceholder();
+  document.body.classList.add('modal-open');
+  document.getElementById('confirmation-modal').style.display='flex';
+}
+
+function closeRideConfirmationModal(){
+  document.getElementById('confirmation-modal').style.display='none';
+  document.body.classList.remove('modal-open');
+  confirmationRideKey=null;
+}
+
+async function sendRideConfirmation(){
+  if(!confirmationRideKey) return;
+  const channel=document.getElementById('confirmation-channel')?.value||'sms';
+  const contact=document.getElementById('confirmation-contact')?.value.trim()||'';
+  const text=document.getElementById('confirmation-message')?.value.trim()||'';
+  if(!contact){alert(channel==='email'?'Enter an email address.':'Enter a phone number.');return;}
+  if(!text){alert('Enter a confirmation message.');return;}
+  if(!confirm('Send this ride confirmation now?')) return;
+  const button=document.getElementById('confirmation-send-btn');
+  const status=document.getElementById('confirmation-status');
+  try{
+    if(button){button.disabled=true;button.textContent='Sending...';}
+    if(status){status.style.display='block';status.style.color='#6b82a8';status.textContent='Sending confirmation...';}
+    await reminderApi('/api/ride-confirmations/send',{
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({rideKey:confirmationRideKey,channel,contact,text,sentBy:currentUserName()})
+    });
+    if(status){status.style.color='#047857';status.textContent='Confirmation sent.';}
+    closeRideConfirmationModal();
+    renderDayView();
+    if(document.getElementById('screen-mobile')?.classList.contains('active')) renderMobileDashboard();
+    showToast('Ride confirmation sent.');
+  }catch(e){
+    if(status){status.style.display='block';status.style.color='#c2410c';status.textContent=e.message||'Could not send confirmation.';}
+    else alert(e.message||'Could not send confirmation.');
+  }finally{
+    if(button){button.disabled=false;button.textContent='Send Confirmation';}
+  }
+}
+
 function mobileRideCard(r){
   const assigned=!!r.driver;
   const key=mobileKey(r._key);
@@ -6649,7 +6770,7 @@ function mobileRideCard(r){
     <div class="mobile-ride-actions" style="${canReturn?'':'grid-template-columns:1fr 1fr'}">
       ${canReturn?`<button class="mobile-action-btn light" style="background:#dcfce7;color:#15803d" onclick="openReturnModal('${key}')">Return</button>`:''}
       <button class="mobile-action-btn dark" onclick="openRideModal('${key}')">Open Ride</button>
-      <button class="mobile-action-btn light" onclick="openRideModal('${key}')">Edit</button>
+      <button class="mobile-action-btn light" style="background:#ecfeff;color:#0369a1" onclick="openRideConfirmationModal('${key}')">Confirm</button>
     </div>
   </div>`;
 }

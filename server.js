@@ -456,6 +456,25 @@ function buildReminderText(ride) {
   return parts.join(' ');
 }
 
+function buildRideConfirmationText(ride) {
+  const client = String(ride.client || ride.facility || 'the rider').trim();
+  const date = String(ride.date || '').trim();
+  const time = displayTime(ride.time) || String(ride.time || '').trim() || 'not set';
+  const pickup = String(ride.pickup || '').trim() || 'not saved';
+  const dropoff = String(ride.dropoff || '').trim() || 'not saved';
+  return [
+    'Is this all correct?',
+    '',
+    `Name: ${client}`,
+    `Pickup date: ${date || 'not set'}`,
+    `Pickup time: ${time}`,
+    `Pickup address: ${pickup}`,
+    `Dropoff address: ${dropoff}`,
+    '',
+    'Please reply yes if everything is correct, or send any changes.'
+  ].join('\n');
+}
+
 function reminderLogKey(date, rideKey) {
   return `${date}_${safeFirebaseKey(rideKey)}`;
 }
@@ -575,6 +594,46 @@ async function sendReminderEmail(candidate) {
     id: '',
     subject: message.message.subject,
     to: candidate.toEmail,
+    sender,
+    replyToMessageId: '',
+  };
+}
+
+async function sendConfirmationEmail({ ride, toEmail, text }) {
+  const sender = configuredEnvValue('OUTLOOK_SENDER_EMAIL');
+  const subjectClient = ride?.client || ride?.facility || 'ride';
+  const sourceMessageId = String(ride?.sourceOutlookMessageId || ride?.outlookMessageId || '').trim();
+  if (sourceMessageId) {
+    await microsoftGraphRequest('POST', `/users/${encodeURIComponent(sender)}/messages/${encodeURIComponent(sourceMessageId)}/reply`, {
+      comment: text,
+    });
+    return {
+      id: sourceMessageId,
+      subject: ride?.sourceEmailSubject || '',
+      to: toEmail,
+      sender,
+      replyToMessageId: sourceMessageId,
+    };
+  }
+
+  const message = {
+    message: {
+      subject: `AbleCare Mobility ride confirmation - ${subjectClient}`,
+      body: {
+        contentType: 'Text',
+        content: text,
+      },
+      toRecipients: [
+        { emailAddress: { address: toEmail } },
+      ],
+    },
+    saveToSentItems: true,
+  };
+  await microsoftGraphRequest('POST', `/users/${encodeURIComponent(sender)}/sendMail`, message);
+  return {
+    id: '',
+    subject: message.message.subject,
+    to: toEmail,
     sender,
     replyToMessageId: '',
   };
@@ -1207,6 +1266,90 @@ const server = http.createServer(async (req, res) => {
 
       await patchFirebase(`rides/${safeFirebaseKey(rideKey)}`, patch);
       sendJson(res, 200, { ok: true, rideKey, method, contact: method === 'email' ? patch.clientEmail : patch.clientPhone });
+      return;
+    }
+
+    if (url.pathname === '/api/ride-confirmations/send' && req.method === 'POST') {
+      const body = await readRequestBody(req);
+      const rideKey = String(body.rideKey || '').trim();
+      const channel = String(body.channel || '').toLowerCase().trim();
+      const contact = String(body.contact || '').trim();
+      const sentBy = String(body.sentBy || 'Dashboard').trim();
+      const text = String(body.text || '').trim();
+      if (!rideKey) {
+        sendJson(res, 400, { ok: false, error: 'rideKey is required.' });
+        return;
+      }
+      if (!['sms', 'email'].includes(channel)) {
+        sendJson(res, 400, { ok: false, error: 'Choose Text or Email.' });
+        return;
+      }
+      const ride = await firebaseGetJson(`rides/${safeFirebaseKey(rideKey)}`);
+      if (!ride) {
+        sendJson(res, 404, { ok: false, error: 'Ride was not found.' });
+        return;
+      }
+      const messageText = text || buildRideConfirmationText(ride);
+      let result;
+      let toPhone = '';
+      let toEmail = '';
+      if (channel === 'sms') {
+        toPhone = cleanPhone(contact || ride.clientPhone || ride.phone || ride.requesterPhone || '');
+        const from = cleanPhone(process.env.RC_FROM_NUMBER);
+        if (!toPhone) {
+          sendJson(res, 400, { ok: false, error: 'Enter a valid phone number.' });
+          return;
+        }
+        if (!from) {
+          sendJson(res, 400, { ok: false, error: 'RC_FROM_NUMBER is missing from .env.' });
+          return;
+        }
+        result = {
+          channel,
+          provider: 'ringcentral',
+          providerResult: await ringCentralRequest('POST', '/restapi/v1.0/account/~/extension/~/sms', {
+            from: { phoneNumber: from },
+            to: [{ phoneNumber: toPhone }],
+            text: messageText,
+          }),
+        };
+      } else {
+        toEmail = firstEmail(contact, ride.clientEmail, ride.requesterEmail, ride.email, ride.facilityEmail);
+        const sourceMessageId = String(ride.sourceOutlookMessageId || ride.outlookMessageId || '').trim();
+        if (!toEmail && !sourceMessageId) {
+          sendJson(res, 400, { ok: false, error: 'Enter a valid email address or link the original Outlook thread.' });
+          return;
+        }
+        result = {
+          channel,
+          provider: 'outlook',
+          providerResult: await sendConfirmationEmail({ ride, toEmail, text: messageText }),
+        };
+      }
+      const sentAt = Date.now();
+      const logKey = safeFirebaseKey(`${rideKey}_${sentAt}`);
+      const log = {
+        rideKey,
+        date: ride.date || '',
+        channel,
+        provider: result.provider,
+        toPhone,
+        toEmail,
+        text: messageText,
+        sentAt,
+        sentBy,
+        providerResult: result.providerResult || null,
+      };
+      await writeFirebase(`rideConfirmationLogs/${ride.date || 'unknown'}/${logKey}`, log);
+      await patchFirebase(`rides/${safeFirebaseKey(rideKey)}`, {
+        lastConfirmationAt: sentAt,
+        lastConfirmationChannel: channel,
+        lastConfirmationProvider: result.provider,
+        lastConfirmationBy: sentBy,
+        ...(channel === 'sms' ? { clientPhone: toPhone, reminderMethod: 'sms', communicationSource: 'ringcentral_sms' } : {}),
+        ...(channel === 'email' && toEmail ? { clientEmail: toEmail, reminderMethod: 'email', communicationSource: 'outlook_email' } : {}),
+      });
+      sendJson(res, 200, { ok: true, log });
       return;
     }
 
