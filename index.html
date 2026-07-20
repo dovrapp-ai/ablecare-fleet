@@ -941,20 +941,22 @@ body[data-user-role="manager"] .owner-only-setting{display:none !important}
 .mobile-quick-actions{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:12px}
 .mobile-soft-btn,.mobile-action-btn,.mobile-driver-open,.mobile-opt-btn,.mobile-calc-btn{border:none;border-radius:16px;font-weight:800;cursor:pointer}
 .mobile-soft-btn{padding:13px 10px;font-size:14px;background:#f8fafc;color:#334155;border:1px solid #e2e8f0}
-.mobile-ride-card.unassigned{background:#fffbeb;border-color:#fcd34d}
-.mobile-ride-top{display:flex;align-items:flex-start;justify-content:space-between;gap:10px}
-.mobile-ride-time{color:#0891b2;font-size:15px;font-weight:800;margin-bottom:4px}
-.mobile-ride-facility{font-size:18px;font-weight:800;color:#0f172a}
-.mobile-ride-client{margin-top:2px;color:#475569;font-size:14px}
-.mobile-status{border-radius:999px;padding:6px 10px;font-size:11px;font-weight:800;white-space:nowrap}
+.mobile-ride-card{border-radius:12px;padding:9px 10px;margin-bottom:7px;border-left:5px solid #06b6d4}
+.mobile-ride-card.unassigned{background:#fffdf4;border-color:#f3d87a;border-left-color:#06b6d4}
+.mobile-ride-top{display:grid;grid-template-columns:68px minmax(0,1fr) auto;gap:8px;align-items:center}
+.mobile-ride-time{color:#0891b2;font-size:17px;font-weight:950;white-space:nowrap}
+.mobile-ride-facility{font-size:16px;font-weight:950;color:#0f172a;line-height:1.05;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.mobile-ride-client{margin-top:2px;color:#475569;font-size:13px;font-weight:800;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.mobile-ride-byline{font-size:11px;font-weight:900;color:#64748b;margin-top:5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.mobile-status{border-radius:999px;padding:5px 8px;font-size:11px;font-weight:950;white-space:nowrap}
 .mobile-status.assigned{background:#dcfce7;color:#15803d}
 .mobile-status.unassigned{background:#fef3c7;color:#b45309}
 .mobile-status.warning{background:#fee2e2;color:#b91c1c}
-.mobile-ride-tags{display:flex;flex-wrap:wrap;gap:6px;margin-top:12px}
-.mobile-tag{background:#f1f5f9;color:#334155;padding:6px 10px;border-radius:999px;font-size:12px;font-weight:700}
-.mobile-ride-actions{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:14px}
-.mobile-action-btn.dark{background:#0f172a;color:#fff;padding:13px 10px;font-size:14px}
-.mobile-action-btn.light{background:#e2e8f0;color:#334155;padding:13px 10px;font-size:14px}
+.mobile-ride-tags{display:flex;flex-wrap:wrap;gap:5px;margin-top:7px}
+.mobile-tag{background:#f1f5f9;color:#334155;padding:4px 7px;border-radius:999px;font-size:11px;font-weight:900}
+.mobile-ride-actions{display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px;margin-top:8px}
+.mobile-action-btn.dark{background:#0f172a;color:#fff;padding:8px 5px;font-size:12px;border-radius:10px}
+.mobile-action-btn.light{background:#e2e8f0;color:#334155;padding:8px 5px;font-size:12px;border-radius:10px}
 .mobile-driver-row{display:flex;justify-content:space-between;align-items:center;gap:10px}
 .mobile-driver-name{font-size:15px;font-weight:800}
 .mobile-driver-detail{font-size:12px;color:#64748b;margin-top:3px}
@@ -3846,10 +3848,20 @@ function rideSourceTagHtml(ride){
 }
 
 function rideCreatedByTagHtml(ride){
-  const sourceInfo = getRideEntrySourceInfo(ride);
-  if(sourceInfo.key !== 'manual') return '';
-  const name = ride?.updatedBy || ride?.createdBy || '';
+  const name = rideDisplayCreatorName(ride);
   return name ? `<span class="ride-block-tag" style="background:#f8fafc;color:#475569">By ${escHtml(name)}</span>` : '';
+}
+
+function rideDisplayCreatorName(ride){
+  const name = String(ride?.createdBy || ride?.updatedBy || '').trim();
+  if(!name || /codex|chatgpt|import/i.test(name)) return '';
+  return name;
+}
+
+function rideCreatedByLineText(ride){
+  const sourceInfo = getRideEntrySourceInfo(ride);
+  const name = rideDisplayCreatorName(ride);
+  return name ? `${sourceInfo.label} by ${name}` : '';
 }
 
 function extractImportedRide(record){
@@ -6582,14 +6594,16 @@ function mobileRideCard(r){
   const unpaid=r.price&&r.paid!=='yes';
   const time=r.time?fmtTime12(r.time):'Awaiting call';
   const title=r.facility||r.client||'Ride';
+  const byLine=rideCreatedByLineText(r);
   const isReturn=!!r.returnOf;
   const canReturn=r.triptype==='rt'&&!isReturn;
   return `<div class="mobile-card mobile-ride-card ${assigned?'':'unassigned'}">
     <div class="mobile-ride-top">
-      <div>
-        <div class="mobile-ride-time">${mobileEsc(time)}</div>
+      <div class="mobile-ride-time">${mobileEsc(time)}</div>
+      <div style="min-width:0">
         <div class="mobile-ride-facility">${mobileEsc(title)}</div>
         ${r.client&&r.facility?`<div class="mobile-ride-client">${mobileEsc(r.client)}</div>`:''}
+        ${byLine?`<div class="mobile-ride-byline">${mobileEsc(byLine)}</div>`:''}
       </div>
       <div class="mobile-status ${assigned?'assigned':'unassigned'}">${assigned?'Assigned':'Unassigned'}</div>
     </div>
@@ -6601,10 +6615,9 @@ function mobileRideCard(r){
       ${r.van?`<div class="mobile-tag">Van #${mobileEsc(r.van)}</div>`:''}
       ${unpaid?`<div class="mobile-tag" style="background:#fef3c7;color:#b45309">Unpaid</div>`:''}
       ${r.status?`<div class="mobile-tag">${mobileEsc(r.status)}</div>`:''}
-      ${getRideEntrySourceInfo(r).key === 'manual' && (r.updatedBy||r.createdBy)?`<div class="mobile-tag">By ${mobileEsc(r.updatedBy||r.createdBy)}</div>`:''}
       ${!isReturn?returnRequestSummaryHtml(r,'mobile'):''}
     </div>
-    <div class="mobile-ride-actions">
+    <div class="mobile-ride-actions" style="${canReturn?'':'grid-template-columns:1fr 1fr'}">
       ${canReturn?`<button class="mobile-action-btn light" style="background:#dcfce7;color:#15803d" onclick="openReturnModal('${key}')">Return</button>`:''}
       <button class="mobile-action-btn dark" onclick="openRideModal('${key}')">Open Ride</button>
       <button class="mobile-action-btn light" onclick="openRideModal('${key}')">Edit</button>
