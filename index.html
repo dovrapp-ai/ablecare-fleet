@@ -3055,6 +3055,12 @@ let selectedDate=new Date();
 let miniMonthOffset=0;
 let ridesFilter='all';
 let lastRenderedRideDate='';
+let dayViewRenderSeq=0;
+let mobileRenderSeq=0;
+let ridesScrollGuardsBound=false;
+let ridesScrollActiveUntil=0;
+let pendingRidesRefreshTimer=null;
+let pendingMobileRefreshTimer=null;
 let allRidesCache={};
 let allRideLogCache={};
 let facEditKey=null;
@@ -4428,9 +4434,43 @@ function restoreRidesScrollState(state){
   });
 }
 
+function markRidesUserScrolling(){
+  ridesScrollActiveUntil=Date.now()+850;
+}
+
+function bindRidesScrollGuards(){
+  if(ridesScrollGuardsBound) return;
+  ridesScrollGuardsBound=true;
+  window.addEventListener('scroll',markRidesUserScrolling,{passive:true});
+  const grid=document.getElementById('time-grid');
+  const sidebar=document.querySelector('#screen-rides .rides-sidebar');
+  if(grid) grid.addEventListener('scroll',markRidesUserScrolling,{passive:true});
+  if(sidebar) sidebar.addEventListener('scroll',markRidesUserScrolling,{passive:true});
+}
+
+function scheduleRidesRender(){
+  const wait=ridesScrollActiveUntil-Date.now();
+  if(wait>0 && document.getElementById('screen-rides')?.classList.contains('active')){
+    clearTimeout(pendingRidesRefreshTimer);
+    pendingRidesRefreshTimer=setTimeout(scheduleRidesRender,wait+80);
+    return;
+  }
+  renderDayView();
+}
+
+function scheduleMobileDashboardRender(){
+  const wait=ridesScrollActiveUntil-Date.now();
+  if(wait>0 && document.getElementById('screen-mobile')?.classList.contains('active') && mobilePanel==='rides'){
+    clearTimeout(pendingMobileRefreshTimer);
+    pendingMobileRefreshTimer=setTimeout(scheduleMobileDashboardRender,wait+80);
+    return;
+  }
+  renderMobileDashboard();
+}
+
 function refreshImportedRideViews(){
-  if(document.getElementById('screen-rides')?.classList.contains('active')) renderDayView();
-  if(document.getElementById('screen-mobile')?.classList.contains('active')) renderMobileDashboard();
+  if(document.getElementById('screen-rides')?.classList.contains('active')) scheduleRidesRender();
+  if(document.getElementById('screen-mobile')?.classList.contains('active')) scheduleMobileDashboardRender();
 }
 
 async function openChatgptImportModal(){
@@ -5876,6 +5916,7 @@ function renderMiniCal(){
 }
 
 async function renderDayView(){
+  const renderSeq=++dayViewRenderSeq;
   const ds=dateStr(selectedDate);
   const scrollState=captureRidesScrollState(ds);
   if(!db){
@@ -5895,10 +5936,12 @@ async function renderDayView(){
     allRideLogCache=logSnap.val()||{};
     allRides=buildCalendarRides();
   }catch(e){
+    if(renderSeq!==dayViewRenderSeq) return;
     console.error('Could not load rides calendar data:', e);
     document.getElementById('time-grid').innerHTML='<div style="padding:40px;text-align:center;color:#ef4444;font-weight:800">Database access failed. Check Firebase Realtime Database rules for drivers, rides, and rideLog.</div>';
     return;
   }
+  if(renderSeq!==dayViewRenderSeq) return;
   const unpaid=allRides.filter(r=>r.price&&r.price!==''&&r.paid!=='yes');
   const unpaidBar=document.getElementById('unpaid-bar');
   if(unpaid.length>0){unpaidBar.style.display='block';document.getElementById('unpaid-count').textContent=unpaid.length;}
@@ -5910,6 +5953,7 @@ async function renderDayView(){
   if(ridesFilter==='unpaid') dayRides=dayRides.filter(r=>r.price&&r.price!==''&&r.paid!=='yes');
   if(ridesFilter==='unassigned') dayRides=dayRides.filter(r=>!r.driver);
   await renderScheduleSyncBar(ds, dayRides);
+  if(renderSeq!==dayViewRenderSeq) return;
   renderDriverActivityPanel(ds, dayRides);
   const grid=document.getElementById('time-grid');
   if(!dayRides.length){
@@ -5967,7 +6011,7 @@ async function renderDayView(){
   restoreRidesScrollState(scrollState);
 }
 
-function initRides(){selectedDate=new Date();miniMonthOffset=0;ridesFilter='all';renderDayView();}
+function initRides(){selectedDate=new Date();miniMonthOffset=0;ridesFilter='all';bindRidesScrollGuards();renderDayView();}
 
 function reminderDefaultDate(){
   const d=new Date();
@@ -6525,6 +6569,7 @@ function mobileApplyReportRange(){
 }
 
 function initMobileDashboard(){
+  bindRidesScrollGuards();
   renderMobileDashboard();
 }
 
@@ -6818,6 +6863,7 @@ async function saveMobileComplianceItem(){
 }
 
 async function renderMobileDashboard(){
+  const renderSeq=++mobileRenderSeq;
   const shell=document.getElementById('screen-mobile');
   if(!shell) return;
   const preserveMobileScroll=shell.classList.contains('active') && !document.body.classList.contains('modal-open')
@@ -6846,6 +6892,7 @@ async function renderMobileDashboard(){
       rideLogRef().once('value'),
       complianceRef().once('value')
     ]);
+    if(renderSeq!==mobileRenderSeq) return;
 
     allRidesCache=rideSnap.val()||{};
     const locs=locSnap.val()||{};
@@ -6913,9 +6960,6 @@ async function renderMobileDashboard(){
     document.getElementById('mobile-map-driver-list').innerHTML=mapRows||mobileEmpty('No driver location data yet.');
     if(mobilePanel==='map') setTimeout(()=>updateMobileMap(drivers,locs),0);
     renderMobileCompliance();
-    if(preserveMobileScroll && preserveMobileScroll.panel===mobilePanel){
-      requestAnimationFrame(()=>window.scrollTo(preserveMobileScroll.x, preserveMobileScroll.y));
-    }
 
     const range=getPPRange(ppOffset);
     let totalMs=0;
@@ -6994,7 +7038,11 @@ async function renderMobileDashboard(){
     mobileSetText('mobile-setting-base',settings.baseAddress||BASE_ADDRESS);
     mobileSetText('mobile-setting-phone',settings.phone||'(443) 819-1808');
     mobileSetText('mobile-setting-drivers',drivers.map(d=>d.name).join(', ')||'None');
+    if(preserveMobileScroll && preserveMobileScroll.panel===mobilePanel){
+      requestAnimationFrame(()=>window.scrollTo(preserveMobileScroll.x, preserveMobileScroll.y));
+    }
   }catch(e){
+    if(renderSeq!==mobileRenderSeq) return;
     console.error('Mobile dashboard render failed:',e);
     document.getElementById('mobile-needs-list').innerHTML=mobileEmpty('Could not load the mobile dashboard data. Try refreshing the page.');
   }
