@@ -242,6 +242,7 @@ button,input,select,textarea{-webkit-appearance:none;font-family:inherit}
 /* ── MODAL ── */
 .modal-overlay{position:fixed;inset:0;background:#00000066;display:none;align-items:center;justify-content:center;z-index:2000;padding:20px}
 .modal-box{background:#fff;border-radius:20px;padding:32px;width:100%;max-width:400px;box-shadow:0 20px 60px rgba(0,0,0,0.2)}
+body.modal-open{overflow:hidden}
 .modal-title{font-size:18px;font-weight:800;color:#0d1b2a;margin-bottom:4px}
 .modal-driver{font-size:13px;color:#6b82a8;margin-bottom:24px}
 .modal-field{margin-bottom:16px}
@@ -578,6 +579,8 @@ body[data-user-role="manager"] .owner-only-setting{display:none !important}
   .export-btn{padding:8px 14px;font-size:12px}
   .optimize-btn{padding:6px 10px;font-size:11px}
   .send-schedule-btn{padding:6px 10px;font-size:11px;width:auto !important}
+  .modal-overlay{align-items:flex-start;overflow:hidden;padding:8px}
+  .modal-box{margin:0 auto !important;max-height:calc(100dvh - 16px) !important;overflow-y:auto !important;-webkit-overflow-scrolling:touch;overscroll-behavior:contain}
 }
 
 
@@ -6427,8 +6430,12 @@ function renderMobileWeekStrip(rideDates){
   const picker=document.getElementById('mobile-ride-date-picker');
   if(picker) picker.value=selectedDs;
   setTimeout(()=>{
+    if(document.querySelector('.modal-overlay[style*="display: flex"]')) return;
     const active=container.querySelector('.mobile-week-day.active');
-    if(active&&active.scrollIntoView) active.scrollIntoView({behavior:'smooth',inline:'center',block:'nearest'});
+    if(active){
+      const left=active.offsetLeft-(container.clientWidth-active.clientWidth)/2;
+      container.scrollLeft=Math.max(0,left);
+    }
   },0);
 }
 
@@ -8099,11 +8106,16 @@ async function openRideModal(key,defaultDate){
     clearAddressNotes();
   }
   updateRideToggles();showHideStretcherFields();
-  document.getElementById('ride-modal').style.display='flex';
+  document.body.classList.add('modal-open');
+  const modal=document.getElementById('ride-modal');
+  modal.style.display='flex';
+  const box=modal.querySelector('.modal-box');
+  if(box) box.scrollTop=0;
   syncEmailReviewPanel();
 }
 function closeRideModal(){
   document.getElementById('ride-modal').style.display='none';
+  document.body.classList.remove('modal-open');
   rideEditKey=null;
   rideSourceContext='manual';
   lastPastedEmail='';
