@@ -1464,9 +1464,10 @@ body[data-user-role="manager"] .owner-only-setting{display:none !important}
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:16px">
           <div class="modal-field">
             <label>Ride Type</label>
-            <div style="display:flex;gap:8px">
+            <div style="display:flex;gap:8px;flex-wrap:wrap">
               <button class="toggle-btn active" id="q-rt-wc" onclick="setQuoteToggle('ridetype','wc')">♿ WC</button>
               <button class="toggle-btn" id="q-rt-str" onclick="setQuoteToggle('ridetype','str')">🛏 Stretcher</button>
+              <button class="toggle-btn" id="q-rt-broda" onclick="setQuoteToggle('ridetype','broda')">Broda</button>
             </div>
           </div>
           <div class="modal-field">
@@ -2298,6 +2299,7 @@ body[data-user-role="manager"] .owner-only-setting{display:none !important}
               <select class="mobile-select" id="mobile-quote-ride-type" onchange="setQuoteToggle('ridetype',this.value)">
                 <option value="wc">Wheelchair</option>
                 <option value="str">Stretcher</option>
+                <option value="broda">Broda (Stretcher)</option>
               </select>
 
               <div class="mobile-input-label">Trip Type</div>
@@ -2624,9 +2626,10 @@ body[data-user-role="manager"] .owner-only-setting{display:none !important}
     <div class="modal-grid" style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
       <div class="modal-field">
         <label>Ride Type</label>
-        <div style="display:flex;gap:8px">
+        <div style="display:flex;gap:8px;flex-wrap:wrap">
           <button class="toggle-btn active" id="rt-wc" onclick="setToggle('ridetype','wc')">♿ WC</button>
           <button class="toggle-btn" id="rt-str" onclick="setToggle('ridetype','str')">🛏 Stretcher</button>
+          <button class="toggle-btn" id="rt-broda" onclick="setToggle('ridetype','broda')">Broda</button>
         </div>
       </div>
       <div class="modal-field">
@@ -3694,7 +3697,34 @@ function normalizeImportedTripType(data){
 
 function normalizeRideType(value){
   const v = String(value || '').toLowerCase().trim();
-  return (v === 'str' || v === 'stretcher') ? 'str' : 'wc';
+  if(v === 'broda' || v.includes('broda')) return 'broda';
+  return (v === 'str' || v === 'stretcher' || v.includes('stretcher')) ? 'str' : 'wc';
+}
+
+function isStretcherLikeRideType(value){
+  const type = normalizeRideType(value);
+  return type === 'str' || type === 'broda';
+}
+
+function rideTypeLabel(value){
+  const type = normalizeRideType(value);
+  if(type === 'broda') return 'Broda (Stretcher)';
+  if(type === 'str') return 'Stretcher';
+  return 'Wheelchair';
+}
+
+function rideTypeShortLabel(value){
+  const type = normalizeRideType(value);
+  if(type === 'broda') return 'Broda';
+  if(type === 'str') return 'Str';
+  return 'WC';
+}
+
+function rideTypeIconLabel(value){
+  const type = normalizeRideType(value);
+  if(type === 'broda') return 'Broda';
+  if(type === 'str') return '🛏 Str';
+  return '♿ WC';
 }
 
 function normalizeYesNo(value, fallback='no'){
@@ -4160,7 +4190,7 @@ async function renderImportReviewList(){
           <div class="import-review-title">${escHtml(rideDraft.client || rideDraft.facility || 'Imported Ride')}</div>
           <div class="import-review-meta">${escHtml(metaLine || 'Imported ride')}</div>
           <div class="import-review-badges">
-            <span class="import-review-badge">${rideDraft.ridetype === 'str' ? 'Stretcher' : 'Wheelchair'}</span>
+            <span class="import-review-badge">${rideTypeLabel(rideDraft.ridetype)}</span>
             <span class="import-review-badge">${rideDraft.triptype === 'rt' ? 'RT' : '1 Way'}</span>
             ${reviewFlag === 'needs_review' ? '<span class="import-review-badge warn">Needs review</span>' : ''}
             ${duplicates.length ? '<span class="import-review-badge warn">Possible duplicate</span>' : ''}
@@ -4229,7 +4259,7 @@ async function renderRideRequestReviewList(){
           <div class="import-review-title">${escHtml(client)}</div>
           <div class="import-review-meta">${escHtml(metaLine)}</div>
           <div class="import-review-badges">
-            <span class="import-review-badge">${normalizeRideType(ride.ridetype) === 'str' ? 'Stretcher' : 'Wheelchair'}</span>
+            <span class="import-review-badge">${rideTypeLabel(ride.ridetype)}</span>
             <span class="import-review-badge">${normalizeTripType(ride.triptype) === 'rt' ? 'RT' : '1 Way'}</span>
             <span class="import-review-badge" style="background:#ecfeff;color:#0d3a52;border:1px solid #a5f3fc">${escHtml(sourceLabel)}</span>
           </div>
@@ -6046,7 +6076,7 @@ async function renderDayView(){
     const isUnpaid=r.price&&r.price!==''&&r.paid!=='yes';
     const isReturn=!!r.returnOf;
     const isLogged=r._source==='log';
-    const cls=isLogged?'logged-block':(isReturn?'return-ride':(isUnpaid?'unpaid-block':(r.ridetype==='str'?'str':'wc')));
+    const cls=isLogged?'logged-block':(isReturn?'return-ride':(isUnpaid?'unpaid-block':(isStretcherLikeRideType(r.ridetype)?'str':'wc')));
     const statusBadge = r.status ? statusBadgeHtml(r.status) : '';
     const editAction=isLogged?`openLogEdit('${r._key}')`:`openRideModal('${r._key}')`;
     const title=escHtml(r.facility||r.client||'-');
@@ -6066,7 +6096,7 @@ async function renderDayView(){
         ${r.dropoff?`<div><strong>Dropoff:</strong> ${escHtml(r.dropoff)}</div>`:'<div style="color:#94a3b8"><strong>Dropoff:</strong> not saved</div>'}
       </div>
       <div class="ride-focus-tags">
-        <span class="ride-block-tag">${r.ridetype==='str'?'Str':'WC'}</span>
+        <span class="ride-block-tag">${rideTypeShortLabel(r.ridetype)}</span>
         <span class="ride-block-tag">${r.triptype==='rt'?'RT':'1 Way'}</span>
         ${rideSourceTagHtml(r)}
         ${r.status?`<span class="ride-block-tag" style="background:#e0f2fe;color:#0369a1;font-weight:800">App: ${statusLabelText(r.status)}</span>`:''}
@@ -6746,7 +6776,7 @@ async function sendRideConfirmation(){
 function mobileRideCard(r){
   const assigned=!!r.driver;
   const key=mobileKey(r._key);
-  const rideType=r.ridetype==='str'?'Stretcher':'Wheelchair';
+  const rideType=rideTypeLabel(r.ridetype);
   const tripType=r.triptype==='1way'?'1 Way':'RT';
   const sourceInfo=getRideEntrySourceInfo(r);
   const unpaid=r.price&&r.paid!=='yes';
@@ -7185,7 +7215,7 @@ async function renderMobileDashboard(){
             const title=(r.facility||r.client||'Ride');
             const sub=(r.client&&r.facility)?r.client:'';
             const timeLabel=r.time?fmtTime12(r.time):'';
-            const typeLabel=`${r.ridetype==='str'?'Stretcher':'Wheelchair'} · ${r.triptype==='rt'?'RT':'1 Way'}`;
+            const typeLabel=`${rideTypeLabel(r.ridetype)} · ${r.triptype==='rt'?'RT':'1 Way'}`;
             const paidLabel=r.paid==='yes'?'Paid':'Unpaid';
             const priceLabel=r.price?('$'+String(r.price).replace(/[^0-9.]/g,'')):'—';
             const milesLabel=formatReportMilesLabel(r);
@@ -7644,7 +7674,7 @@ async function optimizeWithAI(rides, drivers, distMatrix, addresses){
   }
 
   function getTeamLabel(ride, assignedDriver){
-    if((ride.ridetype || '').toLowerCase() !== 'str') return '';
+    if(!isStretcherLikeRideType(ride.ridetype)) return '';
     if(ride.helper) return `${assignedDriver}/${ride.helper}`;
     if(assignedDriver === 'Raul') return 'Raul/wife';
     if(assignedDriver === 'Joel') return 'Joel/Gerson';
@@ -7657,7 +7687,7 @@ async function optimizeWithAI(rides, drivers, distMatrix, addresses){
   }
 
   function getStretcherPriorityPenalty(ride, name, sameTimeStretchers){
-    if((ride.ridetype || '').toLowerCase() !== 'str') return 0;
+    if(!isStretcherLikeRideType(ride.ridetype)) return 0;
     if(name === 'Raul') return -220;
     if(name === 'Joel') return sameTimeStretchers > 1 ? -140 : 40;
     if(name === 'Gerson') return 120;
@@ -7666,7 +7696,8 @@ async function optimizeWithAI(rides, drivers, distMatrix, addresses){
 
   const timeCounts = {};
   rides.forEach(r => {
-    const key = `${r.date || ''}|${r.time || ''}|${(r.ridetype || '').toLowerCase()}`;
+    const typeBucket = isStretcherLikeRideType(r.ridetype) ? 'stretcher' : 'wc';
+    const key = `${r.date || ''}|${r.time || ''}|${typeBucket}`;
     timeCounts[key] = (timeCounts[key] || 0) + 1;
   });
 
@@ -7712,7 +7743,8 @@ async function optimizeWithAI(rides, drivers, distMatrix, addresses){
     const rideTimeMins = ride._rideTimeMins;
     const pickup = ride.pickup || ride.facility || BASE;
     const dropoff = ride.dropoff || BASE;
-    const timeKey = `${ride.date || ''}|${ride.time || ''}|${(ride.ridetype || '').toLowerCase()}`;
+    const typeBucket = isStretcherLikeRideType(ride.ridetype) ? 'stretcher' : 'wc';
+    const timeKey = `${ride.date || ''}|${ride.time || ''}|${typeBucket}`;
     const sameTimeStretchers = timeCounts[timeKey] || 1;
 
     let bestDriver = null;
@@ -7741,9 +7773,9 @@ async function optimizeWithAI(rides, drivers, distMatrix, addresses){
 
       let score = deadheadMiles * 3 + tripMiles + rideCountPenalty + workloadPenalty + balanceBonus + stretcherPriority;
 
-      if((ride.ridetype || '').toLowerCase() === 'str' && name === 'Joel'){
+      if(isStretcherLikeRideType(ride.ridetype) && name === 'Joel'){
         const hasSameTimeRaulStretch = schedules['Raul']?.rides?.some(r =>
-          r.rawTime === ride.time && r.ridetype === 'str'
+          r.rawTime === ride.time && isStretcherLikeRideType(r.ridetype)
         );
         if(hasSameTimeRaulStretch) score -= 80;
       }
@@ -7954,7 +7986,7 @@ function renderOptimizerResults(result, drivers){
           ${ride.pickup ? `<div class="opt-ride-detail">📍 ${ride.pickup}</div>` : ''}
           ${ride.dropoff ? `<div class="opt-ride-detail">🏥 ${ride.dropoff}</div>` : ''}
           <div class="opt-tags">
-            <span class="opt-tag">${ride.ridetype === 'str' ? '🛏 Str' : '♿ WC'}</span>
+            <span class="opt-tag">${rideTypeIconLabel(ride.ridetype)}</span>
             <span class="opt-tag">${ride.triptype === 'rt' ? 'RT' : 'OW'}</span>
             ${ride.teamLabel ? `<span class="opt-tag" style="background:#eef6ff;color:#2563eb">${ride.teamLabel}</span>` : ''}
             ${ride.waitRequired ? '<span class="opt-tag wait">⏳ Wait Required</span>' : ''}
@@ -8023,7 +8055,7 @@ function updateOptimizedRideHelper(rideKey, driverName, helperName){
   const ride = sched?.rides?.find(r => r.rideKey === rideKey);
   if(!ride) return;
   ride.helper = (helperName || '').trim();
-  ride.teamLabel = ride.ridetype === 'str'
+  ride.teamLabel = isStretcherLikeRideType(ride.ridetype)
     ? (ride.helper ? `${driverName}/${ride.helper}` : driverName)
     : '';
 }
@@ -8054,7 +8086,7 @@ function moveRideToDriver(rideKey, fromDriver, toDriver, selectEl){
   const rideIdx = fromSched.rides.findIndex(r=>r.rideKey===rideKey);
   if(rideIdx===-1) return;
   const ride = fromSched.rides.splice(rideIdx,1)[0];
-  ride.teamLabel = (ride.ridetype || '').toLowerCase() === 'str'
+  ride.teamLabel = isStretcherLikeRideType(ride.ridetype)
     ? (ride.helper ? `${toDriver}/${ride.helper}` : toDriver)
     : '';
   toSched.rides.push(ride);
@@ -8111,7 +8143,7 @@ function assignUnassignedRide(rideKey, driverName){
     estimatedReturn: '',
     estimatedMiles: r.estimatedMiles || 0,
     notes: r.notes || '',
-    teamLabel: ((r.ridetype || '').toLowerCase() === 'str' ? `${driverName}/${r.helper || getSuggestedHelper(driverName) || ''}`.replace(/\/$/,'') : '')
+    teamLabel: (isStretcherLikeRideType(r.ridetype) ? `${driverName}/${r.helper || getSuggestedHelper(driverName) || ''}`.replace(/\/$/,'') : '')
   });
   optimizedSchedule.schedules[driverName].rides.sort((a,b)=>(a.sortTimeMins||0)-(b.sortTimeMins||0));
   recalcOptimizedCounts();
@@ -8256,7 +8288,7 @@ function onFacilityType(){
 function showHideStretcherFields(){
   const hasWait=rideToggles.wait==='yes';
   document.getElementById('helper-field').style.display='block';
-  const isStr=rideToggles.ridetype==='str';
+  const isStr=isStretcherLikeRideType(rideToggles.ridetype);
   document.getElementById('miles-field').style.display=isStr?'block':'none';
   const waitHours=document.getElementById('wait-hours-field');
   if(waitHours) waitHours.style.display=hasWait?'block':'none';
@@ -8268,7 +8300,7 @@ function onWaitHoursChange(){
   if(!chargeEl)return;
   if(hrs<=0){chargeEl.style.display='none';return;}
   let charge=0;
-  if(rt==='str'){
+  if(isStretcherLikeRideType(rt)){
     // $150/hr, first 30 min free
     const billableHrs=Math.max(0,hrs-0.5);
     charge=billableHrs*150;
@@ -8284,6 +8316,7 @@ function setToggle(group,val){rideToggles[group]=val;updateRideToggles();if(grou
 function updateRideToggles(){
   document.getElementById('rt-wc').classList.toggle('active',rideToggles.ridetype==='wc');
   document.getElementById('rt-str').classList.toggle('active',rideToggles.ridetype==='str');
+  document.getElementById('rt-broda').classList.toggle('active',rideToggles.ridetype==='broda');
   document.getElementById('tt-rt').classList.toggle('active',rideToggles.triptype==='rt');
   document.getElementById('tt-1way').classList.toggle('active',rideToggles.triptype==='1way');
   document.getElementById('van-1').classList.toggle('active',rideToggles.van==='1');
@@ -8713,7 +8746,7 @@ function rideLogSortValue(r, key){
   if(key === 'date') return `${r.date || ''} ${r.time || ''}`;
   if(key === 'facility') return String(r.facility || '').toLowerCase();
   if(key === 'client') return String(r.client || '').toLowerCase();
-  if(key === 'type') return `${r.ridetype === 'str' ? 'stretcher' : 'wheelchair'} ${r.triptype || ''}`.toLowerCase();
+  if(key === 'type') return `${rideTypeLabel(r.ridetype)} ${r.triptype || ''}`.toLowerCase();
   if(key === 'miles') return reportTripMiles(r);
   if(key === 'calcNotes') return String(r.calcNotes || '').toLowerCase();
   if(key === 'van') return String(r.van || '').toLowerCase();
@@ -8880,8 +8913,8 @@ function renderSummaryCards(rides){
   const paidRevenue = rides.filter(r=>r.paid==='yes').reduce((s,r)=>s+reportMoneyValue(r.price),0);
   const unpaidRevenue = reportOutstandingTotal(rides);
   const totalRides = rides.length;
-  const wcRides = rides.filter(r=>r.ridetype!=='str').length;
-  const strRides = rides.filter(r=>r.ridetype==='str').length;
+  const wcRides = rides.filter(r=>!isStretcherLikeRideType(r.ridetype)).length;
+  const strRides = rides.filter(r=>isStretcherLikeRideType(r.ridetype)).length;
   const totalMiles = rides.reduce((s,r)=>s+reportTripMiles(r),0);
   const moneyCards = isOwnerUser() ? `
     <div class="sum-card"><div class="sum-card-num cyan">$${totalRevenue.toFixed(2)}</div><div class="sum-card-label">Total Revenue</div></div>
@@ -9053,7 +9086,7 @@ function renderRideLog(){
     const dateDisp = r.date?d.toLocaleDateString('en-US',{month:'2-digit',day:'2-digit',year:'numeric'}):'—';
     const isPaid = r.paid==='yes';
     const isUnpaid = r.price && !isPaid;
-    const typeStr = `${r.ridetype==='str'?'🛏 Str':'♿ WC'} ${r.triptype==='rt'?'RT':'1W'}`;
+    const typeStr = `${rideTypeIconLabel(r.ridetype)} ${r.triptype==='rt'?'RT':'1W'}`;
     const milesStr = formatReportMilesLabel(r);
     const bg = i%2===0?'#fff':'#f8fafc';
     html += `<tr style="background:${bg};border-bottom:1px solid #f0f4f8" id="log-row-${r._key||i}">
@@ -9089,8 +9122,8 @@ function renderSquareRideLog(){
   const from = document.getElementById('rep-from')?.value || '';
   const to = document.getElementById('rep-to')?.value || '';
   const totalRevenue = repRides.reduce((s,r)=>s+(parseFloat(r.price)||0),0);
-  const wcRides = repRides.filter(r=>r.ridetype!=='str').length;
-  const strRides = repRides.filter(r=>r.ridetype==='str').length;
+  const wcRides = repRides.filter(r=>!isStretcherLikeRideType(r.ridetype)).length;
+  const strRides = repRides.filter(r=>isStretcherLikeRideType(r.ridetype)).length;
   const totalMiles = repRides.reduce((s,r)=>s+reportTripMiles(r),0);
 
   let html = `<div style="padding:16px 18px;border-bottom:1px solid #e8eef4;background:#f8fafc;display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap">
@@ -9145,7 +9178,7 @@ function renderSquareRideLog(){
   repRides.forEach((r,i)=>{
     const d = new Date(r.date+'T12:00:00');
     const dateDisp = r.date?d.toLocaleDateString('en-US',{month:'2-digit',day:'2-digit',year:'numeric'}):'';
-    const typeStr = `${r.ridetype==='str'?'Stretcher':'Wheelchair'} ${r.triptype==='rt'?'RT':'1 Way'}`;
+    const typeStr = `${rideTypeLabel(r.ridetype)} ${r.triptype==='rt'?'RT':'1 Way'}`;
     const bg = i%2===0?'#fff':'#f8fafc';
     html += `<tr style="background:${bg};border-bottom:1px solid #f0f4f8">
       <td style="padding:9px 12px;white-space:nowrap;font-weight:700;color:#0d1b2a">${dateDisp}</td>
@@ -9242,9 +9275,10 @@ async function openLogEdit(key){
       <div class="modal-grid" style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
         <div class="modal-field">
           <label>Ride Type</label>
-          <div style="display:flex;gap:8px">
-            <button class="toggle-btn ${(r.ridetype||'wc')==='wc'?'active':''}" id="le-wc" onclick="leToggle('ridetype','wc')">♿ WC</button>
-            <button class="toggle-btn ${r.ridetype==='str'?'active':''}" id="le-str" onclick="leToggle('ridetype','str')">🛏 Str</button>
+          <div style="display:flex;gap:8px;flex-wrap:wrap">
+            <button class="toggle-btn ${normalizeRideType(r.ridetype)==='wc'?'active':''}" id="le-wc" onclick="leToggle('ridetype','wc')">♿ WC</button>
+            <button class="toggle-btn ${normalizeRideType(r.ridetype)==='str'?'active':''}" id="le-str" onclick="leToggle('ridetype','str')">🛏 Str</button>
+            <button class="toggle-btn ${normalizeRideType(r.ridetype)==='broda'?'active':''}" id="le-broda" onclick="leToggle('ridetype','broda')">Broda</button>
           </div>
         </div>
         <div class="modal-field">
@@ -9383,6 +9417,7 @@ function leToggle(group, val){
   if(group==='ridetype'){
     document.getElementById('le-wc').classList.toggle('active',val==='wc');
     document.getElementById('le-str').classList.toggle('active',val==='str');
+    document.getElementById('le-broda').classList.toggle('active',val==='broda');
   }
   if(group==='triptype'){
     document.getElementById('le-rt').classList.toggle('active',val==='rt');
@@ -9599,7 +9634,7 @@ function renderByFacility(){
     byFac[f].miles += reportTripMiles(r);
     if(!byFac[f].seenInvoices) byFac[f].seenInvoices = new Set();
     byFac[f].unpaid += reportOutstandingAmount(r, byFac[f].seenInvoices);
-    if(r.ridetype==='str') byFac[f].str++; else byFac[f].wc++;
+    if(isStretcherLikeRideType(r.ridetype)) byFac[f].str++; else byFac[f].wc++;
   });
 
   const sorted = Object.entries(byFac).sort((a,b)=>b[1].revenue-a[1].revenue);
@@ -9638,7 +9673,7 @@ function renderByDriver(){
     byDrv[d].rides++;
     byDrv[d].revenue += parseFloat(r.price)||0;
     byDrv[d].miles += reportTripMiles(r);
-    if(r.ridetype==='str') byDrv[d].str++; else byDrv[d].wc++;
+    if(isStretcherLikeRideType(r.ridetype)) byDrv[d].str++; else byDrv[d].wc++;
   });
 
   const sorted = Object.entries(byDrv).sort((a,b)=>b[1].rides-a[1].rides);
@@ -9708,7 +9743,7 @@ function exportReportsExcel(){
   const wb = XLSX.utils.book_new();
 
   // Ride Log sheet — matches your Budget & Running tab format
-  const rows = [['Date','Day','Facility','Client','RT/1Way','WC/Stretcher','Miles','Calc Notes','Van','Price','Paid','Invoice #','Driver','Notes']];
+  const rows = [['Date','Day','Facility','Client','RT/1Way','Ride Type','Miles','Calc Notes','Van','Price','Paid','Invoice #','Driver','Notes']];
   repRides.forEach(r=>{
     const d = new Date(r.date+'T12:00:00');
     const miles = reportTripMiles(r);
@@ -9718,7 +9753,7 @@ function exportReportsExcel(){
       r.facility||'',
       r.client||'',
       r.triptype==='rt'?'RT':'1 Way',
-      r.ridetype==='str'?'Stretcher':'Wheelchair',
+      rideTypeLabel(r.ridetype),
       miles ? Number(miles.toFixed(1)) : '',
       r.calcNotes||'',
       r.van?'#'+r.van:'',
@@ -9973,7 +10008,7 @@ function renderInvoicePreview(data){
       </td>
       <td style="padding:10px 14px;font-size:13px;color:#0d1b2a;vertical-align:top">
         <div style="font-weight:700">${r.client||'—'}</div>
-        <div style="color:#6b82a8;font-size:11px">${r.ridetype==='str'?'🛏 Stretcher':'♿ Wheelchair'} · ${r.triptype==='rt'?'Round Trip':'One Way'}</div>
+        <div style="color:#6b82a8;font-size:11px">${rideTypeIconLabel(r.ridetype)} · ${r.triptype==='rt'?'Round Trip':'One Way'}</div>
       </td>
       <td style="padding:10px 14px;font-size:12px;color:#6b82a8;vertical-align:top">
         <div>📍 ${r.pickup||r.facility||'—'}</div>
@@ -10165,7 +10200,7 @@ IMPORTANT EXTRACTION RULES:
 - "price" = the dollar amount if mentioned (e.g. "$165" = "165"). Return as number string without $ sign.
 - "date" = convert to YYYY-MM-DD format. Use today's year (${new Date().getFullYear()}) if year not specified.
 - "time" = the PICKUP time in HH:MM 24hr format. "11am" = "11:00". If email says "arrive by X" calculate pickup 30-60 min earlier.
-- "ridetype" = "str" if stretcher mentioned, "wc" if wheelchair mentioned, "wc" if unclear
+- "ridetype" = "broda" if Broda chair/Broda transport is mentioned, "str" if stretcher mentioned, "wc" if wheelchair mentioned, "wc" if unclear
 - "triptype" = "rt" if round trip mentioned, "1way" if one way, "rt" if unclear
 - "notes" = any extra info like facility/requester phone numbers, appointment type, special instructions
 
@@ -10291,7 +10326,7 @@ function fallbackParseEmail(text){
   // Simple keyword extraction if API fails
   const lower = text.toLowerCase();
   const extracted = {
-    ridetype: lower.includes('stretcher') ? 'str' : 'wc',
+    ridetype: lower.includes('broda') ? 'broda' : (lower.includes('stretcher') ? 'str' : 'wc'),
     triptype: lower.includes('one way') || lower.includes('1 way') ? '1way' : 'rt',
   };
 
@@ -10319,6 +10354,10 @@ const DEFAULT_QUOTE_PRICING = {
   str: {
     rt:   { base: 700, freeMiles: 0, ratePerMile: 10 }, // $350 x 2 legs
     '1way': { base: 350, freeMiles: 0, ratePerMile: 10 },
+  },
+  broda: {
+    rt:   { base: 700, freeMiles: 0, ratePerMile: 10 },
+    '1way': { base: 350, freeMiles: 0, ratePerMile: 10 },
   }
 };
 
@@ -10338,6 +10377,10 @@ function loadQuotePricing(){
         str: {
           rt: {...DEFAULT_QUOTE_PRICING.str.rt, ...(saved.str.rt||{})},
           '1way': {...DEFAULT_QUOTE_PRICING.str['1way'], ...(saved.str['1way']||{})}
+        },
+        broda: {
+          rt: {...DEFAULT_QUOTE_PRICING.broda.rt, ...(saved.broda?.rt||{})},
+          '1way': {...DEFAULT_QUOTE_PRICING.broda['1way'], ...(saved.broda?.['1way']||{})}
         }
       };
     }
@@ -10355,7 +10398,7 @@ function currentQuoteRate(){
 }
 
 function quoteRateDescription(ridetype=quoteToggles.ridetype, triptype=quoteToggles.triptype){
-  const typeLabel = ridetype==='str' ? 'Stretcher' : 'Wheelchair';
+  const typeLabel = rideTypeLabel(ridetype);
   const tripLabel = triptype==='rt' ? 'Round Trip' : 'One Way';
   return `${typeLabel} - ${tripLabel}`;
 }
@@ -10427,6 +10470,7 @@ function setQuoteToggle(group, val){
 function updateQuoteToggles(){
   document.getElementById('q-rt-wc').classList.toggle('active', quoteToggles.ridetype==='wc');
   document.getElementById('q-rt-str').classList.toggle('active', quoteToggles.ridetype==='str');
+  document.getElementById('q-rt-broda').classList.toggle('active', quoteToggles.ridetype==='broda');
   document.getElementById('q-tt-rt').classList.toggle('active', quoteToggles.triptype==='rt');
   document.getElementById('q-tt-1way').classList.toggle('active', quoteToggles.triptype==='1way');
   renderQuoteRateInputs();
@@ -10443,8 +10487,8 @@ function calcPrice(miles, ridetype, triptype){
   const isRT = triptype==='rt';
   const legs = isRT ? 2 : 1;
 
-  if(ridetype==='str'){
-    // Stretcher: $350/leg + $10/mile per leg (both legs for RT)
+  if(isStretcherLikeRideType(ridetype)){
+    // Stretcher/Broda: base per leg + mileage per leg.
     const mileCharge = miles * p.ratePerMile * legs;
     const total = p.base + mileCharge;
     return { total, base: p.base, miles, mileCharge, legs, p };
@@ -10481,11 +10525,11 @@ async function calculateQuote(){
     document.getElementById('q-price').textContent = `$${result.total.toFixed(2)}`;
     document.getElementById('q-route-label').textContent = `${pickup} → ${dropoff}`;
     document.getElementById('q-type-label').textContent =
-      `${rt==='str'?'🛏 Stretcher':'♿ Wheelchair'} · ${tt==='rt'?'Round Trip':'One Way'}`;
+      `${rideTypeIconLabel(rt)} · ${tt==='rt'?'Round Trip':'One Way'}`;
 
     // Breakdown
     let breakdown = '';
-    if(rt==='str'){
+    if(isStretcherLikeRideType(rt)){
       breakdown = `
         Base rate: $${result.p.base.toFixed(2)} (${result.legs} leg${result.legs>1?'s':''})<br>
         Mileage: ${miles.toFixed(1)} mi × $${result.p.ratePerMile}/mi × ${result.legs} leg${result.legs>1?'s':''} = $${result.mileCharge.toFixed(2)}<br>
