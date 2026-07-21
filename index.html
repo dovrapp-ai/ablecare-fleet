@@ -8658,6 +8658,8 @@ async function logRideFromCalendar(rideKey){
     // Optional: add billing math notes like "16.8 miles (600+168=768)".
     calcNotes: '',
     notes: r.notes||'',
+    sourceEmailRaw: r.sourceEmailRaw || r.originalPastedEmail || '',
+    sourceEmailSubject: r.sourceEmailSubject || '',
     status: r.status||'',
     calendarKey: rideKey,
     createdAt: Date.now()
@@ -8720,6 +8722,8 @@ async function logAllRidesForDay(){
       milesSource: milesSource || '',
       calcNotes: '',
       notes: r.notes||'',
+      sourceEmailRaw: r.sourceEmailRaw || r.originalPastedEmail || '',
+      sourceEmailSubject: r.sourceEmailSubject || '',
       status: r.status||'',
       calendarKey: k, createdAt: Date.now()
     };
@@ -9262,7 +9266,17 @@ async function openLogEdit(key){
   // Build modal
   const drivers = await loadDrivers();
   const driverOpts = '<option value="">—</option>' + drivers.map(d=>`<option value="${d.name}"${r.driver===d.name?' selected':''}>${d.name}</option>`).join('');
-  const facOpts = '<option value="">—</option>' + FACILITIES.map(f=>`<option value="${f.name}"${r.facility===f.name?' selected':''}>${f.name}</option>`).join('');
+  if(key && r.calendarKey && !String(r.sourceEmailRaw || '').trim()){
+    try{
+      const linkedSnap = await ridesRef().child(r.calendarKey).once('value');
+      const linkedRide = linkedSnap.val() || {};
+      r.sourceEmailRaw = linkedRide.sourceEmailRaw || linkedRide.originalPastedEmail || '';
+      r.sourceEmailSubject = r.sourceEmailSubject || linkedRide.sourceEmailSubject || '';
+    }catch(e){
+      console.warn('Could not load linked ride email for report edit', e);
+    }
+  }
+  const facOptions = FACILITIES.map(f=>`<option value="${escHtml(f.name)}"></option>`).join('');
 
   const billableMilesValue = formatReportMiles(r);
 
@@ -9285,7 +9299,8 @@ async function openLogEdit(key){
       </div>
       <div class="modal-field">
         <label>Facility / Client</label>
-        <select id="le-facility" style="width:100%;padding:9px 12px;border:2px solid #e8eef4;border-radius:10px;font-size:13px;outline:none;font-family:inherit;background:#fff">${facOpts}</select>
+        <input type="text" id="le-facility" list="le-facility-options" value="${escHtml(r.facility||'')}" placeholder="e.g. Roland Park" style="width:100%;padding:9px 12px;border:2px solid #e8eef4;border-radius:10px;font-size:13px;outline:none;font-family:inherit"/>
+        <datalist id="le-facility-options">${facOptions}</datalist>
       </div>
       <div class="modal-field">
         <label>Client Name</label>
@@ -9370,6 +9385,10 @@ async function openLogEdit(key){
       <div class="modal-field">
         <label>Notes</label>
         <input type="text" id="le-notes" value="${r.notes||''}" placeholder="Any notes..." style="width:100%;padding:9px 12px;border:2px solid #e8eef4;border-radius:10px;font-size:13px;outline:none;font-family:inherit"/>
+      </div>
+      <div class="modal-field">
+        <label>Original Pasted Email</label>
+        <textarea id="le-source-email-raw" placeholder="No pasted email saved for this report ride." style="width:100%;min-height:180px;padding:10px 12px;border:2px solid #e8eef4;border-radius:10px;font-size:12px;line-height:1.45;outline:none;font-family:inherit;resize:vertical">${escHtml(r.sourceEmailRaw||'')}</textarea>
       </div>
       <div class="modal-actions">
         <button class="modal-save" onclick="saveLogEdit()">Save</button>
@@ -9490,6 +9509,7 @@ async function saveLogEdit(){
     paid: window._leToggles.paid||'no',
     paymethod: window._leToggles.paymethod||'cc',
     notes: document.getElementById('le-notes').value.trim(),
+    sourceEmailRaw: document.getElementById('le-source-email-raw')?.value.trim() || '',
     status: document.getElementById('le-status').value||'',
     updatedAt: Date.now(),
     updatedBy: currentUserName(),
