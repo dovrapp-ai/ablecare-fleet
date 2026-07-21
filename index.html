@@ -590,7 +590,8 @@ body[data-user-role="manager"] .owner-only-setting{display:none !important}
 .ride-email-pane{min-width:0;background:#f8fafc;border:1px solid #e8eef4;border-radius:14px;padding:14px;position:sticky;top:0}
 .email-review-wrap{display:block;border-top:none;padding-top:0;margin-top:0}
 .email-review-title{font-size:12px;font-weight:800;color:#00b4d8;text-transform:uppercase;letter-spacing:1px;margin-bottom:8px}
-.email-review-box{background:#fff;border:1px solid #e8eef4;border-radius:12px;padding:12px;min-height:420px;max-height:62vh;overflow:auto;white-space:pre-wrap;font-size:12px;line-height:1.5;color:#334155}
+.email-review-box{background:#fff;border:1px solid #e8eef4;border-radius:12px;padding:12px;min-height:420px;max-height:62vh;overflow:auto;white-space:pre-wrap;font-size:12px;line-height:1.5;color:#334155;width:100%;resize:vertical;font-family:inherit;outline:none}
+.email-review-box:focus{border-color:#00b4d8;box-shadow:0 0 0 3px rgba(0,180,216,.12)}
 .email-review-note{font-size:11px;color:#6b82a8;margin-top:6px}
 .email-review-empty{color:#94a3b8;font-style:italic}
 
@@ -2736,8 +2737,8 @@ body[data-user-role="manager"] .owner-only-setting{display:none !important}
       <div class="ride-email-pane">
         <div class="email-review-wrap" id="email-review-wrap">
           <div class="email-review-title">Original Pasted Email</div>
-          <div class="email-review-box" id="email-review-text"><span class="email-review-empty">Paste an email and the original message will stay here on the right so you can compare it with the form.</span></div>
-          <div class="email-review-note">Compare the parsed fields on the left with the original pasted email on the right before saving the ride.</div>
+          <textarea class="email-review-box" id="email-review-text" placeholder="Paste the original email here..." oninput="onRideEmailReviewInput(this.value)"></textarea>
+          <div class="email-review-note">Paste the original email here so it stays with this ride and can be compared before saving.</div>
         </div>
       </div>
     </div>
@@ -8367,6 +8368,7 @@ async function openRideModal(key,defaultDate){
     // Populate status dropdown with any custom statuses
     populateStatusDropdown('r-status', r.status||'');
     document.getElementById('r-helper').value=r.helper||'';
+    lastPastedEmail = r.sourceEmailRaw || r.originalPastedEmail || '';
     if(document.getElementById('r-wait-hours')) document.getElementById('r-wait-hours').value=r.waitHours||'';
     sel.value=r.driver||'';
     rideToggles={ridetype:r.ridetype||'wc',triptype:r.triptype||'rt',van:r.van||'',paid:r.paid||'no',wait:r.wait||'no',paymethod:r.paymethod||'cc'};
@@ -8443,10 +8445,11 @@ async function saveRide(){
     paymethod:rideToggles.paymethod||'cc',
     miles:document.getElementById('r-miles').value.trim(),
     notes:document.getElementById('r-notes').value.trim(),
+    sourceEmailRaw:lastPastedEmail.trim(),
     status:document.getElementById('r-status').value||'',
     entrySource: pendingImportReviewMeta
       ? inferImportedEntrySource(pendingImportReviewMeta.source || '')
-      : (rideEditKey ? rideSourceContext : (lastPastedEmail && lastPastedEmail.trim() ? 'email_paste' : 'manual')),
+      : (lastPastedEmail && lastPastedEmail.trim() ? 'email_paste' : (rideEditKey ? rideSourceContext : 'manual')),
     updatedAt:Date.now(),
     updatedBy:currentUserName(),
     updatedByRole:currentUserRole(),
@@ -10156,11 +10159,11 @@ function syncEmailReviewPanel(){
   const box = document.getElementById('email-review-text');
   if(!wrap || !box) return;
   wrap.style.display = 'block';
-  if(lastPastedEmail && lastPastedEmail.trim()){
-    box.textContent = lastPastedEmail;
-  } else {
-    box.innerHTML = '<span class="email-review-empty">Paste an email and the original message will stay here on the right so you can compare it with the form.</span>';
-  }
+  if(document.activeElement !== box) box.value = lastPastedEmail || '';
+}
+
+function onRideEmailReviewInput(value){
+  lastPastedEmail = value || '';
 }
 
 async function parseEmailWithAI(){
