@@ -1605,8 +1605,12 @@ body[data-user-role="manager"] .owner-only-setting{display:none !important}
         <div style="display:flex;gap:10px;margin-bottom:16px;flex-wrap:wrap">
           <button class="add-btn" style="flex:1;padding:12px" onclick="printInvoice()">🖨️ Download PDF</button>
           <button class="add-btn" style="flex:1;padding:12px;background:#0d1b2a" onclick="emailInvoice()">📧 Email to Facility</button>
+          <button class="add-btn" style="flex:1;padding:12px;background:#0f766e" onclick="copyQuickBooksInvoiceData()">Copy QB Data</button>
+          <button class="ts-mode-btn" style="padding:12px" onclick="downloadQuickBooksInvoiceCsv()">CSV</button>
+          <button class="ts-mode-btn" style="padding:12px" onclick="downloadQuickBooksInvoiceJson()">JSON</button>
           <button class="ts-mode-btn" style="padding:12px" onclick="resetInvoice()">← New Invoice</button>
         </div>
+        <div id="inv-qb-export-status" style="display:none;margin:-6px 0 12px;color:#0f766e;font-weight:800;font-size:13px"></div>
         <div id="inv-preview" style="background:#fff;border-radius:16px;overflow:hidden;box-shadow:0 2px 12px rgba(0,0,0,0.08)"></div>
       </div>
 
@@ -10228,6 +10232,213 @@ function renderInvoicePreview(data){
 function formatInvDate(ds){
   if(!ds) return '—';
   return fmtDateMDY(ds);
+}
+
+function getInvoiceLineAmount(r){
+  const ridetype = normalizeRideType(r && r.ridetype);
+  const triptype = normalizeTripType(r && r.triptype);
+  const rawPrice = r && r.price;
+  const explicitPriceNum = parseFloat(normalizeCurrencyValue(rawPrice));
+  const hasExplicitPrice = rawPrice != null && String(rawPrice).trim() !== '' && Number.isFinite(explicitPriceNum);
+  let price = hasExplicitPrice ? explicitPriceNum : 0;
+
+  const extractFirstNumber = (value)=>{
+    if(value == null) return NaN;
+    if(typeof value === 'number') return value;
+    const s = String(value).replace(/,/g,'');
+    const m = s.match(/-?\d+(?:\.\d+)?/);
+    return m ? parseFloat(m[0]) : NaN;
+  };
+
+  let oneWayMiles = extractFirstNumber(r && r.estimatedMiles);
+  if(!Number.isFinite(oneWayMiles) || oneWayMiles <= 0){
+    const billable = extractFirstNumber(r && (r.billableMiles ?? r.tripMiles ?? r.miles));
+    oneWayMiles = Number.isFinite(billable) && billable > 0
+      ? (triptype === 'rt' ? billable / 2 : billable)
+      : 0;
+  }
+
+  if(!hasExplicitPrice && oneWayMiles > 0){
+    price = calcPrice(oneWayMiles, ridetype, triptype).total;
+  }
+
+  const waitHours = parseFloat(r && r.waitHours) || 0;
+  const waitCharge = calcWaitCharge(waitHours, ridetype);
+  return {
+    amount: Number((price + waitCharge).toFixed(2)),
+    baseAmount: Number(price.toFixed(2)),
+    waitCharge: Number(waitCharge.toFixed(2)),
+    miles: oneWayMiles ? Number(oneWayMiles.toFixed(1)) : '',
+    waitHours: waitHours || ''
+  };
+}
+
+function invoiceServiceName(r){
+  const ridetype = normalizeRideType(r && r.ridetype);
+  const triptype = normalizeTripType(r && r.triptype);
+  const status = String(r && r.status || '').toLowerCase();
+  if(status === 'cancelled_pickup') return 'Canceled at Pickup';
+  const vehicle = ridetype === 'str' ? 'Stretcher Transport' : ridetype === 'broda' ? 'Broda Transport' : 'Wheelchair Transport';
+  return `${vehicle} (${triptype === 'rt' ? 'Roundtrip' : 'One Way'})`;
+}
+
+function buildQuickBooksInvoiceExport(){
+  if(!currentInvoiceData) return null;
+  const { facilityName, invNumber, invDate, fromDate, toDate, invNotes, rides, fac } = currentInvoiceData;
+  const customer = facilityName;
+  const lines = (rides || []).map((r, index)=>{
+    const money = getInvoiceLineAmount(r);
+    const service = invoiceServiceName(r);
+    const resident = r.client || '';
+    const isWaap = canonicalizeFacilityName(r.facility) === 'WAAP' || canonicalizeFacilityName(facilityName) === 'WAAP';
+    const routeLine = isWaap
+      ? `Pickup Address: ${r.pickup || r.facility || ''}`
+      : `Pickup: ${r.pickup || r.facility || ''}\nDropoff: ${r.dropoff || ''}`;
+    const parts = [
+      `Service: ${service}`,
+      resident ? `Resident: ${resident}` : '',
+      routeLine,
+      money.miles ? `Mileage: ${money.miles} miles` : '',
+      money.waitHours ? `Wait Time: ${money.waitHours} hours` : '',
+      r.notes ? `Notes: ${r.notes}` : ''
+    ].filter(Boolean);
+
+    return {
+      invoiceNumber: invNumber,
+      invoiceDate: invDate,
+      serviceDate: r.date || '',
+      pickupTime: r.time || '',
+      customer,
+      billingContact: fac && fac.contact || '',
+      billingEmail: fac && fac.email || '',
+      resident,
+      facility: r.facility || facilityName,
+      service,
+      rideType: normalizeRideType(r.ridetype),
+      tripType: normalizeTripType(r.triptype),
+      pickup: r.pickup || '',
+      dropoff: r.dropoff || '',
+      miles: money.miles,
+      waitHours: money.waitHours,
+      amount: money.amount,
+      description: parts.join('\n'),
+      memo: invNotes || '',
+      source: r._source || '',
+      sourceKey: r._key || '',
+      lineNumber: index + 1
+    };
+  });
+  const total = lines.reduce((sum, line)=>sum + (parseFloat(line.amount) || 0), 0);
+  return {
+    customer,
+    invoiceNumber: invNumber,
+    invoiceDate: invDate,
+    periodStart: fromDate,
+    periodEnd: toDate,
+    notes: invNotes,
+    total: Number(total.toFixed(2)),
+    lineCount: lines.length,
+    lines
+  };
+}
+
+function quickBooksExportStatus(message){
+  const el = document.getElementById('inv-qb-export-status');
+  if(!el) return;
+  el.textContent = message;
+  el.style.display = 'block';
+  clearTimeout(el._hideTimer);
+  el._hideTimer = setTimeout(()=>{ el.style.display='none'; }, 4500);
+}
+
+function qbCsvValue(value){
+  const text = String(value ?? '');
+  return /[",\n\r]/.test(text) ? `"${text.replace(/"/g,'""')}"` : text;
+}
+
+function quickBooksInvoiceCsv(){
+  const data = buildQuickBooksInvoiceExport();
+  if(!data) return '';
+  const headers = [
+    'Customer','Invoice Number','Invoice Date','Service Date','Pickup Time',
+    'Resident','Facility','Service','Description','Amount','Memo',
+    'Billing Email','Source','Source Key'
+  ];
+  const rows = data.lines.map(line=>[
+    line.customer, line.invoiceNumber, line.invoiceDate, line.serviceDate, line.pickupTime,
+    line.resident, line.facility, line.service, line.description, line.amount, line.memo,
+    line.billingEmail, line.source, line.sourceKey
+  ]);
+  return [headers, ...rows].map(row=>row.map(qbCsvValue).join(',')).join('\n');
+}
+
+function quickBooksInvoiceText(){
+  const data = buildQuickBooksInvoiceExport();
+  if(!data) return '';
+  const header = [
+    `Customer: ${data.customer}`,
+    `Invoice #: ${data.invoiceNumber}`,
+    `Invoice Date: ${data.invoiceDate}`,
+    `Period: ${data.periodStart} to ${data.periodEnd}`,
+    `Total: $${data.total.toFixed(2)}`,
+    `Lines: ${data.lineCount}`
+  ].join('\n');
+  const lines = data.lines.map(line=>
+    `\n--- Line ${line.lineNumber} ---\n` +
+    `Date: ${line.serviceDate}${line.pickupTime ? ' ' + fmtTime12(line.pickupTime) : ''}\n` +
+    `${line.description}\n` +
+    `Amount: $${Number(line.amount || 0).toFixed(2)}`
+  ).join('\n');
+  return `${header}\n${lines}`;
+}
+
+async function copyQuickBooksInvoiceData(){
+  if(!currentInvoiceData){alert('Generate an invoice first.');return;}
+  const text = quickBooksInvoiceText();
+  try {
+    await navigator.clipboard.writeText(text);
+    quickBooksExportStatus('QuickBooks data copied.');
+  } catch(err){
+    const box = document.createElement('textarea');
+    box.value = text;
+    document.body.appendChild(box);
+    box.select();
+    document.execCommand('copy');
+    document.body.removeChild(box);
+    quickBooksExportStatus('QuickBooks data copied.');
+  }
+}
+
+function downloadInvoiceExport(filename, content, type){
+  const blob = new Blob([content], { type });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = filename;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+}
+
+function safeInvoiceFilename(ext){
+  const data = currentInvoiceData || {};
+  const customer = String(data.facilityName || 'invoice').replace(/[^a-z0-9]+/gi,'-').replace(/^-|-$/g,'');
+  const number = String(data.invNumber || 'draft').replace(/[^a-z0-9-]+/gi,'');
+  return `quickbooks-${customer}-${number}.${ext}`;
+}
+
+function downloadQuickBooksInvoiceCsv(){
+  if(!currentInvoiceData){alert('Generate an invoice first.');return;}
+  downloadInvoiceExport(safeInvoiceFilename('csv'), quickBooksInvoiceCsv(), 'text/csv;charset=utf-8');
+  quickBooksExportStatus('QuickBooks CSV downloaded.');
+}
+
+function downloadQuickBooksInvoiceJson(){
+  if(!currentInvoiceData){alert('Generate an invoice first.');return;}
+  const data = buildQuickBooksInvoiceExport();
+  downloadInvoiceExport(safeInvoiceFilename('json'), JSON.stringify(data, null, 2), 'application/json;charset=utf-8');
+  quickBooksExportStatus('QuickBooks JSON downloaded.');
 }
 
 function printInvoice(){
