@@ -10305,6 +10305,85 @@ function invoiceServiceName(r){
   return `${vehicle} (${triptype === 'rt' ? 'Roundtrip' : 'One Way'})`;
 }
 
+function parseInvoiceMileageLine(r, money){
+  const notes = String(r && r.notes || '');
+  const ridetype = normalizeRideType(r && r.ridetype);
+  const triptype = normalizeTripType(r && r.triptype);
+  const cleanMoney = (value)=>{
+    const n = parseFloat(String(value || '').replace(/,/g,''));
+    return Number.isFinite(n) ? n : 0;
+  };
+  const formatMoney = (value)=>`$${cleanMoney(value).toFixed(2)}`;
+
+  const explicit = notes.match(/(\d+(?:\.\d+)?)\s*(?:extra\s*)?miles?\s*(?:=|\$)\s*\$?(\d+(?:,\d{3})*(?:\.\d+)?)/i);
+  if(explicit) return `Mileage: ${parseFloat(explicit[1]).toFixed(1)} miles = ${formatMoney(explicit[2])}`;
+
+  const formula = notes.match(/(\d+(?:\.\d+)?)\s*miles?[\s\S]*?\(([^)]*)\)/i);
+  if(formula){
+    const miles = parseFloat(formula[1]);
+    const nums = (formula[2].match(/\d+(?:,\d{3})*(?:\.\d+)?/g) || []).map(cleanMoney);
+    if(Number.isFinite(miles) && nums.length >= 2){
+      const mileCharge = nums.length >= 3 ? nums[nums.length - 2] : nums[nums.length - 1] - nums[0];
+      if(mileCharge > 0) return `Mileage: ${miles.toFixed(1)} miles = ${formatMoney(mileCharge)}`;
+    }
+  }
+
+  const extra = notes.match(/(\d+(?:\.\d+)?)\s*extra\s*miles?/i);
+  if(extra){
+    const miles = parseFloat(extra[1]);
+    const charge = ridetype === 'wc' ? miles : miles * 10;
+    return `Mileage: ${miles.toFixed(1)} miles = ${formatMoney(charge)}`;
+  }
+
+  if(money && money.miles){
+    const miles = parseFloat(money.miles);
+    if(Number.isFinite(miles) && miles > 0){
+      const legs = triptype === 'rt' ? 2 : 1;
+      const rate = ridetype === 'wc' ? 1 : 10;
+      const freeMiles = ridetype === 'wc' ? 10 : 0;
+      const charge = Math.max(0, miles - freeMiles) * rate * legs;
+      if(charge > 0) return `Mileage: ${miles.toFixed(1)} miles = ${formatMoney(charge)}`;
+    }
+  }
+  return '';
+}
+
+function parseInvoiceWaitLine(r, money){
+  const notes = String(r && r.notes || '');
+  const formatMoney = (value)=>{
+    const n = parseFloat(String(value || '').replace(/,/g,''));
+    return Number.isFinite(n) ? `$${n.toFixed(2)}` : '';
+  };
+
+  const explicit = notes.match(/wait(?:\s*time)?[\s\S]*?(?:=|\$)\s*\$?(\d+(?:,\d{3})*(?:\.\d+)?)/i)
+    || notes.match(/\d+(?:\.\d+)?\s*(?:min|mins|minute|minutes)\s*(?:=|\$)\s*\$?(\d+(?:,\d{3})*(?:\.\d+)?)/i);
+  const charged = explicit ? formatMoney(explicit[1]) : (money && money.waitCharge ? `$${Number(money.waitCharge).toFixed(2)}` : '');
+  if(!charged) return '';
+
+  const explicitMinutes = notes.match(/wait(?:\s*time)?[\s\S]*?(\d+(?:\.\d+)?)\s*(?:min|mins|minute|minutes)\s*(?:=|\$)/i)
+    || notes.match(/(\d+(?:\.\d+)?)\s*(?:min|mins|minute|minutes)\s*(?:=|\$)/i);
+  if(explicitMinutes) return `Wait Time: ${Math.round(parseFloat(explicitMinutes[1]))} minutes = ${charged}`;
+
+  const minutesRange = notes.match(/wait(?:\s*time)?\s*(\d{1,2})(?::(\d{2}))?\s*(?:am|pm)?\s*-\s*(\d{1,2})(?::(\d{2}))?\s*(?:am|pm)?\s*-\s*30\s*min/i);
+  if(minutesRange){
+    const h1 = parseInt(minutesRange[1], 10);
+    const m1 = parseInt(minutesRange[2] || '0', 10);
+    const h2 = parseInt(minutesRange[3], 10);
+    const m2 = parseInt(minutesRange[4] || '0', 10);
+    let total = ((h2 * 60 + m2) - (h1 * 60 + m1));
+    if(total < 0) total += 12 * 60;
+    total = Math.max(0, total - 30);
+    if(total > 0) return `Wait Time: ${total} minutes = ${charged}`;
+  }
+
+  if(money && money.waitHours){
+    const minutes = Math.round(parseFloat(money.waitHours) * 60);
+    if(minutes > 0) return `Wait Time: ${minutes} minutes = ${charged}`;
+  }
+
+  return `Wait Time: ${charged}`;
+}
+
 function buildQuickBooksInvoiceExport(){
   if(!currentInvoiceData) return null;
   const { facilityName, invNumber, invDate, fromDate, toDate, invNotes, rides, fac } = currentInvoiceData;
@@ -10313,17 +10392,15 @@ function buildQuickBooksInvoiceExport(){
     const money = getInvoiceLineAmount(r);
     const service = invoiceServiceName(r);
     const resident = r.client || '';
-    const isWaap = canonicalizeFacilityName(r.facility) === 'WAAP' || canonicalizeFacilityName(facilityName) === 'WAAP';
-    const routeLine = isWaap
-      ? `Pickup Address: ${r.pickup || r.facility || ''}`
-      : `Pickup: ${r.pickup || r.facility || ''}\nDropoff: ${r.dropoff || ''}`;
+    const destination = r.dropoff || '';
+    const mileageLine = parseInvoiceMileageLine(r, money);
+    const waitLine = parseInvoiceWaitLine(r, money);
     const parts = [
       `Service: ${service}`,
-      resident ? `Resident: ${resident}` : '',
-      routeLine,
-      money.miles ? `Mileage: ${money.miles} miles` : '',
-      money.waitHours ? `Wait Time: ${money.waitHours} hours` : '',
-      r.notes ? `Notes: ${r.notes}` : ''
+      resident ? `Patient: ${resident}` : '',
+      destination ? `Destination: ${destination}` : '',
+      mileageLine,
+      waitLine
     ].filter(Boolean);
 
     return {
