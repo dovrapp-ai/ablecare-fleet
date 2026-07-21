@@ -8575,6 +8575,9 @@ function inferOneWayClientMilesFromRouteFields(ride){
 }
 
 async function computeOneWayClientMiles(ride){
+  const manualMiles = roundMiles1(ride?.miles);
+  if(manualMiles) return { miles: manualMiles, source: 'manual_miles' };
+
   // Prefer routeMiles - deadheadMiles when available, since this cancels out any deadhead errors
   // and yields the true client miles (pickup -> dropoff) one-way.
   const inferred = inferOneWayClientMilesFromRouteFields(ride);
@@ -8599,6 +8602,21 @@ async function computeOneWayClientMiles(ride){
   return { miles: 0, source: 'unknown' };
 }
 
+async function computeReportMilesForRide(ride, triptype){
+  const manualMiles = roundMiles1(ride?.miles);
+  if(manualMiles){
+    const multiplier = triptype === 'rt' ? 2 : 1;
+    return {
+      oneWayMiles: roundMiles1(manualMiles / multiplier) || manualMiles,
+      billableMiles: manualMiles,
+      source: 'manual_miles'
+    };
+  }
+  const { miles: oneWayMiles, source } = await computeOneWayClientMiles(ride);
+  const billableMiles = roundMiles1((triptype === 'rt' ? 2 : 1) * oneWayMiles);
+  return { oneWayMiles, billableMiles, source };
+}
+
 async function logRideFromCalendar(rideKey){
   if(!rideKey) return;
   const snap = await ridesRef().child(rideKey).once('value');
@@ -8613,8 +8631,7 @@ async function logRideFromCalendar(rideKey){
   }
 
   const triptype = r.triptype || 'rt';
-  const { miles: oneWayMiles, source: milesSource } = await computeOneWayClientMiles(r);
-  const billableMiles = (triptype === 'rt' ? 2 : 1) * oneWayMiles;
+  const { oneWayMiles, billableMiles, source: milesSource } = await computeReportMilesForRide(r, triptype);
 
   const logEntry = {
     date: r.date||'',
@@ -8636,7 +8653,7 @@ async function logRideFromCalendar(rideKey){
     // One-way client miles (pickup -> dropoff). Kept for reference/back-compat.
     estimatedMiles: oneWayMiles,
     // Full trip miles you can bill the client (RT doubles).
-    billableMiles: parseFloat(billableMiles.toFixed(1)) || 0,
+    billableMiles: billableMiles || 0,
     milesSource: milesSource || '',
     // Optional: add billing math notes like "16.8 miles (600+168=768)".
     calcNotes: '',
@@ -8687,8 +8704,7 @@ async function logAllRidesForDay(){
   for(const [k,r] of newRides){
     const newKey = rideLogRef().push().key;
     const triptype = r.triptype || 'rt';
-    const { miles: oneWay, source: milesSource } = await computeOneWayClientMiles(r);
-    const billableMiles = (triptype === 'rt' ? 2 : 1) * oneWay;
+    const { oneWayMiles: oneWay, billableMiles, source: milesSource } = await computeReportMilesForRide(r, triptype);
     updates[newKey] = {
       date: r.date||'', time: r.time||'', facility: r.facility||'',
       client: r.client||'', ridetype: r.ridetype||'wc', triptype,
@@ -8700,7 +8716,7 @@ async function logAllRidesForDay(){
       // One-way client miles (pickup -> dropoff). Kept for reference/back-compat.
       estimatedMiles: oneWay,
       // Full trip miles you can bill the client (RT doubles).
-      billableMiles: parseFloat(billableMiles.toFixed(1)) || 0,
+      billableMiles: billableMiles || 0,
       milesSource: milesSource || '',
       calcNotes: '',
       notes: r.notes||'',
@@ -9385,7 +9401,6 @@ async function recalcLogMiles(){
   try{
     setSrc('Calculating...');
     const triptype = window._leToggles?.triptype || 'rt';
-    const multiplier = triptype === 'rt' ? 2 : 1;
 
     const calKey = window._leMeta?.calendarKey || '';
     let rideForCalc = null;
@@ -9403,8 +9418,7 @@ async function recalcLogMiles(){
       };
     }
 
-    const { miles: oneWay, source } = await computeOneWayClientMiles(rideForCalc);
-    const billable = roundMiles1(oneWay * multiplier);
+    const { billableMiles: billable, source } = await computeReportMilesForRide(rideForCalc, triptype);
     const milesEl = document.getElementById('le-billable-miles');
     if(milesEl) milesEl.value = billable ? String(billable) : '';
     setSrc(billable ? `Recalculated (${source})` : 'Could not calculate miles');
