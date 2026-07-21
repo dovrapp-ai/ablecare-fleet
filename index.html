@@ -1583,8 +1583,8 @@ body[data-user-role="manager"] .owner-only-setting{display:none !important}
 
         <div class="modal-grid" style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
           <div class="modal-field">
-            <label>Invoice Number</label>
-            <input type="text" id="inv-number" placeholder="e.g. 1045" style="width:100%;padding:10px 14px;border:2px solid #e8eef4;border-radius:10px;font-size:14px;color:#0d1b2a;outline:none;font-family:inherit"/>
+            <label>Invoice Number (optional)</label>
+            <input type="text" id="inv-number" placeholder="QuickBooks will assign this" style="width:100%;padding:10px 14px;border:2px solid #e8eef4;border-radius:10px;font-size:14px;color:#0d1b2a;outline:none;font-family:inherit"/>
           </div>
           <div class="modal-field">
             <label>Invoice Date</label>
@@ -9980,8 +9980,6 @@ async function generateInvoice(){
 
   if(!facilityName){alert('Please select a facility.');return;}
   if(!fromDate||!toDate){alert('Please select a date range.');return;}
-  if(!invNumber){alert('Please enter an invoice number.');return;}
-
   document.getElementById('inv-error').style.display='none';
 
   const fac = FACILITIES.find(f=>f.name===facilityName)||{};
@@ -10172,7 +10170,7 @@ function renderInvoicePreview(data){
         </div>
         <div style="text-align:right">
           <div style="font-size:32px;font-weight:900;color:#00b4d8">INVOICE</div>
-          <div style="font-size:14px;color:#0d1b2a;margin-top:4px"># ${invNumber}</div>
+          <div style="font-size:14px;color:#0d1b2a;margin-top:4px">${invNumber ? `# ${invNumber}` : 'QuickBooks draft'}</div>
           <div style="font-size:12px;color:#6b82a8">Date: ${invDateFmt}</div>
           <div style="font-size:12px;color:#6b82a8">Period: ${fromFmt} – ${toFmt}</div>
         </div>
@@ -10375,9 +10373,10 @@ function quickBooksInvoiceCsv(){
 function quickBooksInvoiceText(){
   const data = buildQuickBooksInvoiceExport();
   if(!data) return '';
+  const invoiceLabel = data.invoiceNumber || '(to be assigned in QuickBooks)';
   const header = [
     `Customer: ${data.customer}`,
-    `Invoice #: ${data.invoiceNumber}`,
+    `Invoice #: ${invoiceLabel}`,
     `Invoice Date: ${data.invoiceDate}`,
     `Period: ${data.periodStart} to ${data.periodEnd}`,
     `Total: $${data.total.toFixed(2)}`,
@@ -10445,7 +10444,7 @@ function printInvoice(){
   const content = document.getElementById('printable-invoice');
   if(!content){alert('Generate an invoice first.');return;}
   const win = window.open('','_blank');
-  win.document.write(`<!DOCTYPE html><html><head><title>Invoice #${currentInvoiceData?.invNumber||''}</title>
+  win.document.write(`<!DOCTYPE html><html><head><title>${currentInvoiceData?.invNumber ? `Invoice #${currentInvoiceData.invNumber}` : 'QuickBooks Draft Invoice'}</title>
     <style>
       body{font-family:Arial,sans-serif;margin:0;padding:0;}
       @media print{body{margin:0;}}
@@ -10465,9 +10464,10 @@ function emailInvoice(){
     alert(`No email address saved for ${facilityName}.\n\nGo to Settings → Facilities → Edit ${facilityName} to add a billing email.`);
     return;
   }
-  const subject = encodeURIComponent(`AbleCare Mobility — Invoice #${invNumber}`);
+  const invoiceLabel = invNumber ? `Invoice #${invNumber}` : 'invoice draft';
+  const subject = encodeURIComponent(`AbleCare Mobility — ${invoiceLabel}`);
   const body = encodeURIComponent(
-    `Dear ${fac?.contact||facilityName},\n\nPlease find attached Invoice #${invNumber} for transportation services from ${formatInvDate(fromDate)} to ${formatInvDate(toDate)}.\n\nTotal Due: $${subtotal?.toFixed(2)||'0.00'}\n\nTo view the invoice, please open the attached PDF.\n\nThank you,\nAbleCare Mobility LLC\n(443) 819-1808\n1829 Reisterstown Rd Suite 350, Pikesville, MD 21208`
+    `Dear ${fac?.contact||facilityName},\n\nPlease find attached ${invoiceLabel} for transportation services from ${formatInvDate(fromDate)} to ${formatInvDate(toDate)}.\n\nTotal Due: $${subtotal?.toFixed(2)||'0.00'}\n\nTo view the invoice, please open the attached PDF.\n\nThank you,\nAbleCare Mobility LLC\n(443) 819-1808\n1829 Reisterstown Rd Suite 350, Pikesville, MD 21208`
   );
   window.open(`mailto:${email}?subject=${subject}&body=${body}`);
 }
