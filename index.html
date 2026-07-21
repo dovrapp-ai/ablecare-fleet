@@ -10004,10 +10004,27 @@ async function generateInvoice(){
     return raw === want || raw.includes(want) || want.includes(raw);
   };
 
+  const invoiceMatchText = (value)=>String(value || '')
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g,' ')
+    .replace(/\bms\b|\bmr\b|\bmrs\b/g,' ')
+    .replace(/\s+/g,' ')
+    .trim();
+
+  const invoiceRideKey = (r)=>{
+    const canon = canonicalizeFacilityName(r && r.facility) || invoiceMatchText(r && r.facility);
+    const client = invoiceMatchText(r && r.client);
+    return `${r && r.date || ''}|${canon}|${client}`;
+  };
+
   const isInvoiceRide = (r)=>{
     const status = String(r && r.status || '').toLowerCase().trim();
     // Never invoice cancelled rides (but "cancelled at pickup" is still billable).
     if(['cancelled','noshow'].includes(status)) return false;
+
+    // This screen is for preparing NEW QuickBooks invoices only.
+    // If the ride/report already has an invoice number, it was already invoiced.
+    if(String(r && r.invoice || '').trim()) return false;
 
     // If the user explicitly set price to 0, treat as "do not invoice".
     // (Blank/undefined is treated as "missing" and can be calculated.)
@@ -10051,7 +10068,14 @@ async function generateInvoice(){
     })
     .filter(r=>matchesFacility(r.facility) && r.date>=fromDate && r.date<=toDate && isInvoiceRide(r));
 
-  const loggedCalendarKeys = new Set(logRides.map(r=>r.calendarKey).filter(Boolean));
+  const allLoggedCalendarKeys = new Set(Object.values(allLogs)
+    .filter(r=>r && matchesFacility(r.facility) && r.date>=fromDate && r.date<=toDate)
+    .map(r=>r.calendarKey)
+    .filter(Boolean));
+  const allLoggedRideKeys = new Set(Object.values(allLogs)
+    .filter(r=>r && matchesFacility(r.facility) && r.date>=fromDate && r.date<=toDate)
+    .map(invoiceRideKey)
+    .filter(Boolean));
 
   const scheduledRides = Object.entries(allRides)
     .map(([k,v])=>({...(v||{}), _key:k, _source:'rides'}))
@@ -10059,7 +10083,8 @@ async function generateInvoice(){
       matchesFacility(r.facility) &&
       r.date>=fromDate && r.date<=toDate &&
       isInvoiceRide(r) &&
-      !loggedCalendarKeys.has(r._key)
+      !allLoggedCalendarKeys.has(r._key) &&
+      !allLoggedRideKeys.has(invoiceRideKey(r))
     );
 
   const rides = [...logRides, ...scheduledRides]
@@ -10067,8 +10092,8 @@ async function generateInvoice(){
 
   if(!rides.length){
     document.getElementById('inv-error-msg').textContent =
-      `No invoice-billed rides found for ${facilityName} between ${fromDate} and ${toDate}. ` +
-      `Make sure rides are set to "Invoice" payment method (or add billing email/contact to the facility settings).`;
+      `No uninvoiced rides found for ${facilityName} between ${fromDate} and ${toDate}. ` +
+      `Rides with an existing invoice number are skipped automatically.`;
     document.getElementById('inv-error').style.display='block';
     return;
   }
