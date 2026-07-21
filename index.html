@@ -2618,6 +2618,12 @@ body[data-user-role="manager"] .owner-only-setting{display:none !important}
     </div>
 
     <div class="modal-field">
+      <label>➕ Additional Stops</label>
+      <div id="ride-stops-list" style="display:flex;flex-direction:column;gap:8px"></div>
+      <button type="button" class="toggle-btn" onclick="addRideStop()" style="margin-top:8px;padding:9px 12px">+ Add Stop</button>
+    </div>
+
+    <div class="modal-field">
       <label>🏥 Drop Off Address</label>
       <input type="text" id="r-dropoff" placeholder="Appointment / drop off location..." oninput="onRideAddressInput('dropoff')" autocomplete="off" style="width:100%;padding:10px 14px;border:2px solid #e8eef4;border-radius:10px;font-size:13px;color:#0d1b2a;outline:none;font-family:inherit"/>
       <div class="suggestions"><div class="suggestions-list ride-address-suggestions" id="r-dropoff-suggestions" style="display:none"></div></div>
@@ -3726,6 +3732,27 @@ function rideTypeIconLabel(value){
   if(type === 'broda') return 'Broda';
   if(type === 'str') return '🛏 Str';
   return '♿ WC';
+}
+
+function normalizeRideStops(value){
+  if(Array.isArray(value)){
+    return value.map(stop=>{
+      if(typeof stop === 'string') return stop.trim();
+      return String(stop?.address || stop?.stop || stop?.location || '').trim();
+    }).filter(Boolean);
+  }
+  if(typeof value === 'string'){
+    return value.split(/\r?\n|;\s*/).map(s=>s.trim()).filter(Boolean);
+  }
+  return [];
+}
+
+function rideStopsText(stops){
+  return normalizeRideStops(stops).map((stop,i)=>`Stop ${i+1}: ${stop}`);
+}
+
+function rideStopsHtml(stops){
+  return normalizeRideStops(stops).map((stop,i)=>`<div><strong>Stop ${i+1}:</strong> ${escHtml(stop)}</div>`).join('');
 }
 
 function normalizeYesNo(value, fallback='no'){
@@ -6094,6 +6121,7 @@ async function renderDayView(){
       </div>
       <div class="ride-focus-route">
         ${r.pickup?`<div><strong>Pickup:</strong> ${escHtml(r.pickup)}</div>`:'<div style="color:#94a3b8"><strong>Pickup:</strong> not saved</div>'}
+        ${rideStopsHtml(r.stops || r.additionalStops)}
         ${r.dropoff?`<div><strong>Dropoff:</strong> ${escHtml(r.dropoff)}</div>`:'<div style="color:#94a3b8"><strong>Dropoff:</strong> not saved</div>'}
       </div>
       <div class="ride-focus-tags">
@@ -6698,6 +6726,7 @@ function buildRideConfirmationMessage(ride){
   const time=ride.time?fmtTime12(ride.time):'not set';
   const pickup=ride.pickup||'not saved';
   const dropoff=ride.dropoff||'not saved';
+  const stops=rideStopsText(ride.stops || ride.additionalStops);
   return [
     'Is this all correct?',
     '',
@@ -6705,6 +6734,7 @@ function buildRideConfirmationMessage(ride){
     `Pickup date: ${date}`,
     `Pickup time: ${time}`,
     `Pickup address: ${pickup}`,
+    ...stops,
     `Dropoff address: ${dropoff}`,
     '',
     'Please reply yes if everything is correct, or send any changes.'
@@ -7865,6 +7895,7 @@ async function optimizeWithAI(rides, drivers, distMatrix, addresses){
       client: ride.client || '',
       pickup,
       dropoff,
+      stops: normalizeRideStops(ride.stops || ride.additionalStops),
       ridetype: ride.ridetype || 'wc',
       triptype: ride.triptype || 'rt',
       helper: ride.helper || '',
@@ -7985,6 +8016,7 @@ function renderOptimizerResults(result, drivers){
           <div class="opt-ride-time">${fmtTime12(ride.rawTime || '') || ride.displayTime || ride.pickupTime || ride.departBase || '?'}</div>
           <div class="opt-ride-name">${ride.facility || ''} ${ride.client ? '— ' + ride.client : ''}</div>
           ${ride.pickup ? `<div class="opt-ride-detail">📍 ${ride.pickup}</div>` : ''}
+          ${rideStopsHtml(ride.stops || ride.additionalStops)}
           ${ride.dropoff ? `<div class="opt-ride-detail">🏥 ${ride.dropoff}</div>` : ''}
           <div class="opt-tags">
             <span class="opt-tag">${rideTypeIconLabel(ride.ridetype)}</span>
@@ -8031,6 +8063,7 @@ function renderOptimizerResults(result, drivers){
       <div style="background:#fff;border-radius:10px;padding:12px 14px;margin-bottom:8px;border:1px solid #fed7aa">
         <div style="font-size:12px;font-weight:800;color:#c2410c;margin-bottom:4px">${idx+1}. ${fmtTime12(r.time || '') || r.time || 'Unknown time'} — ${r.facility || ''} ${r.client ? '— ' + r.client : ''}</div>
         ${r.pickup ? `<div style="font-size:12px;color:#6b7280">📍 ${r.pickup}</div>` : ''}
+        ${rideStopsHtml(r.stops || r.additionalStops)}
         ${r.dropoff ? `<div style="font-size:12px;color:#6b7280">🏥 ${r.dropoff}</div>` : ''}
         ${r.reason ? `<div style="font-size:12px;color:#b45309;margin-top:4px">Reason: ${r.reason}</div>` : ''}
         <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:10px">${assignButtons}</div>
@@ -8111,6 +8144,7 @@ function removeRideFromOptimized(rideKey, fromDriver){
     client: ride.client || '',
     pickup: ride.pickup || '',
     dropoff: ride.dropoff || '',
+    stops: normalizeRideStops(ride.stops || ride.additionalStops),
     notes: ride.notes || '',
     ridetype: ride.ridetype || 'wc',
     triptype: ride.triptype || 'rt',
@@ -8137,6 +8171,7 @@ function assignUnassignedRide(rideKey, driverName){
     client: r.client || '',
     pickup: r.pickup || '',
     dropoff: r.dropoff || '',
+    stops: normalizeRideStops(r.stops || r.additionalStops),
     ridetype: r.ridetype || 'wc',
     triptype: r.triptype || 'rt',
     helper: r.helper || '',
@@ -8286,6 +8321,35 @@ function onFacilityType(){
   document.querySelectorAll('.facility-btn').forEach(b=>b.classList.toggle('active',b.textContent===name));
   applyFacilityAddresses(name);
 }
+function renderRideStopsEditor(stops=[]){
+  const list=document.getElementById('ride-stops-list');
+  if(!list) return;
+  const normalized=normalizeRideStops(stops);
+  list.innerHTML=normalized.map((stop,i)=>`
+    <div class="ride-stop-row" style="display:grid;grid-template-columns:1fr auto;gap:8px;align-items:center">
+      <input type="text" class="ride-stop-input" value="${escHtml(stop)}" placeholder="Stop ${i+1} address..." style="width:100%;padding:10px 14px;border:2px solid #e8eef4;border-radius:10px;font-size:13px;color:#0d1b2a;outline:none;font-family:inherit"/>
+      <button type="button" class="toggle-btn" onclick="removeRideStop(${i})" style="padding:9px 12px;color:#ef4444">Remove</button>
+    </div>
+  `).join('');
+}
+function addRideStop(value=''){
+  const stops=getRideStopsFromForm();
+  stops.push(value);
+  renderRideStopsEditor(stops);
+  const inputs=document.querySelectorAll('#ride-stops-list .ride-stop-input');
+  const last=inputs[inputs.length-1];
+  if(last) last.focus();
+}
+function removeRideStop(index){
+  const stops=getRideStopsFromForm();
+  stops.splice(index,1);
+  renderRideStopsEditor(stops);
+}
+function getRideStopsFromForm(){
+  return Array.from(document.querySelectorAll('#ride-stops-list .ride-stop-input'))
+    .map(input=>input.value.trim())
+    .filter(Boolean);
+}
 function showHideStretcherFields(){
   const hasWait=rideToggles.wait==='yes';
   document.getElementById('helper-field').style.display='block';
@@ -8361,6 +8425,7 @@ async function openRideModal(key,defaultDate){
     if(sourceEl) sourceEl.value=normalizeCommunicationSource(r.communicationSource)||inferCommunicationSourceForRide(r);
     document.getElementById('r-pickup').value=r.pickup||'';
     document.getElementById('r-dropoff').value=r.dropoff||'';
+    renderRideStopsEditor(r.stops || r.additionalStops || []);
     document.getElementById('r-price').value=r.price||'';
     document.getElementById('r-invoice').value=r.invoice||'';
     document.getElementById('r-miles').value=r.miles||'';
@@ -8390,6 +8455,7 @@ async function openRideModal(key,defaultDate){
     if(sourceEl) sourceEl.value=rideSourceContext==='email_paste'?'outlook_email':'manual';
     document.getElementById('r-pickup').value='';
     document.getElementById('r-dropoff').value='';
+    renderRideStopsEditor([]);
     document.getElementById('r-price').value='';
     document.getElementById('r-invoice').value='';
     document.getElementById('r-miles').value='';
@@ -8434,6 +8500,7 @@ async function saveRide(){
     facilityPhone:facilityPhoneForRide(facility),
     pickup:document.getElementById('r-pickup').value.trim(),
     dropoff:document.getElementById('r-dropoff').value.trim(),
+    stops:getRideStopsFromForm(),
     ridetype:rideToggles.ridetype,triptype:rideToggles.triptype,
     van:rideToggles.van||'',driver:document.getElementById('r-driver').value,
     helper:document.getElementById('r-helper').value.trim(),
@@ -8650,6 +8717,7 @@ async function logRideFromCalendar(rideKey){
     waitHours: r.waitHours||0,
     pickup: r.pickup||'',
     dropoff: r.dropoff||'',
+    stops: normalizeRideStops(r.stops || r.additionalStops),
     // One-way client miles (pickup -> dropoff). Kept for reference/back-compat.
     estimatedMiles: oneWayMiles,
     // Full trip miles you can bill the client (RT doubles).
@@ -8715,6 +8783,7 @@ async function logAllRidesForDay(){
       paymethod: r.paymethod||'cc', waitHours: r.waitHours||0,
       pickup: r.pickup||'',
       dropoff: r.dropoff||'',
+      stops: normalizeRideStops(r.stops || r.additionalStops),
       // One-way client miles (pickup -> dropoff). Kept for reference/back-compat.
       estimatedMiles: oneWay,
       // Full trip miles you can bill the client (RT doubles).
@@ -9356,6 +9425,14 @@ async function openLogEdit(key){
         </div>
       </div>
       <div class="modal-field">
+        <label>Route Stops</label>
+        <div style="background:#f8fafc;border:1px solid #e2e8f0;border-radius:10px;padding:10px 12px;font-size:12px;line-height:1.45;color:#334155">
+          ${r.pickup?`<div><strong>Pickup:</strong> ${escHtml(r.pickup)}</div>`:''}
+          ${rideStopsHtml(r.stops || r.additionalStops) || '<div style="color:#94a3b8">No additional stops saved.</div>'}
+          ${r.dropoff?`<div><strong>Dropoff:</strong> ${escHtml(r.dropoff)}</div>`:''}
+        </div>
+      </div>
+      <div class="modal-field">
         <label>Calc Notes</label>
         <input type="text" id="le-calc-notes" value="${r.calcNotes||''}" placeholder="e.g. 16.8 miles (600+168=768)" style="width:100%;padding:9px 12px;border:2px solid #e8eef4;border-radius:10px;font-size:13px;outline:none;font-family:inherit"/>
       </div>
@@ -9410,7 +9487,8 @@ async function openLogEdit(key){
   window._leMeta = {
     calendarKey: r.calendarKey||'',
     pickup: r.pickup||'',
-    dropoff: r.dropoff||''
+    dropoff: r.dropoff||'',
+    stops: normalizeRideStops(r.stops || r.additionalStops)
   };
 }
 
@@ -9433,6 +9511,7 @@ async function recalcLogMiles(){
         facility: document.getElementById('le-facility')?.value || '',
         pickup: window._leMeta?.pickup || '',
         dropoff: window._leMeta?.dropoff || '',
+        stops: window._leMeta?.stops || [],
         estimatedMiles: 0
       };
     }
@@ -9506,6 +9585,7 @@ async function saveLogEdit(){
     billableMiles: parseFloat(billableMiles.toFixed(1))||0,
     // Optional billing math notes like "16.8 miles (600+168=768)".
     calcNotes: document.getElementById('le-calc-notes').value.trim(),
+    stops: window._leMeta?.stops || [],
     paid: window._leToggles.paid||'no',
     paymethod: window._leToggles.paymethod||'cc',
     notes: document.getElementById('le-notes').value.trim(),
@@ -10049,6 +10129,7 @@ function renderInvoicePreview(data){
       </td>
       <td style="padding:10px 14px;font-size:12px;color:#6b82a8;vertical-align:top">
         <div>📍 ${r.pickup||r.facility||'—'}</div>
+        ${rideStopsHtml(r.stops || r.additionalStops)}
         <div>🏥 ${r.dropoff||'—'}</div>
         ${milesStr}
       </td>

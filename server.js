@@ -444,6 +444,19 @@ function displayDate(value) {
   return `${match[2]}/${match[3]}/${match[1]}`;
 }
 
+function normalizeRideStops(value) {
+  if (Array.isArray(value)) {
+    return value.map((stop) => {
+      if (typeof stop === 'string') return stop.trim();
+      return String(stop?.address || stop?.stop || stop?.location || '').trim();
+    }).filter(Boolean);
+  }
+  if (typeof value === 'string') {
+    return value.split(/\r?\n|;\s*/).map((stop) => stop.trim()).filter(Boolean);
+  }
+  return [];
+}
+
 function buildReminderText(ride) {
   const client = String(ride.client || 'your ride').trim();
   const facility = String(ride.facility || '').trim();
@@ -454,10 +467,12 @@ function buildReminderText(ride) {
   const time = displayTime(ride.time);
   const pickup = String(ride.pickup || '').trim();
   const dropoff = String(ride.dropoff || '').trim();
+  const stops = normalizeRideStops(ride.stops || ride.additionalStops);
   const parts = [
     `Reminder from AbleCare Mobility: ${rideLabel}${time ? ` is scheduled for pickup tomorrow at ${time}` : ' has transportation scheduled for tomorrow'}.`,
   ];
   if (pickup) parts.push(`Pickup: ${pickup}.`);
+  stops.forEach((stop, index) => parts.push(`Stop ${index + 1}: ${stop}.`));
   if (dropoff) parts.push(`Drop off: ${dropoff}.`);
   parts.push('Reply here or call AbleCare if anything changed.');
   return parts.join(' ');
@@ -469,6 +484,8 @@ function buildRideConfirmationText(ride) {
   const time = displayTime(ride.time) || String(ride.time || '').trim() || 'not set';
   const pickup = String(ride.pickup || '').trim() || 'not saved';
   const dropoff = String(ride.dropoff || '').trim() || 'not saved';
+  const stops = normalizeRideStops(ride.stops || ride.additionalStops)
+    .map((stop, index) => `Stop ${index + 1}: ${stop}`);
   return [
     'Is this all correct?',
     '',
@@ -476,6 +493,7 @@ function buildRideConfirmationText(ride) {
     `Pickup date: ${date || 'not set'}`,
     `Pickup time: ${time}`,
     `Pickup address: ${pickup}`,
+    ...stops,
     `Dropoff address: ${dropoff}`,
     '',
     'Please reply yes if everything is correct, or send any changes.'
