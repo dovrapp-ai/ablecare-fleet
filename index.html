@@ -10147,35 +10147,31 @@ function renderInvoicePreview(data){
     const lineTotal = price + waitCharge;
     subtotal += lineTotal;
 
-    const waitStr = r.waitHours && parseFloat(r.waitHours)>0
-      ? `<br><span style="color:#6b82a8;font-size:11px">⏳ Wait: ${r.waitHours}h = $${waitCharge.toFixed(2)}</span>`
-      : '';
+    const money = {
+      amount: Number(lineTotal.toFixed(2)),
+      baseAmount: Number(price.toFixed(2)),
+      waitCharge: Number(waitCharge.toFixed(2)),
+      miles: oneWayMiles ? Number(oneWayMiles.toFixed(1)) : '',
+      waitHours: waitHours || ''
+    };
+    const details = [
+      `Service: ${invoiceServiceName(r)}`,
+      r.client ? `Patient: ${r.client}` : '',
+      r.dropoff ? `Destination: ${r.dropoff}` : '',
+      parseInvoiceMileageLine(r, money),
+      parseInvoiceWaitLine(r, money)
+    ].filter(Boolean).map(line=>`<div>${escHtml(line)}</div>`).join('');
 
-    const milesStr = r.estimatedMiles
-      ? `<br><span style="color:#6b82a8;font-size:11px">🗺 ${r.estimatedMiles} mi</span>`
-      : '';
-
-    return `<tr style="border-bottom:1px solid #f0f4f8">
-      <td style="padding:10px 14px;font-size:13px;color:#0d1b2a;vertical-align:top">
-        <div style="font-weight:700">${formatInvDate(r.date)}</div>
-        <div style="color:#6b82a8;font-size:11px">${r.time?fmtTime12(r.time):''}</div>
-      </td>
-      <td style="padding:10px 14px;font-size:13px;color:#0d1b2a;vertical-align:top">
-        <div style="font-weight:700">${r.client||'—'}</div>
-        <div style="color:#6b82a8;font-size:11px">${rideTypeIconLabel(r.ridetype)} · ${r.triptype==='rt'?'Round Trip':'One Way'}</div>
-      </td>
-      <td style="padding:10px 14px;font-size:12px;color:#6b82a8;vertical-align:top">
-        <div>📍 ${r.pickup||r.facility||'—'}</div>
-        ${rideStopsHtml(r.stops || r.additionalStops)}
-        <div>🏥 ${r.dropoff||'—'}</div>
-        ${milesStr}
-      </td>
-      <td style="padding:10px 14px;font-size:13px;color:#0d1b2a;text-align:right;vertical-align:top">
-        <div style="font-weight:800">$${price.toFixed(2)}</div>
-        ${waitStr}
-        ${waitCharge>0?`<div style="color:#c2410c;font-size:11px;font-weight:700">+$${waitCharge.toFixed(2)}</div>`:''}
-      </td>
-    </tr>`;
+    return `<div style="display:grid;grid-template-columns:110px 1fr 110px;gap:16px;padding:16px 18px;border-bottom:1px solid #e8eef4;align-items:start">
+      <div style="font-size:13px;color:#0d1b2a">
+        <div style="font-weight:800">${formatInvDate(r.date)}</div>
+        <div style="color:#6b82a8;font-size:12px;margin-top:2px">${r.time?fmtTime12(r.time):''}</div>
+      </div>
+      <div style="font-size:13px;line-height:1.55;color:#0d1b2a">
+        ${details || '<div>Service details unavailable</div>'}
+      </div>
+      <div style="font-size:15px;font-weight:900;color:#0d1b2a;text-align:right">$${lineTotal.toFixed(2)}</div>
+    </div>`;
   }).join('');
 
   const fromFmt = formatInvDate(fromDate);
@@ -10209,18 +10205,15 @@ function renderInvoicePreview(data){
         ${fac.email?`<div style="font-size:13px;color:#6b82a8">${fac.email}</div>`:''}
       </div>
 
-      <!-- Rides table -->
-      <table style="width:100%;border-collapse:collapse;margin-bottom:24px">
-        <thead>
-          <tr style="background:#0d1b2a">
-            <th style="padding:10px 14px;font-size:12px;color:#fff;text-align:left;font-weight:700">Date</th>
-            <th style="padding:10px 14px;font-size:12px;color:#fff;text-align:left;font-weight:700">Resident</th>
-            <th style="padding:10px 14px;font-size:12px;color:#fff;text-align:left;font-weight:700">Route</th>
-            <th style="padding:10px 14px;font-size:12px;color:#fff;text-align:right;font-weight:700">Amount</th>
-          </tr>
-        </thead>
-        <tbody>${rideRows}</tbody>
-      </table>
+      <!-- Rides -->
+      <div style="margin-bottom:24px;border:1px solid #e8eef4;border-radius:10px;overflow:hidden">
+        <div style="display:grid;grid-template-columns:110px 1fr 110px;gap:16px;background:#0d1b2a;padding:10px 18px;color:#fff;font-size:12px;font-weight:700">
+          <div>Date</div>
+          <div>QuickBooks Line Details</div>
+          <div style="text-align:right">Amount</div>
+        </div>
+        ${rideRows}
+      </div>
 
       <!-- Totals -->
       <div style="display:flex;justify-content:flex-end;margin-bottom:28px">
