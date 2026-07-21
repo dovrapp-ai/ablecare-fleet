@@ -6388,7 +6388,7 @@ function mobileReminderCard(item){
     ${mobileReminderContactEditor(item)}
     <div class="mobile-reminder-message">${escHtml(item.text)}</div>
     <div class="mobile-ride-actions">
-      <button class="mobile-action-btn dark" ${sendDisabled} onclick="mobileSendRideReminder(${jsString(item.rideKey)})">${item.sent?'Sent':'Send'}</button>
+      <button class="mobile-action-btn dark" ${sendDisabled} data-mobile-reminder-send="${escHtml(item.rideKey)}">${item.sent?'Sent':'Send'}</button>
     </div>
   </div>`;
 }
@@ -6437,10 +6437,11 @@ async function mobileSaveReminderContact(rideKey, button){
   }
 }
 
-async function mobileSendRideReminder(rideKey){
+async function mobileSendRideReminder(rideKey, button){
   const date=mobileReminderDateValue();
   if(!confirm('Send this reminder now?')) return;
   try{
+    if(button){button.disabled=true;button.textContent='Sending...';}
     await reminderApi('/api/reminders/send',{
       method:'POST',
       headers:{'Content-Type':'application/json'},
@@ -6448,6 +6449,7 @@ async function mobileSendRideReminder(rideKey){
     });
     await mobileLoadReminders();
   }catch(e){
+    if(button){button.disabled=false;button.textContent='Send';}
     alert(e.message||'Reminder failed.');
   }
 }
@@ -6489,6 +6491,14 @@ async function mobileDryRunReminders(){
 }
 
 document.addEventListener('click', (event)=>{
+  const sendButton=event.target.closest('[data-mobile-reminder-send]');
+  if(sendButton){
+    event.preventDefault();
+    event.stopPropagation();
+    if(sendButton.disabled) return;
+    mobileSendRideReminder(sendButton.getAttribute('data-mobile-reminder-send') || '', sendButton);
+    return;
+  }
   const button=event.target.closest('[data-reminder-save]');
   if(!button) return;
   event.preventDefault();
