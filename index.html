@@ -6014,7 +6014,10 @@ function getCalendarRideDates(){
 
 function isVisibleRideLog(r){
   if(!r) return false;
-  return r.loggedFromRides === true || String(r.logSource || '') === 'rides-tab';
+  const source = String(r.logSource || '');
+  if(r.loggedFromRides === true || source === 'rides-tab') return true;
+  if(source === 'reports-manual') return false;
+  return !!String(r.calendarKey || '').trim();
 }
 
 function rideMatchText(value){
