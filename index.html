@@ -10159,10 +10159,11 @@ function renderInvoicePreview(data){
       waitHours: waitHours || ''
     };
     const destination = invoiceDestinationAddress(r, facilityName);
+    const addressLabel = invoiceAddressLabel(r, facilityName);
     const details = [
       `Service: ${invoiceServiceName(r)}`,
       r.client ? `Patient: ${r.client}` : '',
-      destination ? `Destination: ${destination}` : '',
+      destination ? `${addressLabel}: ${destination}` : '',
       parseInvoiceMileageLine(r, money),
       parseInvoiceWaitLine(r, money)
     ].filter(Boolean).map(line=>`<div>${escHtml(line)}</div>`).join('');
@@ -10314,6 +10315,12 @@ function invoiceDestinationAddress(r, invoiceFacilityName){
   return r && r.dropoff || '';
 }
 
+function invoiceAddressLabel(r, invoiceFacilityName){
+  const invoiceFacility = canonicalizeFacilityName(invoiceFacilityName) || String(invoiceFacilityName || '').trim();
+  const rideFacility = canonicalizeFacilityName(r && r.facility) || String(r && r.facility || '').trim();
+  return (invoiceFacility === 'WAAP' || rideFacility === 'WAAP') ? 'Pickup Address' : 'Destination';
+}
+
 function parseInvoiceMileageLine(r, money){
   const notes = String(r && r.notes || '');
   const ridetype = normalizeRideType(r && r.ridetype);
@@ -10401,12 +10408,13 @@ function buildQuickBooksInvoiceExport(){
     const service = invoiceServiceName(r);
     const resident = r.client || '';
     const destination = invoiceDestinationAddress(r, facilityName);
+    const addressLabel = invoiceAddressLabel(r, facilityName);
     const mileageLine = parseInvoiceMileageLine(r, money);
     const waitLine = parseInvoiceWaitLine(r, money);
     const parts = [
       `Service: ${service}`,
       resident ? `Patient: ${resident}` : '',
-      destination ? `Destination: ${destination}` : '',
+      destination ? `${addressLabel}: ${destination}` : '',
       mileageLine,
       waitLine
     ].filter(Boolean);
