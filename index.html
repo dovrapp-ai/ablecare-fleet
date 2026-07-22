@@ -6012,14 +6012,93 @@ function getCalendarRideDates(){
   return new Set(dates);
 }
 
+function rideMatchText(value){
+  return String(value || '')
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g,' ')
+    .replace(/\bms\b|\bmr\b|\bmrs\b/g,' ')
+    .replace(/\s+/g,' ')
+    .trim();
+}
+
+function rideAddressTokens(value){
+  return rideMatchText(value)
+    .split(' ')
+    .filter(t=>t.length > 2 && !['road','street','avenue','drive','lane','suite','building','baltimore','towson','maryland'].includes(t));
+}
+
+function rideAddressesLikelyMatch(a, b){
+  const at = rideAddressTokens(a);
+  const bt = rideAddressTokens(b);
+  if(!at.length || !bt.length) return false;
+  const aCompact = at.join('');
+  const bCompact = bt.join('');
+  if(aCompact.length >= 8 && bCompact.length >= 8 && (aCompact.includes(bCompact) || bCompact.includes(aCompact))) return true;
+  const bSet = new Set(bt);
+  const overlap = at.filter(t=>bSet.has(t)).length;
+  return overlap >= Math.min(2, at.length, bt.length);
+}
+
+function rideTimeMinutes(value){
+  const text = String(value || '').trim().toLowerCase();
+  if(!text) return null;
+  const m = text.match(/(\d{1,2})(?::(\d{2}))?\s*(am|pm)?/);
+  if(!m) return null;
+  let h = parseInt(m[1], 10);
+  const min = parseInt(m[2] || '0', 10);
+  const ap = m[3] || '';
+  if(ap === 'pm' && h < 12) h += 12;
+  if(ap === 'am' && h === 12) h = 0;
+  if(!ap && h > 23) return null;
+  return h * 60 + min;
+}
+
+function ridesLikelySameForReport(scheduleRide, logRide){
+  if(!scheduleRide || !logRide) return false;
+  if(String(scheduleRide.date || '') !== String(logRide.date || '')) return false;
+  if(logRide.calendarKey && scheduleRide._key && logRide.calendarKey === scheduleRide._key) return true;
+
+  const schedClient = rideMatchText(scheduleRide.client || scheduleRide.facility);
+  const logClient = rideMatchText(logRide.client || logRide.facility);
+  if(!schedClient || !logClient || schedClient !== logClient) return false;
+
+  const addressPairs = [
+    [scheduleRide.pickup, logRide.pickup],
+    [scheduleRide.dropoff, logRide.dropoff],
+    [scheduleRide.pickup, logRide.dropoff],
+    [scheduleRide.dropoff, logRide.pickup]
+  ];
+  if(addressPairs.some(([a,b])=>rideAddressesLikelyMatch(a,b))) return true;
+
+  const st = rideTimeMinutes(scheduleRide.time);
+  const lt = rideTimeMinutes(logRide.time);
+  if(st != null && lt != null && Math.abs(st - lt) <= 20) return true;
+
+  return false;
+}
+
+function findReportLogForScheduledRide(scheduleRide, logs){
+  return (logs || []).find(logRide=>ridesLikelySameForReport(scheduleRide, logRide)) || null;
+}
+
+function annotateScheduledRidesWithReportLogs(scheduled, logs){
+  return (scheduled || []).map(r=>{
+    const match = findReportLogForScheduledRide(r, logs);
+    return match ? {...r,_loggedReportKey:match._key,_loggedReportStatus:match.status||''} : r;
+  });
+}
+
 function buildCalendarRides(){
-  const scheduled = Object.entries(allRidesCache||{})
+  const rawScheduled = Object.entries(allRidesCache||{})
     .filter(([,v])=>!v.hideFromDashboard && !v.returnOf)
     .map(([k,v])=>({...v,_key:k,_source:'schedule'}));
-  const scheduledKeys = new Set(scheduled.map(r=>r._key));
-  const logged = Object.entries(allRideLogCache||{})
-    .filter(([,v])=>!v.calendarKey || !scheduledKeys.has(v.calendarKey))
+  const rawLogs = Object.entries(allRideLogCache||{})
     .map(([k,v])=>({...v,_key:k,_source:'log'}));
+  const scheduled = annotateScheduledRidesWithReportLogs(rawScheduled, rawLogs);
+  const scheduledKeys = new Set(scheduled.map(r=>r._key));
+  const scheduledLogKeys = new Set(scheduled.map(r=>r._loggedReportKey).filter(Boolean));
+  const logged = rawLogs
+    .filter(v=>(!v.calendarKey || !scheduledKeys.has(v.calendarKey)) && !scheduledLogKeys.has(v._key));
   return scheduled.concat(logged);
 }
 
@@ -6107,10 +6186,10 @@ async function renderDayView(){
   const html=sorted.map(r=>{
     const isUnpaid=r.price&&r.price!==''&&r.paid!=='yes';
     const isReturn=!!r.returnOf;
-    const isLogged=r._source==='log';
+    const isLogged=r._source==='log' || !!r._loggedReportKey;
     const cls=isLogged?'logged-block':(isReturn?'return-ride':(isUnpaid?'unpaid-block':(isStretcherLikeRideType(r.ridetype)?'str':'wc')));
     const statusBadge = r.status ? statusBadgeHtml(r.status) : '';
-    const editAction=isLogged?`openLogEdit('${r._key}')`:`openRideModal('${r._key}')`;
+    const editAction=r._source==='log'?`openLogEdit('${r._key}')`:`openRideModal('${r._key}')`;
     const title=escHtml(r.facility||r.client||'-');
     const client=r.client&&r.facility?escHtml(r.client):'';
     const driver=r.driver?`${escHtml(r.driver)}${r.helper?' + '+escHtml(r.helper):''}`:'No driver yet';
@@ -6829,6 +6908,7 @@ function mobileRideCard(r){
   const title=r.facility||r.client||'Ride';
   const byLine=rideCreatedByLineText(r);
   const isReturn=!!r.returnOf;
+  const isLogged=r._source==='log' || !!r._loggedReportKey;
   const canReturn=r.triptype==='rt'&&!isReturn;
   return `<div class="mobile-card mobile-ride-card ${assigned?'':'unassigned'}">
     <div class="mobile-ride-top">
@@ -6847,6 +6927,7 @@ function mobileRideCard(r){
       ${r.driver?`<div class="mobile-tag">${mobileEsc(r.driver)}${r.helper?' + '+mobileEsc(r.helper):''}</div>`:''}
       ${r.van?`<div class="mobile-tag">Van #${mobileEsc(r.van)}</div>`:''}
       ${unpaid?`<div class="mobile-tag" style="background:#fef3c7;color:#b45309">Unpaid</div>`:''}
+      ${isLogged?`<div class="mobile-tag" style="background:#dcfce7;color:#15803d">Logged in Reports</div>`:''}
       ${r.status?`<div class="mobile-tag">${mobileEsc(r.status)}</div>`:''}
       ${!isReturn?returnRequestSummaryHtml(r,'mobile'):''}
     </div>
@@ -7141,6 +7222,7 @@ async function renderMobileDashboard(){
     if(renderSeq!==mobileRenderSeq) return;
 
     allRidesCache=rideSnap.val()||{};
+    allRideLogCache=logs;
     const locs=locSnap.val()||{};
     const shifts=shiftSnap.val()||{};
     const settings=settingsSnap.val()||{};
@@ -7155,7 +7237,11 @@ async function renderMobileDashboard(){
     };
     mobileLocCache=locs;
     mobileDriversCache=drivers;
-    const allRides=Object.entries(allRidesCache).map(([k,v])=>({...v,_key:k}));
+    const rawMobileRides=Object.entries(allRidesCache)
+      .filter(([,v])=>!v.hideFromDashboard && !v.returnOf)
+      .map(([k,v])=>({...v,_key:k,_source:'schedule'}));
+    const mobileLogs=Object.entries(allRideLogCache||{}).map(([k,v])=>({...v,_key:k,_source:'log'}));
+    const allRides=annotateScheduledRidesWithReportLogs(rawMobileRides, mobileLogs);
     const mobileRideDates=new Set(allRides.map(r=>r.date).filter(Boolean));
     renderMobileWeekStrip(mobileRideDates);
     const dayRides=allRides.filter(r=>r.date===ds).sort((a,b)=>(a.time||'').localeCompare(b.time||''));
