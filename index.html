@@ -7221,12 +7221,12 @@ async function renderMobileDashboard(){
     ]);
     if(renderSeq!==mobileRenderSeq) return;
 
-    allRidesCache=rideSnap.val()||{};
-    allRideLogCache=logs;
     const locs=locSnap.val()||{};
     const shifts=shiftSnap.val()||{};
     const settings=settingsSnap.val()||{};
     const logs=logSnap.val()||{};
+    allRidesCache=rideSnap.val()||{};
+    allRideLogCache=logs;
     const comp=compSnap.val()||{};
     complianceCache={
       entities:comp.entities||{},
