@@ -6008,8 +6008,13 @@ function selectDay(ds){selectedDate=new Date(ds+'T12:00:00');renderDayView();ren
 function getCalendarRideDates(){
   const dates = [];
   Object.values(allRidesCache||{}).forEach(r=>{ if(r&&r.date) dates.push(r.date); });
-  Object.values(allRideLogCache||{}).forEach(r=>{ if(r&&r.date) dates.push(r.date); });
+  Object.values(allRideLogCache||{}).forEach(r=>{ if(r&&r.date&&isVisibleRideLog(r)) dates.push(r.date); });
   return new Set(dates);
+}
+
+function isVisibleRideLog(r){
+  if(!r) return false;
+  return r.loggedFromRides === true || String(r.logSource || '') === 'rides-tab';
 }
 
 function rideMatchText(value){
@@ -6094,10 +6099,11 @@ function buildCalendarRides(){
     .map(([k,v])=>({...v,_key:k,_source:'schedule'}));
   const rawLogs = Object.entries(allRideLogCache||{})
     .map(([k,v])=>({...v,_key:k,_source:'log'}));
-  const scheduled = annotateScheduledRidesWithReportLogs(rawScheduled, rawLogs);
+  const visibleLogs = rawLogs.filter(isVisibleRideLog);
+  const scheduled = annotateScheduledRidesWithReportLogs(rawScheduled, visibleLogs);
   const scheduledKeys = new Set(scheduled.map(r=>r._key));
   const scheduledLogKeys = new Set(scheduled.map(r=>r._loggedReportKey).filter(Boolean));
-  const logged = rawLogs
+  const logged = visibleLogs
     .filter(v=>(!v.calendarKey || !scheduledKeys.has(v.calendarKey)) && !scheduledLogKeys.has(v._key));
   return scheduled.concat(logged);
 }
@@ -7320,7 +7326,7 @@ async function renderMobileDashboard(){
     // Keep keys so we can open the same Edit popup you have on desktop.
     const reportRides=Object.entries(logs)
       .map(([k,v])=>({...v,_key:k}))
-      .filter(r=>(!rangeFrom||r.date>=rangeFrom)&&(!rangeTo||r.date<=rangeTo));
+      .filter(r=>isVisibleRideLog(r)&&(!rangeFrom||r.date>=rangeFrom)&&(!rangeTo||r.date<=rangeTo));
 
     const revenue=reportRides.reduce((sum,r)=>sum+(parseFloat(r.price)||0),0);
     const unpaidLogs=reportRides.filter(r=>r.price&&r.paid!=='yes');
@@ -8830,7 +8836,13 @@ async function logRideFromCalendar(rideKey){
     sourceEmailSubject: r.sourceEmailSubject || '',
     status: r.status||'',
     calendarKey: rideKey,
-    createdAt: Date.now()
+    createdAt: Date.now(),
+    loggedAt: Date.now(),
+    loggedBy: currentUserName(),
+    loggedByRole: currentUserRole(),
+    loggedFromRides: true,
+    logSource: 'rides-tab',
+    logMethod: 'single'
   };
 
   const newRef = rideLogRef().push();
@@ -8894,7 +8906,13 @@ async function logAllRidesForDay(){
       sourceEmailRaw: r.sourceEmailRaw || r.originalPastedEmail || '',
       sourceEmailSubject: r.sourceEmailSubject || '',
       status: r.status||'',
-      calendarKey: k, createdAt: Date.now()
+      calendarKey: k, createdAt: Date.now(),
+      loggedAt: Date.now(),
+      loggedBy: currentUserName(),
+      loggedByRole: currentUserRole(),
+      loggedFromRides: true,
+      logSource: 'rides-tab',
+      logMethod: 'bulk'
     };
     if(reportLogEntryNeedsCompletion(updates[newKey])) needsCompletion.push(newKey);
   }
@@ -9055,6 +9073,7 @@ async function loadReports(){
   }
   const all = snap.val()||{};
   let rides = Object.entries(all).map(([k,v])=>({...v,_key:k})).filter(r=>{
+    if(!isVisibleRideLog(r)) return false;
     if((from || to) && !r.date) return false;
     if(from && r.date < from) return false;
     if(to && r.date > to) return false;
@@ -9702,6 +9721,8 @@ async function saveLogEdit(){
     ride.createdAt = Date.now();
     ride.createdBy = currentUserName();
     ride.createdByRole = currentUserRole();
+    ride.logSource = 'reports-manual';
+    ride.logMethod = 'manual';
     await rideLogRef().push(ride);
   }
 
@@ -10152,14 +10173,14 @@ async function generateInvoice(){
       }
       return r;
     })
-    .filter(r=>matchesFacility(r.facility) && r.date>=fromDate && r.date<=toDate && isInvoiceRide(r));
+    .filter(r=>isVisibleRideLog(r) && matchesFacility(r.facility) && r.date>=fromDate && r.date<=toDate && isInvoiceRide(r));
 
   const allLoggedCalendarKeys = new Set(Object.values(allLogs)
-    .filter(r=>r && matchesFacility(r.facility) && r.date>=fromDate && r.date<=toDate)
+    .filter(r=>r && isVisibleRideLog(r) && matchesFacility(r.facility) && r.date>=fromDate && r.date<=toDate)
     .map(r=>r.calendarKey)
     .filter(Boolean));
   const allLoggedRideKeys = new Set(Object.values(allLogs)
-    .filter(r=>r && matchesFacility(r.facility) && r.date>=fromDate && r.date<=toDate)
+    .filter(r=>r && isVisibleRideLog(r) && matchesFacility(r.facility) && r.date>=fromDate && r.date<=toDate)
     .map(invoiceRideKey)
     .filter(Boolean));
 
