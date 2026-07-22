@@ -10127,15 +10127,18 @@ function renderInvoicePreview(data){
     const hasExplicitPrice = (rawPrice != null && String(rawPrice).trim() !== '' && Number.isFinite(explicitPriceNum));
     let price = hasExplicitPrice ? explicitPriceNum : 0;
 
-    // One-way client miles (pickup -> dropoff). For logged rides we may only have full billable miles.
+    // One-way client miles are used for pricing rules; billable miles are what Reports shows.
     let oneWayMiles = extractFirstNumber(r && r.estimatedMiles);
+    let billableMiles = extractFirstNumber(r && (r.billableMiles ?? r.tripMiles ?? r.miles));
     if(!Number.isFinite(oneWayMiles) || oneWayMiles <= 0){
-      const billable = extractFirstNumber(r && (r.billableMiles ?? r.tripMiles ?? r.miles));
-      if(Number.isFinite(billable) && billable > 0){
-        oneWayMiles = (triptype === 'rt') ? (billable / 2) : billable;
+      if(Number.isFinite(billableMiles) && billableMiles > 0){
+        oneWayMiles = (triptype === 'rt') ? (billableMiles / 2) : billableMiles;
       } else {
         oneWayMiles = 0;
       }
+    }
+    if(!Number.isFinite(billableMiles) || billableMiles <= 0){
+      billableMiles = oneWayMiles > 0 ? oneWayMiles * (triptype === 'rt' ? 2 : 1) : 0;
     }
 
     if(!hasExplicitPrice && oneWayMiles > 0){
@@ -10152,6 +10155,7 @@ function renderInvoicePreview(data){
       baseAmount: Number(price.toFixed(2)),
       waitCharge: Number(waitCharge.toFixed(2)),
       miles: oneWayMiles ? Number(oneWayMiles.toFixed(1)) : '',
+      billableMiles: billableMiles ? Number(billableMiles.toFixed(1)) : '',
       waitHours: waitHours || ''
     };
     const destination = invoiceDestinationAddress(r);
@@ -10268,11 +10272,14 @@ function getInvoiceLineAmount(r){
   };
 
   let oneWayMiles = extractFirstNumber(r && r.estimatedMiles);
+  let billableMiles = extractFirstNumber(r && (r.billableMiles ?? r.tripMiles ?? r.miles));
   if(!Number.isFinite(oneWayMiles) || oneWayMiles <= 0){
-    const billable = extractFirstNumber(r && (r.billableMiles ?? r.tripMiles ?? r.miles));
-    oneWayMiles = Number.isFinite(billable) && billable > 0
-      ? (triptype === 'rt' ? billable / 2 : billable)
+    oneWayMiles = Number.isFinite(billableMiles) && billableMiles > 0
+      ? (triptype === 'rt' ? billableMiles / 2 : billableMiles)
       : 0;
+  }
+  if(!Number.isFinite(billableMiles) || billableMiles <= 0){
+    billableMiles = oneWayMiles > 0 ? oneWayMiles * (triptype === 'rt' ? 2 : 1) : 0;
   }
 
   if(!hasExplicitPrice && oneWayMiles > 0){
@@ -10286,6 +10293,7 @@ function getInvoiceLineAmount(r){
     baseAmount: Number(price.toFixed(2)),
     waitCharge: Number(waitCharge.toFixed(2)),
     miles: oneWayMiles ? Number(oneWayMiles.toFixed(1)) : '',
+    billableMiles: billableMiles ? Number(billableMiles.toFixed(1)) : '',
     waitHours: waitHours || ''
   };
 }
@@ -10335,13 +10343,12 @@ function parseInvoiceMileageLine(r, money){
     return `Mileage: ${miles.toFixed(1)} miles = ${formatMoney(charge)}`;
   }
 
-  if(money && money.miles){
-    const miles = parseFloat(money.miles);
+  if(money && (money.billableMiles || money.miles)){
+    const miles = parseFloat(money.billableMiles || money.miles);
     if(Number.isFinite(miles) && miles > 0){
-      const legs = triptype === 'rt' ? 2 : 1;
       const rate = ridetype === 'wc' ? 1 : 10;
       const freeMiles = ridetype === 'wc' ? 10 : 0;
-      const charge = Math.max(0, miles - freeMiles) * rate * legs;
+      const charge = Math.max(0, miles - (freeMiles * (triptype === 'rt' ? 2 : 1))) * rate;
       if(charge > 0) return `Mileage: ${miles.toFixed(1)} miles = ${formatMoney(charge)}`;
     }
   }
