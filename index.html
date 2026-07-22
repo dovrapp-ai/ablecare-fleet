@@ -10158,7 +10158,7 @@ function renderInvoicePreview(data){
       billableMiles: billableMiles ? Number(billableMiles.toFixed(1)) : '',
       waitHours: waitHours || ''
     };
-    const destination = invoiceDestinationAddress(r);
+    const destination = invoiceDestinationAddress(r, facilityName);
     const details = [
       `Service: ${invoiceServiceName(r)}`,
       r.client ? `Patient: ${r.client}` : '',
@@ -10307,9 +10307,10 @@ function invoiceServiceName(r){
   return `${vehicle} (${triptype === 'rt' ? 'Roundtrip' : 'One Way'})`;
 }
 
-function invoiceDestinationAddress(r){
-  const facility = canonicalizeFacilityName(r && r.facility) || String(r && r.facility || '').trim();
-  if(facility === 'WAAP') return r && r.pickup || '';
+function invoiceDestinationAddress(r, invoiceFacilityName){
+  const invoiceFacility = canonicalizeFacilityName(invoiceFacilityName) || String(invoiceFacilityName || '').trim();
+  const rideFacility = canonicalizeFacilityName(r && r.facility) || String(r && r.facility || '').trim();
+  if(invoiceFacility === 'WAAP' || rideFacility === 'WAAP') return r && r.pickup || '';
   return r && r.dropoff || '';
 }
 
@@ -10399,7 +10400,7 @@ function buildQuickBooksInvoiceExport(){
     const money = getInvoiceLineAmount(r);
     const service = invoiceServiceName(r);
     const resident = r.client || '';
-    const destination = invoiceDestinationAddress(r);
+    const destination = invoiceDestinationAddress(r, facilityName);
     const mileageLine = parseInvoiceMileageLine(r, money);
     const waitLine = parseInvoiceWaitLine(r, money);
     const parts = [
