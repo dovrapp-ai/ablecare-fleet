@@ -7255,7 +7255,7 @@ async function renderMobileDashboard(){
       .filter(([,v])=>!v.hideFromDashboard && !v.returnOf)
       .map(([k,v])=>({...v,_key:k,_source:'schedule'}));
     const mobileLogs=Object.entries(allRideLogCache||{}).map(([k,v])=>({...v,_key:k,_source:'log'}));
-    const allRides=annotateScheduledRidesWithReportLogs(rawMobileRides, mobileLogs);
+    const allRides=annotateScheduledRidesWithReportLogs(rawMobileRides, mobileLogs.filter(isVisibleRideLog));
     const mobileRideDates=new Set(allRides.map(r=>r.date).filter(Boolean));
     renderMobileWeekStrip(mobileRideDates);
     const dayRides=allRides.filter(r=>r.date===ds).sort((a,b)=>(a.time||'').localeCompare(b.time||''));
