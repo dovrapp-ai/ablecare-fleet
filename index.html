@@ -2213,11 +2213,8 @@ body[data-user-role="manager"] .owner-only-setting{display:none !important}
               <div class="mobile-week-strip" id="mobile-week-strip"></div>
             </div>
 
-            <div class="mobile-section-title">Needs attention</div>
+            <div class="mobile-section-title">Today's Rides</div>
             <div id="mobile-needs-list"></div>
-
-            <div class="mobile-section-title">Assigned rides</div>
-            <div id="mobile-assigned-list"></div>
           </div>
 
           <div class="mobile-panel" id="mobile-panel-reminders">
@@ -7215,12 +7212,11 @@ async function renderMobileDashboard(){
   const picker=document.getElementById('mobile-ride-date-picker');
   if(picker) picker.value=ds;
 
-  if(!db){
-    renderMobileWeekStrip(new Set());
-    document.getElementById('mobile-needs-list').innerHTML=mobileEmpty('Not connected to the database yet. Enter the PIN and wait for the dashboard to load.');
-    document.getElementById('mobile-assigned-list').innerHTML='';
-    return;
-  }
+    if(!db){
+      renderMobileWeekStrip(new Set());
+      document.getElementById('mobile-needs-list').innerHTML=mobileEmpty('Not connected to the database yet. Enter the PIN and wait for the dashboard to load.');
+      return;
+    }
 
   try{
     await ensureComplianceSeedData();
@@ -7262,14 +7258,12 @@ async function renderMobileDashboard(){
     const assigned=dayRides.filter(r=>r.driver);
     const unassigned=dayRides.filter(r=>!r.driver);
     const unpaid=dayRides.filter(r=>r.price&&r.paid!=='yes');
-    const needs=dayRides.filter(r=>!r.driver||(r.price&&r.paid!=='yes')||['cancelled','noshow','cancelled_pickup'].includes(r.status));
 
     mobileSetText('mobile-stat-total',dayRides.length);
     mobileSetText('mobile-stat-assigned',assigned.length);
     mobileSetText('mobile-stat-open',unassigned.length);
 
-    document.getElementById('mobile-needs-list').innerHTML=needs.length?needs.map(mobileRideCard).join(''):mobileEmpty('No urgent ride items for this day.');
-    document.getElementById('mobile-assigned-list').innerHTML=assigned.length?assigned.map(mobileRideCard).join(''):mobileEmpty('No assigned rides yet.');
+    document.getElementById('mobile-needs-list').innerHTML=dayRides.length?dayRides.map(mobileRideCard).join(''):mobileEmpty('No rides scheduled for this day.');
 
     const driverRows=drivers.map(d=>{
       const ridesForDriver=dayRides.filter(r=>r.driver===d.name);
