@@ -6915,6 +6915,7 @@ function mobileRideCard(r){
   const tripType=r.triptype==='1way'?'1 Way':'RT';
   const sourceInfo=getRideEntrySourceInfo(r);
   const unpaid=r.price&&r.paid!=='yes';
+  const paid=r.price&&r.paid==='yes';
   const time=r.time?fmtTime12(r.time):'Awaiting call';
   const title=r.facility||r.client||'Ride';
   const byLine=rideCreatedByLineText(r);
@@ -6938,6 +6939,7 @@ function mobileRideCard(r){
       ${r.driver?`<div class="mobile-tag">${mobileEsc(r.driver)}${r.helper?' + '+mobileEsc(r.helper):''}</div>`:''}
       ${r.van?`<div class="mobile-tag">Van #${mobileEsc(r.van)}</div>`:''}
       ${unpaid?`<div class="mobile-tag" style="background:#fef3c7;color:#b45309">Unpaid</div>`:''}
+      ${paid?`<div class="mobile-tag" style="background:#dcfce7;color:#15803d">Paid</div>`:''}
       ${isLogged?`<div class="mobile-tag" style="background:#dcfce7;color:#15803d">Logged in Reports</div>`:''}
       ${r.status?`<div class="mobile-tag">${mobileEsc(r.status)}</div>`:''}
       ${!isReturn?returnRequestSummaryHtml(r,'mobile'):''}
