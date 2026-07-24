@@ -6013,7 +6013,7 @@ function isVisibleRideLog(r){
   if(!r) return false;
   // Keep all existing report history visible. The stricter "logged from Rides"
   // rule applies only to new report rows created after this deployment.
-  const strictReportsFrom = 1784747628952;
+  const strictReportsFrom = 1784899583726;
   const createdAt = Number(r.createdAt || 0);
   if(!createdAt || createdAt < strictReportsFrom) return true;
   const source = String(r.logSource || '');
