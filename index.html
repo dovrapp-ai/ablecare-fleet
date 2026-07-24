@@ -6922,6 +6922,8 @@ function mobileRideCard(r){
   const isReturn=!!r.returnOf;
   const isLogged=r._source==='log' || !!r._loggedReportKey;
   const canReturn=r.triptype==='rt'&&!isReturn;
+  const canLog=!isReturn&&!isLogged&&r._source!=='log';
+  const actionCount=(canReturn?1:0)+2+(canLog?1:0);
   return `<div class="mobile-card mobile-ride-card ${assigned?'':'unassigned'}">
     <div class="mobile-ride-top">
       <div class="mobile-ride-time">${mobileEsc(time)}</div>
@@ -6944,10 +6946,11 @@ function mobileRideCard(r){
       ${r.status?`<div class="mobile-tag">${mobileEsc(r.status)}</div>`:''}
       ${!isReturn?returnRequestSummaryHtml(r,'mobile'):''}
     </div>
-    <div class="mobile-ride-actions" style="${canReturn?'':'grid-template-columns:1fr 1fr'}">
+    <div class="mobile-ride-actions" style="grid-template-columns:repeat(${actionCount},minmax(0,1fr))">
       ${canReturn?`<button class="mobile-action-btn light" style="background:#dcfce7;color:#15803d" onclick="openReturnModal('${key}')">Return</button>`:''}
       <button class="mobile-action-btn dark" onclick="openRideModal('${key}')">Open Ride</button>
       <button class="mobile-action-btn light" style="background:#ecfeff;color:#0369a1" onclick="openRideConfirmationModal('${key}')">Confirm</button>
+      ${canLog?`<button class="mobile-action-btn light" style="background:#eef2ff;color:#1d4ed8" onclick="logRideFromCalendar('${key}')">Log</button>`:''}
     </div>
   </div>`;
 }
@@ -8852,6 +8855,8 @@ async function logRideFromCalendar(rideKey){
   const newRef = rideLogRef().push();
   await newRef.set(logEntry);
   showToast('✓ Ride logged to Reports!');
+  await renderDayView();
+  if(document.getElementById('screen-mobile')?.classList.contains('active')) renderMobileDashboard();
 
   if(reportLogEntryNeedsCompletion(logEntry)){
     startReportCompletionWizard([newRef.key]);
