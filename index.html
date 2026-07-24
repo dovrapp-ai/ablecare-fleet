@@ -8663,6 +8663,7 @@ async function saveRide(){
   let savedRideKey = rideEditKey || null;
   if(rideEditKey){
     await ridesRef().child(rideEditKey).update(ride);
+    await syncRideStatusToReportLogs(rideEditKey, ride.status);
   }
   else{
     ride.createdAt=Date.now();
@@ -8809,6 +8810,37 @@ async function computeReportMilesForRide(ride, triptype){
   const { miles: oneWayMiles, source } = await computeOneWayClientMiles(ride);
   const billableMiles = roundMiles1((triptype === 'rt' ? 2 : 1) * oneWayMiles);
   return { oneWayMiles, billableMiles, source };
+}
+
+async function syncRideStatusToReportLogs(rideKey, status){
+  if(!rideKey || !db) return;
+  const cleanStatus = String(status || '').trim();
+  const snap = await rideLogRef().orderByChild('calendarKey').equalTo(rideKey).once('value');
+  const logs = snap.val() || {};
+  const now = Date.now();
+  const updates = {};
+  Object.keys(logs).forEach(logKey=>{
+    updates[`rideLog/${logKey}/status`] = cleanStatus;
+    updates[`rideLog/${logKey}/statusSyncedAt`] = now;
+    updates[`rideLog/${logKey}/statusSyncedFrom`] = 'rides';
+    updates[`rideLog/${logKey}/updatedAt`] = now;
+    updates[`rideLog/${logKey}/updatedBy`] = currentUserName();
+    updates[`rideLog/${logKey}/updatedByRole`] = currentUserRole();
+  });
+  if(Object.keys(updates).length) await db.ref().update(updates);
+}
+
+async function syncReportStatusToRide(calendarKey, status){
+  if(!calendarKey || !db) return;
+  const now = Date.now();
+  await ridesRef().child(calendarKey).update({
+    status: String(status || '').trim(),
+    statusSyncedAt: now,
+    statusSyncedFrom: 'reports',
+    updatedAt: now,
+    updatedBy: currentUserName(),
+    updatedByRole: currentUserRole()
+  });
 }
 
 async function logRideFromCalendar(rideKey){
@@ -9740,6 +9772,7 @@ async function saveLogEdit(){
 
   if(logEditKey){
     await rideLogRef().child(logEditKey).update(ride);
+    await syncReportStatusToRide(window._leMeta?.calendarKey || '', ride.status);
   } else {
     ride.createdAt = Date.now();
     ride.createdBy = currentUserName();
