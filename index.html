@@ -6690,6 +6690,51 @@ function mobileKey(value){
   return String(value||'').replace(/\\/g,'\\\\').replace(/'/g,"\\'");
 }
 
+async function mobileUpdateReportBilling(logKey, fields){
+  if(!logKey || !db) return;
+  const snap = await rideLogRef().child(logKey).once('value');
+  const current = snap.val() || {};
+  const now = Date.now();
+  const cleanFields = {};
+  if(Object.prototype.hasOwnProperty.call(fields,'paid')) cleanFields.paid = fields.paid === 'yes' ? 'yes' : 'no';
+  if(Object.prototype.hasOwnProperty.call(fields,'invoice')) cleanFields.invoice = String(fields.invoice || '').trim();
+  const updates = {
+    [`rideLog/${logKey}/updatedAt`]: now,
+    [`rideLog/${logKey}/updatedBy`]: currentUserName(),
+    [`rideLog/${logKey}/updatedByRole`]: currentUserRole()
+  };
+  Object.entries(cleanFields).forEach(([key,value])=>{
+    updates[`rideLog/${logKey}/${key}`] = value;
+  });
+  const calendarKey = String(current.calendarKey || '').trim();
+  if(calendarKey){
+    Object.entries(cleanFields).forEach(([key,value])=>{
+      updates[`rides/${calendarKey}/${key}`] = value;
+    });
+    updates[`rides/${calendarKey}/updatedAt`] = now;
+    updates[`rides/${calendarKey}/updatedBy`] = currentUserName();
+    updates[`rides/${calendarKey}/updatedByRole`] = currentUserRole();
+  }
+  await db.ref().update(updates);
+}
+
+async function mobileToggleReportPaid(event, logKey, currentPaid){
+  if(event) event.stopPropagation();
+  const nextPaid = currentPaid === 'yes' ? 'no' : 'yes';
+  await mobileUpdateReportBilling(logKey, { paid: nextPaid });
+  showToast(nextPaid === 'yes' ? 'Marked paid' : 'Marked unpaid');
+  await renderMobileDashboard();
+}
+
+async function mobilePromptReportInvoice(event, logKey, currentInvoice){
+  if(event) event.stopPropagation();
+  const nextInvoice = prompt('Invoice number', currentInvoice || '');
+  if(nextInvoice === null) return;
+  await mobileUpdateReportBilling(logKey, { invoice: nextInvoice });
+  showToast(String(nextInvoice || '').trim() ? 'Invoice number saved' : 'Invoice number cleared');
+  await renderMobileDashboard();
+}
+
 function switchMobilePanel(name){
   mobilePanel=name;
   document.querySelectorAll('.mobile-tab').forEach(t=>t.classList.remove('active'));
@@ -7369,6 +7414,8 @@ async function renderMobileDashboard(){
             const statusLabel=r.status?statusLabelText(r.status):'No status';
             const notesLabel=String(r.notes||'').trim();
             const editKey=mobileKey(r._key);
+            const invoiceValue=String(r.invoice||'').trim();
+            const invoiceLabel=invoiceValue?`Invoice #${invoiceValue}`:'Add Invoice';
             return `<div style="border-top:1px solid #eef2f7;padding-top:10px;margin-top:10px;cursor:pointer" onclick="openLogEdit('${editKey}')">
               <div style="display:grid;grid-template-columns:minmax(0,1fr) auto;gap:10px;align-items:flex-start">
                 <div style="min-width:0">
@@ -7378,8 +7425,9 @@ async function renderMobileDashboard(){
                   <div style="font-size:12px;color:#64748b;margin-top:6px">${mobileEsc(typeLabel)} · ${mobileEsc(milesLabel)} · ${mobileEsc(priceLabel)}</div>
                 </div>
                 <div style="display:flex;flex-direction:column;align-items:flex-end;gap:5px;min-width:108px">
-                  <button class="mobile-driver-open">Edit</button>
-                  <div class="mobile-tag" style="background:${paid?'#dcfce7':'#fef3c7'};color:${paid?'#15803d':'#b45309'}">${mobileEsc(paidLabel)}</div>
+                  <button class="mobile-driver-open" onclick="event.stopPropagation();openLogEdit('${editKey}')">Edit</button>
+                  <button class="mobile-tag" style="border:none;cursor:pointer;background:${paid?'#dcfce7':'#fef3c7'};color:${paid?'#15803d':'#b45309'}" onclick="mobileToggleReportPaid(event,'${editKey}','${paid?'yes':'no'}')">${mobileEsc(paidLabel)}</button>
+                  <button class="mobile-tag" style="border:none;cursor:pointer;background:${invoiceValue?'#e0f2fe':'#f1f5f9'};color:${invoiceValue?'#0369a1':'#475569'};max-width:150px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis" onclick="mobilePromptReportInvoice(event,'${editKey}','${mobileKey(invoiceValue)}')">${mobileEsc(invoiceLabel)}</button>
                   <div style="font-size:11px;color:#475569;text-align:right;max-width:150px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${mobileEsc(driverLabel)}</div>
                   <div style="font-size:11px;color:#64748b;text-align:right">${mobileEsc(vanLabel)}</div>
                 </div>
