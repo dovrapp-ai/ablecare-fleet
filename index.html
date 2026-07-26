@@ -9197,7 +9197,10 @@ async function loadReports(){
     if((from || to) && !r.date) return false;
     if(from && r.date < from) return false;
     if(to && r.date > to) return false;
-    if(facilityFilter && r.facility !== facilityFilter) return false;
+    if(
+      facilityFilter &&
+      String(r.facility || '').trim().toLowerCase() !== String(facilityFilter).trim().toLowerCase()
+    ) return false;
     if(driverFilter && r.driver !== driverFilter) return false;
     if(paidFilter && r.paid !== paidFilter) return false;
     if(repView === 'square' && !isSquarePaidRide(r)) return false;
