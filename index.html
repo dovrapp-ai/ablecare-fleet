@@ -2563,11 +2563,36 @@ body[data-user-role="manager"] .owner-only-setting{display:none !important}
     <div class="modal-grid" style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
       <div class="modal-field">
         <label>Date</label>
-        <input type="date" id="r-date"/>
+        <input type="date" id="r-date" onchange="updateRideRecurrencePreview()"/>
       </div>
       <div class="modal-field">
         <label>Pickup Time</label>
         <input type="time" id="r-time"/>
+      </div>
+    </div>
+
+    <div class="modal-field" id="ride-recurrence-section">
+      <label>🔁 Repeat Schedule</label>
+      <select id="r-repeat" onchange="onRideRepeatChange()" style="width:100%;padding:10px 14px;border:2px solid #e8eef4;border-radius:10px;font-size:14px;color:#0d1b2a;outline:none;font-family:inherit;background:#fff">
+        <option value="none">Does not repeat</option>
+        <option value="weekly">Weekly on selected days</option>
+      </select>
+      <div id="r-repeat-weekly" style="display:none;margin-top:10px;padding:12px;background:#f8fbff;border:1px solid #dbeafe;border-radius:12px">
+        <div style="font-size:12px;font-weight:800;color:#5b74a0;margin-bottom:8px">Repeat every week on</div>
+        <div id="r-repeat-days" style="display:grid;grid-template-columns:repeat(7,minmax(38px,1fr));gap:5px">
+          <button type="button" class="toggle-btn" data-repeat-day="0" onclick="toggleRideRecurrenceDay(0)">Sun</button>
+          <button type="button" class="toggle-btn" data-repeat-day="1" onclick="toggleRideRecurrenceDay(1)">Mon</button>
+          <button type="button" class="toggle-btn" data-repeat-day="2" onclick="toggleRideRecurrenceDay(2)">Tue</button>
+          <button type="button" class="toggle-btn" data-repeat-day="3" onclick="toggleRideRecurrenceDay(3)">Wed</button>
+          <button type="button" class="toggle-btn" data-repeat-day="4" onclick="toggleRideRecurrenceDay(4)">Thu</button>
+          <button type="button" class="toggle-btn" data-repeat-day="5" onclick="toggleRideRecurrenceDay(5)">Fri</button>
+          <button type="button" class="toggle-btn" data-repeat-day="6" onclick="toggleRideRecurrenceDay(6)">Sat</button>
+        </div>
+        <div class="modal-field" style="margin:12px 0 0">
+          <label>Repeat Until</label>
+          <input type="date" id="r-repeat-until" onchange="updateRideRecurrencePreview()"/>
+        </div>
+        <div id="r-repeat-preview" style="font-size:12px;color:#0d6f89;font-weight:700;line-height:1.45;margin-top:8px"></div>
       </div>
     </div>
 
@@ -2751,7 +2776,7 @@ body[data-user-role="manager"] .owner-only-setting{display:none !important}
     </div>
 
     <div class="modal-actions">
-      <button class="modal-save" onclick="saveRide()">Save Ride</button>
+      <button class="modal-save" id="ride-save-btn" onclick="saveRide()">Save Ride</button>
       <button class="modal-delete" id="ride-delete-btn" onclick="deleteRide()" style="display:none">Delete</button>
       <button class="modal-cancel" onclick="closeRideModal()">Cancel</button>
     </div>
@@ -3097,6 +3122,7 @@ let editContext={driverName:null,shiftKey:null};
 let rideEditKey=null;
 let rideSourceContext='manual';
 let rideToggles={ridetype:'wc',triptype:'rt',van:'',paid:'no',wait:'no',paymethod:'cc'};
+let rideRecurrenceDays=new Set();
 let selectedDate=new Date();
 let miniMonthOffset=0;
 let ridesFilter='all';
@@ -8701,6 +8727,94 @@ function updateRideToggles(){
   if(payCc) payCc.classList.toggle('active',rideToggles.paymethod==='cc');
   if(payInv) payInv.classList.toggle('active',rideToggles.paymethod==='invoice');
 }
+
+function rideDateFromInput(value){
+  return /^\d{4}-\d{2}-\d{2}$/.test(String(value||''))?new Date(`${value}T12:00:00`):null;
+}
+
+function rideRecurrenceDateStrings(){
+  const repeat=document.getElementById('r-repeat')?.value||'none';
+  const startValue=document.getElementById('r-date')?.value||'';
+  if(repeat!=='weekly')return startValue?[startValue]:[];
+  const untilValue=document.getElementById('r-repeat-until')?.value||'';
+  const start=rideDateFromInput(startValue);
+  const until=rideDateFromInput(untilValue);
+  if(!start||!until||until<start||!rideRecurrenceDays.size)return [];
+  const dates=[];
+  const cursor=new Date(start);
+  while(cursor<=until&&dates.length<=110){
+    if(rideRecurrenceDays.has(cursor.getDay()))dates.push(dateStr(cursor));
+    cursor.setDate(cursor.getDate()+1);
+  }
+  return dates;
+}
+
+function updateRideRecurrencePreview(){
+  const weekly=document.getElementById('r-repeat')?.value==='weekly';
+  const preview=document.getElementById('r-repeat-preview');
+  const saveButton=document.getElementById('ride-save-btn');
+  document.querySelectorAll('[data-repeat-day]').forEach(button=>{
+    button.classList.toggle('active',rideRecurrenceDays.has(Number(button.dataset.repeatDay)));
+  });
+  if(!weekly){
+    if(preview)preview.textContent='';
+    if(saveButton)saveButton.textContent=rideEditKey?'Save Ride':'Save Ride';
+    return;
+  }
+  const start=document.getElementById('r-date')?.value||'';
+  const until=document.getElementById('r-repeat-until')?.value||'';
+  if(!rideRecurrenceDays.size){
+    if(preview)preview.textContent='Choose at least one weekday.';
+    if(saveButton)saveButton.textContent='Create Recurring Rides';
+    return;
+  }
+  if(!until){
+    if(preview)preview.textContent='Choose an ending date to preview the schedule.';
+    if(saveButton)saveButton.textContent='Create Recurring Rides';
+    return;
+  }
+  const dates=rideRecurrenceDateStrings();
+  if(!dates.length){
+    if(preview)preview.textContent=start&&until&&until<start?'Ending date must be on or after the start date.':'No matching dates in this range.';
+    if(saveButton)saveButton.textContent='Create Recurring Rides';
+    return;
+  }
+  const first=rideDateFromInput(dates[0]).toLocaleDateString('en-US',{month:'short',day:'numeric'});
+  const last=rideDateFromInput(dates[dates.length-1]).toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'});
+  if(preview)preview.textContent=`${dates.length} rides will be created from ${first} through ${last}. Each ride can be edited or cancelled separately.`;
+  if(saveButton)saveButton.textContent=`Create ${dates.length} Rides`;
+}
+
+function toggleRideRecurrenceDay(day){
+  const value=Number(day);
+  if(rideRecurrenceDays.has(value))rideRecurrenceDays.delete(value);
+  else rideRecurrenceDays.add(value);
+  updateRideRecurrencePreview();
+}
+
+function onRideRepeatChange(){
+  const repeat=document.getElementById('r-repeat')?.value||'none';
+  const weekly=document.getElementById('r-repeat-weekly');
+  if(weekly)weekly.style.display=repeat==='weekly'?'block':'none';
+  if(repeat==='weekly'&&!rideRecurrenceDays.size){
+    const start=rideDateFromInput(document.getElementById('r-date')?.value||'');
+    if(start)rideRecurrenceDays.add(start.getDay());
+  }
+  updateRideRecurrencePreview();
+}
+
+function resetRideRecurrence(isEditing=false){
+  rideRecurrenceDays=new Set();
+  const section=document.getElementById('ride-recurrence-section');
+  const repeat=document.getElementById('r-repeat');
+  const weekly=document.getElementById('r-repeat-weekly');
+  const until=document.getElementById('r-repeat-until');
+  if(section)section.style.display=isEditing?'none':'block';
+  if(repeat)repeat.value='none';
+  if(weekly)weekly.style.display='none';
+  if(until)until.value='';
+  updateRideRecurrencePreview();
+}
 async function openRideModal(key,defaultDate){
   key=key||null;rideEditKey=key;
   const drivers=await loadDrivers();
@@ -8711,6 +8825,7 @@ async function openRideModal(key,defaultDate){
   fbEl.innerHTML=FACILITIES.map(f=>`<button class="facility-btn" onclick="selectFacility('${f.name.replace(/'/g,"\\'")}')">${f.name}</button>`).join('');
   const clearAddressNotes=()=>{['r-pickup-note','r-dropoff-note','r-pickup-suggestions','r-dropoff-suggestions'].forEach(id=>{const el=document.getElementById(id);if(el)el.style.display='none';});['r-pickup','r-dropoff'].forEach(id=>{const el=document.getElementById(id);if(el)el.style.background='';});};
   if(key){
+    resetRideRecurrence(true);
     const snap=await ridesRef().child(key).once('value');const r=snap.val();if(!r)return;
     rideSourceContext = inferRideEntrySource(r);
     document.getElementById('ride-modal-title').textContent='Edit Ride';
@@ -8791,6 +8906,22 @@ async function saveRide(){
   const date=document.getElementById('r-date').value;
   const facility=document.getElementById('r-facility').value.trim();
   if(!date){alert('Date is required.');return;}
+  const repeatMode=document.getElementById('r-repeat')?.value||'none';
+  let recurrenceDates=[date];
+  if(repeatMode==='weekly'){
+    if(rideEditKey){alert('Recurring schedules can only be created from a new ride.');return;}
+    if(pendingImportReviewKey){alert('Finish approving this imported ride first, then create a recurring schedule from Add Ride.');return;}
+    const repeatUntil=document.getElementById('r-repeat-until')?.value||'';
+    const startDate=rideDateFromInput(date);
+    const endDate=rideDateFromInput(repeatUntil);
+    if(!rideRecurrenceDays.size){alert('Choose at least one weekday for the recurring ride.');return;}
+    if(!endDate){alert('Choose an ending date for the recurring ride.');return;}
+    if(endDate<startDate){alert('The ending date must be on or after the start date.');return;}
+    if((endDate-startDate)/(24*60*60*1000)>366){alert('Recurring schedules can cover up to one year at a time.');return;}
+    recurrenceDates=rideRecurrenceDateStrings();
+    if(!recurrenceDates.length){alert('No selected weekdays occur within this date range.');return;}
+    if(recurrenceDates.length>110){alert('This schedule would create more than 110 rides. Shorten the date range or select fewer days.');return;}
+  }
   const ride={
     date,time:document.getElementById('r-time').value||'',
     facility,client:document.getElementById('r-client').value.trim(),
@@ -8840,12 +8971,34 @@ async function saveRide(){
     await syncRideStatusToReportLogs(rideEditKey, ride.status);
   }
   else{
-    ride.createdAt=Date.now();
+    const createdAt=Date.now();
+    ride.createdAt=createdAt;
     ride.createdBy=currentUserName();
     ride.createdByRole=currentUserRole();
-    const newRef = ridesRef().push();
-    savedRideKey = newRef.key;
-    await newRef.set(ride);
+    if(repeatMode==='weekly'){
+      const seriesId=`weekly_${createdAt}_${Math.random().toString(36).slice(2,8)}`;
+      const updates={};
+      recurrenceDates.forEach((occurrenceDate,index)=>{
+        const occurrenceRef=ridesRef().push();
+        if(index===0)savedRideKey=occurrenceRef.key;
+        updates[occurrenceRef.key]={
+          ...ride,
+          date:occurrenceDate,
+          recurringSeriesId:seriesId,
+          recurringOccurrence:true,
+          recurringSeriesStart:date,
+          recurringSeriesEnd:document.getElementById('r-repeat-until').value,
+          recurringWeekdays:Array.from(rideRecurrenceDays).sort((a,b)=>a-b),
+          recurringOccurrenceNumber:index+1,
+          recurringOccurrenceCount:recurrenceDates.length,
+        };
+      });
+      await ridesRef().update(updates);
+    }else{
+      const newRef = ridesRef().push();
+      savedRideKey = newRef.key;
+      await newRef.set(ride);
+    }
   }
   if(pendingImportReviewKey){
     await rideImportsRef().child(pendingImportReviewKey).update({
@@ -8854,7 +9007,9 @@ async function saveRide(){
       importedRideKey:savedRideKey || ''
     });
   }
-  closeRideModal();renderDayView();if(document.getElementById('screen-mobile')?.classList.contains('active'))renderMobileDashboard();
+  closeRideModal();
+  if(repeatMode==='weekly')showToast(`Created ${recurrenceDates.length} recurring rides`);
+  renderDayView();if(document.getElementById('screen-mobile')?.classList.contains('active'))renderMobileDashboard();
 }
 async function deleteRide(){
   if(!rideEditKey)return;
@@ -9169,6 +9324,7 @@ function setRideLogSort(key){
   if(repSort.key === key){
     repSort.dir = repSort.dir === 'asc' ? 'desc' : 'asc';
   }else{
+    resetRideRecurrence(false);
     repSort.key = key;
     repSort.dir = key === 'price' || key === 'miles' ? 'desc' : 'asc';
   }
