@@ -10708,14 +10708,9 @@ async function generateInvoice(){
   const fac = FACILITIES.find(f=>f.name===facilityName)||{};
   const isInvoiceFacility = !!(fac.email || fac.contact);
 
-  // Pull from BOTH:
-  // 1) Reports (rideLog): contains final billable miles + pricing
-  // 2) Scheduled rides: in case rides haven't been logged yet
-  const [ridesSnap, logSnap] = await Promise.all([
-    ridesRef().once('value'),
-    rideLogRef().once('value')
-  ]);
-  const allRides = ridesSnap.val()||{};
+  // Invoices are prepared only from Reports. A scheduled ride must be logged
+  // from Rides into Reports before it can appear in an invoice draft.
+  const logSnap = await rideLogRef().once('value');
   const allLogs = logSnap.val()||{};
 
   const matchesFacility = (value)=>{
@@ -10725,19 +10720,6 @@ async function generateInvoice(){
     const want = String(facilityName || '').toLowerCase().trim();
     if(!raw || !want) return false;
     return raw === want || raw.includes(want) || want.includes(raw);
-  };
-
-  const invoiceMatchText = (value)=>String(value || '')
-    .toLowerCase()
-    .replace(/[^a-z0-9]+/g,' ')
-    .replace(/\bms\b|\bmr\b|\bmrs\b/g,' ')
-    .replace(/\s+/g,' ')
-    .trim();
-
-  const invoiceRideKey = (r)=>{
-    const canon = canonicalizeFacilityName(r && r.facility) || invoiceMatchText(r && r.facility);
-    const client = invoiceMatchText(r && r.client);
-    return `${r && r.date || ''}|${canon}|${client}`;
   };
 
   const isInvoiceRide = (r)=>{
@@ -10779,44 +10761,16 @@ async function generateInvoice(){
   };
 
   const logRides = Object.entries(allLogs)
-    .map(([k,v])=>{
-      const r = { ...(v||{}), _key:k, _source:'report' };
-      // Backfill missing fields from the scheduled ride (by calendarKey) when available.
-      const ck = r.calendarKey;
-      const src = (ck && allRides && allRides[ck]) ? allRides[ck] : null;
-      if(src){
-        if(!r.status) r.status = src.status || '';
-      }
-      return r;
-    })
+    .map(([k,v])=>({ ...(v||{}), _key:k, _source:'report' }))
     .filter(r=>isVisibleRideLog(r) && matchesFacility(r.facility) && r.date>=fromDate && r.date<=toDate && isInvoiceRide(r));
 
-  const allLoggedCalendarKeys = new Set(Object.values(allLogs)
-    .filter(r=>r && isVisibleRideLog(r) && matchesFacility(r.facility) && r.date>=fromDate && r.date<=toDate)
-    .map(r=>r.calendarKey)
-    .filter(Boolean));
-  const allLoggedRideKeys = new Set(Object.values(allLogs)
-    .filter(r=>r && isVisibleRideLog(r) && matchesFacility(r.facility) && r.date>=fromDate && r.date<=toDate)
-    .map(invoiceRideKey)
-    .filter(Boolean));
-
-  const scheduledRides = Object.entries(allRides)
-    .map(([k,v])=>({...(v||{}), _key:k, _source:'rides'}))
-    .filter(r=>
-      matchesFacility(r.facility) &&
-      r.date>=fromDate && r.date<=toDate &&
-      isInvoiceRide(r) &&
-      !allLoggedCalendarKeys.has(r._key) &&
-      !allLoggedRideKeys.has(invoiceRideKey(r))
-    );
-
-  const rides = [...logRides, ...scheduledRides]
+  const rides = logRides
     .sort((a,b)=>String(a.date||'').localeCompare(String(b.date||'')) || String(a.time||'').localeCompare(String(b.time||'')));
 
   if(!rides.length){
     document.getElementById('inv-error-msg').textContent =
       `No uninvoiced rides found for ${facilityName} between ${fromDate} and ${toDate}. ` +
-      `Rides with an existing invoice number are skipped automatically.`;
+      `Only rides already logged in Reports are included. Rides with an existing invoice number are skipped automatically.`;
     document.getElementById('inv-error').style.display='block';
     return;
   }
