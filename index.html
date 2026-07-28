@@ -7121,6 +7121,9 @@ function mobileRideCard(r){
   const canReturn=r.triptype==='rt'&&!isReturn;
   const canLog=!isReturn&&!isLogged&&r._source!=='log';
   const actionCount=(canReturn?1:0)+2+(canLog?1:0);
+  const statusInfo = r.status ? getStatuses().find(s=>s.value===r.status) : null;
+  const statusStyle = statusInfo ? `background:${statusInfo.bg};color:${statusInfo.color}` : 'background:#f1f5f9;color:#334155';
+  const statusText = r.status ? statusLabelText(r.status) : '';
   return `<div class="mobile-card mobile-ride-card ${assigned?'':'unassigned'}">
     <div class="mobile-ride-top">
       <div class="mobile-ride-time">${mobileEsc(time)}</div>
@@ -7140,7 +7143,7 @@ function mobileRideCard(r){
       ${unpaid?`<div class="mobile-tag" style="background:#fef3c7;color:#b45309">Unpaid</div>`:''}
       ${paid?`<div class="mobile-tag" style="background:#dcfce7;color:#15803d">Paid</div>`:''}
       ${isLogged?`<div class="mobile-tag" style="background:#dcfce7;color:#15803d">Logged in Reports</div>`:''}
-      ${r.status?`<div class="mobile-tag">${mobileEsc(r.status)}</div>`:''}
+      ${r.status?`<div class="mobile-tag" style="${statusStyle}">${mobileEsc(statusText)}</div>`:''}
       ${!isReturn?returnRequestSummaryHtml(r,'mobile'):''}
     </div>
     <div class="mobile-ride-actions" style="grid-template-columns:repeat(${actionCount},minmax(0,1fr))">
