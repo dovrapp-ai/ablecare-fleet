@@ -7565,6 +7565,7 @@ async function renderMobileDashboard(){
             const vanLabel=r.van?`Van #${r.van}`:'No van';
             const statusLabel=r.status?statusLabelText(r.status):'No status';
             const notesLabel=String(r.notes||'').trim();
+            const calcNotesLabel=String(r.calcNotes||'').trim();
             const editKey=mobileKey(r._key);
             const invoiceValue=String(r.invoice||'').trim();
             const invoiceLabel=invoiceValue?`Invoice #${invoiceValue}`:'Add Invoice';
@@ -7587,6 +7588,7 @@ async function renderMobileDashboard(){
               <div style="display:flex;flex-wrap:wrap;gap:6px;margin-top:7px">
                 <div class="mobile-tag" style="background:#e0f2fe;color:#0369a1">${mobileEsc(statusLabel)}</div>
               </div>
+              ${calcNotesLabel?`<div style="font-size:12px;color:#0369a1;background:#e0f2fe;border-radius:10px;padding:7px 9px;margin-top:7px;line-height:1.35;font-weight:800">${mobileEsc(calcNotesLabel)}</div>`:''}
               ${notesLabel?`<div style="font-size:12px;color:#64748b;margin-top:7px;line-height:1.35;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden">${mobileEsc(notesLabel)}</div>`:''}
             </div>`;
           }).join('')}
