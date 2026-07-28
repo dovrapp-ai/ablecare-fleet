@@ -2185,6 +2185,7 @@ body[data-user-role="manager"] .owner-only-setting{display:none !important}
             <button class="mobile-tab" onclick="switchMobilePanel('dispatch')" id="mobile-tab-dispatch">Dispatch</button>
             <button class="mobile-tab" onclick="switchMobilePanel('map')" id="mobile-tab-map">Live Map</button>
             <button class="mobile-tab" onclick="switchMobilePanel('quote')" id="mobile-tab-quote">Quote</button>
+            <button class="mobile-tab" onclick="switchMobilePanel('invoice')" id="mobile-tab-invoice">Invoice</button>
             <button class="mobile-tab" onclick="switchMobilePanel('compliance')" id="mobile-tab-compliance">Compliance</button>
           </div>
 
@@ -2357,6 +2358,27 @@ body[data-user-role="manager"] .owner-only-setting{display:none !important}
                 <button class="mobile-action-btn light" style="flex:1" onclick="mobileSetReportRangeThisMonth()">This Month</button>
                 <button class="mobile-action-btn dark" style="flex:1" onclick="mobileApplyReportRange()">Apply</button>
               </div>
+              <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:12px">
+                <div>
+                  <div class="mobile-input-label">Facility</div>
+                  <select class="mobile-select" id="mobile-rep-facility" style="margin-bottom:0"></select>
+                </div>
+                <div>
+                  <div class="mobile-input-label">Driver</div>
+                  <select class="mobile-select" id="mobile-rep-driver" style="margin-bottom:0"></select>
+                </div>
+              </div>
+              <div style="display:flex;gap:10px;margin-top:10px;align-items:flex-end">
+                <div style="flex:1">
+                  <div class="mobile-input-label">Payment</div>
+                  <select class="mobile-select" id="mobile-rep-paid" style="margin-bottom:0">
+                    <option value="">All</option>
+                    <option value="yes">Paid</option>
+                    <option value="no">Unpaid</option>
+                  </select>
+                </div>
+                <button class="mobile-action-btn dark" style="flex:1" onclick="mobileApplyReportFilters()">Filter</button>
+              </div>
             </div>
             <div class="mobile-report-summary-grid">
               <div class="mobile-report-stat">
@@ -2377,6 +2399,53 @@ body[data-user-role="manager"] .owner-only-setting{display:none !important}
               </div>
             </div>
             <div id="mobile-report-list"></div>
+          </div>
+
+          <div class="mobile-panel" id="mobile-panel-invoice">
+            <div class="mobile-section-title" style="margin-top:0">Invoice</div>
+            <div class="mobile-quote-row">
+              <div class="mobile-input-label">Facility</div>
+              <select class="mobile-select" id="mobile-inv-facility" onchange="mobileOnInvoiceFacilityChange()"></select>
+              <div class="mobile-subtle" id="mobile-inv-facility-info" style="display:none;margin:-2px 0 12px"></div>
+
+              <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+                <div>
+                  <div class="mobile-input-label">From</div>
+                  <input class="mobile-input" id="mobile-inv-from" type="date"/>
+                </div>
+                <div>
+                  <div class="mobile-input-label">To</div>
+                  <input class="mobile-input" id="mobile-inv-to" type="date"/>
+                </div>
+              </div>
+
+              <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+                <div>
+                  <div class="mobile-input-label">Invoice #</div>
+                  <input class="mobile-input" id="mobile-inv-number" placeholder="QuickBooks assigns"/>
+                </div>
+                <div>
+                  <div class="mobile-input-label">Invoice Date</div>
+                  <input class="mobile-input" id="mobile-inv-date" type="date"/>
+                </div>
+              </div>
+
+              <div class="mobile-input-label">Notes</div>
+              <input class="mobile-input" id="mobile-inv-notes" placeholder="Payment due within 30 days"/>
+              <button class="mobile-calc-btn" onclick="mobileGenerateInvoice()">Generate Invoice</button>
+            </div>
+
+            <div id="mobile-inv-error" style="display:none;background:#fff7ed;border:1px solid #fed7aa;border-radius:14px;padding:14px;margin:12px 0;color:#c2410c;font-size:13px;font-weight:800"></div>
+            <div id="mobile-inv-preview-wrap" style="display:none;margin-top:12px">
+              <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:10px">
+                <button class="mobile-action-btn dark" onclick="copyQuickBooksInvoiceData()">Copy QB Data</button>
+                <button class="mobile-action-btn light" onclick="downloadQuickBooksInvoiceCsv()">CSV</button>
+                <button class="mobile-action-btn light" onclick="downloadQuickBooksInvoiceJson()">JSON</button>
+                <button class="mobile-action-btn light" onclick="mobileResetInvoice()">New Invoice</button>
+              </div>
+              <div id="mobile-inv-qb-export-status" style="display:none;margin:0 0 10px;color:#0f766e;font-weight:800;font-size:13px"></div>
+              <div id="mobile-inv-preview" style="background:#fff;border:1px solid #e2e8f0;border-radius:16px;overflow:auto;max-width:100%"></div>
+            </div>
           </div>
 
           <div class="mobile-panel" id="mobile-panel-compliance">
@@ -6808,6 +6877,9 @@ let mobileDriversCache=[];
 let mobileReportsShowAll=false;
 let mobileReportFrom='';
 let mobileReportTo='';
+let mobileReportFacility='';
+let mobileReportDriver='';
+let mobileReportPaid='';
 let confirmationRideKey=null;
 
 function mobileSetText(id,value){
@@ -6898,6 +6970,9 @@ function switchMobilePanel(name){
   if(name==='quote'){
     loadQuotePricing();
     renderQuoteRateInputs();
+  }
+  if(name==='invoice'){
+    populateMobileInvoiceForm();
   }
   if(name==='reminders'){
     mobileLoadReminders();
@@ -7007,6 +7082,128 @@ function mobileApplyReportRange(){
   if(toEl) toEl.value=mobileReportTo||'';
 
   renderMobileDashboard();
+}
+
+function mobileApplyReportFilters(){
+  mobileReportFacility=String(document.getElementById('mobile-rep-facility')?.value||'').trim();
+  mobileReportDriver=String(document.getElementById('mobile-rep-driver')?.value||'').trim();
+  mobileReportPaid=String(document.getElementById('mobile-rep-paid')?.value||'').trim();
+  renderMobileDashboard();
+}
+
+function setMobileSelectValue(id,value){
+  const el=document.getElementById(id);
+  if(el) el.value=value||'';
+}
+
+function populateMobileReportFilters(drivers){
+  const facEl=document.getElementById('mobile-rep-facility');
+  const drvEl=document.getElementById('mobile-rep-driver');
+  const paidEl=document.getElementById('mobile-rep-paid');
+  if(facEl){
+    facEl.innerHTML='<option value="">All Facilities</option>' +
+      FACILITIES.map(f=>`<option value="${mobileEsc(f.name)}">${mobileEsc(f.name)}</option>`).join('');
+    facEl.value=mobileReportFacility||'';
+  }
+  if(drvEl){
+    drvEl.innerHTML='<option value="">All Drivers</option>' +
+      (drivers||[]).map(d=>`<option value="${mobileEsc(d.name)}">${mobileEsc(d.name)}</option>`).join('');
+    drvEl.value=mobileReportDriver||'';
+  }
+  if(paidEl) paidEl.value=mobileReportPaid||'';
+}
+
+function populateMobileInvoiceForm(){
+  const facEl=document.getElementById('mobile-inv-facility');
+  if(!facEl) return;
+  const current=facEl.value;
+  facEl.innerHTML='<option value="">Select facility...</option>' +
+    FACILITIES.filter(f=>f.name!=='Langerman'&&f.name!=='Wingo'&&f.name!=='Maxine'&&f.name!=='Insight')
+      .map(f=>`<option value="${mobileEsc(f.name)}">${mobileEsc(f.name)}</option>`).join('');
+  if(current) facEl.value=current;
+  const today=new Date();
+  const from=new Date(today);
+  from.setDate(today.getDate()-30);
+  const defaults=[
+    ['mobile-inv-to',dateStr(today)],
+    ['mobile-inv-from',dateStr(from)],
+    ['mobile-inv-date',dateStr(today)]
+  ];
+  defaults.forEach(([id,value])=>{
+    const el=document.getElementById(id);
+    if(el && !el.value) el.value=value;
+  });
+  const notes=document.getElementById('mobile-inv-notes');
+  if(notes && !notes.value) notes.value='Payment due within 30 days';
+  mobileOnInvoiceFacilityChange();
+}
+
+function mobileOnInvoiceFacilityChange(){
+  const name=String(document.getElementById('mobile-inv-facility')?.value||'');
+  const fac=FACILITIES.find(f=>f.name===name);
+  const info=document.getElementById('mobile-inv-facility-info');
+  if(!info) return;
+  if(fac && (fac.email||fac.contact)){
+    info.textContent=[fac.email?`Email: ${fac.email}`:'',fac.contact?`Contact: ${fac.contact}`:''].filter(Boolean).join(' - ');
+    info.style.display='block';
+  }else{
+    info.style.display='none';
+    info.textContent='';
+  }
+}
+
+function mobileCopyInvoiceFormToDesktop(){
+  if(!document.getElementById('inv-facility')) return false;
+  initInvoice();
+  const pairs=[
+    ['inv-facility','mobile-inv-facility'],
+    ['inv-from','mobile-inv-from'],
+    ['inv-to','mobile-inv-to'],
+    ['inv-number','mobile-inv-number'],
+    ['inv-date','mobile-inv-date'],
+    ['inv-notes','mobile-inv-notes']
+  ];
+  pairs.forEach(([desktopId,mobileId])=>{
+    const desktop=document.getElementById(desktopId);
+    const mobile=document.getElementById(mobileId);
+    if(desktop && mobile) desktop.value=mobile.value||'';
+  });
+  onInvFacilityChange();
+  return true;
+}
+
+function mobileSyncInvoicePreview(){
+  const desktopPreview=document.getElementById('inv-preview');
+  const desktopPreviewWrap=document.getElementById('inv-preview-wrap');
+  const mobilePreview=document.getElementById('mobile-inv-preview');
+  const mobilePreviewWrap=document.getElementById('mobile-inv-preview-wrap');
+  const desktopError=document.getElementById('inv-error');
+  const desktopErrorMsg=document.getElementById('inv-error-msg');
+  const mobileError=document.getElementById('mobile-inv-error');
+  if(mobileError){
+    const hasError=desktopError && desktopError.style.display!=='none';
+    mobileError.style.display=hasError?'block':'none';
+    mobileError.textContent=hasError?(desktopErrorMsg?.textContent||'No invoice rides found.'):'';
+  }
+  if(mobilePreview && mobilePreviewWrap){
+    const hasPreview=desktopPreviewWrap && desktopPreviewWrap.style.display!=='none';
+    mobilePreviewWrap.style.display=hasPreview?'block':'none';
+    mobilePreview.innerHTML=hasPreview?(desktopPreview?.innerHTML||''):'';
+  }
+}
+
+async function mobileGenerateInvoice(){
+  if(!mobileCopyInvoiceFormToDesktop()) return;
+  await generateInvoice();
+  mobileSyncInvoicePreview();
+}
+
+function mobileResetInvoice(){
+  resetInvoice();
+  const preview=document.getElementById('mobile-inv-preview-wrap');
+  const error=document.getElementById('mobile-inv-error');
+  if(preview) preview.style.display='none';
+  if(error) error.style.display='none';
 }
 
 function initMobileDashboard(){
@@ -7505,6 +7702,8 @@ async function renderMobileDashboard(){
     document.getElementById('mobile-map-driver-list').innerHTML=mapRows||mobileEmpty('No driver location data yet.');
     if(mobilePanel==='map') setTimeout(()=>updateMobileMap(drivers,locs),0);
     renderMobileCompliance();
+    populateMobileReportFilters(drivers);
+    if(mobilePanel==='invoice') populateMobileInvoiceForm();
 
     const range=getPPRange(ppOffset);
     let totalMs=0;
@@ -7533,7 +7732,15 @@ async function renderMobileDashboard(){
     // Keep keys so we can open the same Edit popup you have on desktop.
     const reportRides=Object.entries(logs)
       .map(([k,v])=>({...v,_key:k}))
-      .filter(r=>isVisibleRideLog(r)&&(!rangeFrom||r.date>=rangeFrom)&&(!rangeTo||r.date<=rangeTo));
+      .filter(r=>{
+        if(!isVisibleRideLog(r)) return false;
+        if(rangeFrom&&r.date<rangeFrom) return false;
+        if(rangeTo&&r.date>rangeTo) return false;
+        if(mobileReportFacility&&String(r.facility||'').trim().toLowerCase()!==mobileReportFacility.toLowerCase()) return false;
+        if(mobileReportDriver&&r.driver!==mobileReportDriver&&r.helper!==mobileReportDriver) return false;
+        if(mobileReportPaid&&r.paid!==mobileReportPaid) return false;
+        return true;
+      });
 
     const revenue=reportRides.reduce((sum,r)=>sum+(parseFloat(r.price)||0),0);
     const unpaidLogs=reportRides.filter(r=>r.price&&r.paid!=='yes');
@@ -10963,12 +11170,14 @@ function buildQuickBooksInvoiceExport(){
 }
 
 function quickBooksExportStatus(message){
-  const el = document.getElementById('inv-qb-export-status');
-  if(!el) return;
-  el.textContent = message;
-  el.style.display = 'block';
-  clearTimeout(el._hideTimer);
-  el._hideTimer = setTimeout(()=>{ el.style.display='none'; }, 4500);
+  ['inv-qb-export-status','mobile-inv-qb-export-status'].forEach(id=>{
+    const el = document.getElementById(id);
+    if(!el) return;
+    el.textContent = message;
+    el.style.display = 'block';
+    clearTimeout(el._hideTimer);
+    el._hideTimer = setTimeout(()=>{ el.style.display='none'; }, 4500);
+  });
 }
 
 function qbCsvValue(value){
