@@ -3992,6 +3992,21 @@ function normalizeCommunicationSource(value){
   return raw;
 }
 
+function isPrivatePayReportRide(r){
+  const facility = String(r && r.facility || '').trim().toLowerCase();
+  const paymethod = normalizePayMethod(r && r.paymethod);
+  if(!facility || facility === 'private' || facility === 'private pay') return true;
+  if(paymethod === 'cc' && !canonicalizeFacilityName(facility)) return true;
+  return false;
+}
+
+function reportRideMatchesFacilityFilter(r, filterValue){
+  const filter = String(filterValue || '').trim();
+  if(!filter) return true;
+  if(filter === '__private_pay__') return isPrivatePayReportRide(r);
+  return String(r && r.facility || '').trim().toLowerCase() === filter.toLowerCase();
+}
+
 function inferCommunicationSourceForRide(ride, fallbackSource){
   const explicit = normalizeCommunicationSource(ride?.communicationSource || ride?.contactSource || ride?.originalCommunicationSource || '');
   if(explicit) return explicit;
@@ -7101,7 +7116,7 @@ function populateMobileReportFilters(drivers){
   const drvEl=document.getElementById('mobile-rep-driver');
   const paidEl=document.getElementById('mobile-rep-paid');
   if(facEl){
-    facEl.innerHTML='<option value="">All Facilities</option>' +
+    facEl.innerHTML='<option value="">All Facilities</option><option value="__private_pay__">Private Pay</option>' +
       FACILITIES.map(f=>`<option value="${mobileEsc(f.name)}">${mobileEsc(f.name)}</option>`).join('');
     facEl.value=mobileReportFacility||'';
   }
@@ -7736,7 +7751,7 @@ async function renderMobileDashboard(){
         if(!isVisibleRideLog(r)) return false;
         if(rangeFrom&&r.date<rangeFrom) return false;
         if(rangeTo&&r.date>rangeTo) return false;
-        if(mobileReportFacility&&String(r.facility||'').trim().toLowerCase()!==mobileReportFacility.toLowerCase()) return false;
+        if(!reportRideMatchesFacilityFilter(r,mobileReportFacility)) return false;
         if(mobileReportDriver&&r.driver!==mobileReportDriver&&r.helper!==mobileReportDriver) return false;
         if(mobileReportPaid&&r.paid!==mobileReportPaid) return false;
         return true;
@@ -9616,7 +9631,7 @@ async function initReports(){
 
   // Populate facility dropdown
   const facSel = document.getElementById('rep-facility');
-  facSel.innerHTML = '<option value="">All Facilities</option>' +
+  facSel.innerHTML = '<option value="">All Facilities</option><option value="__private_pay__">Private Pay</option>' +
     FACILITIES.map(f=>`<option value="${f.name}">${f.name}</option>`).join('');
 
   // Populate driver dropdown
@@ -9674,10 +9689,7 @@ async function loadReports(){
     if((from || to) && !r.date) return false;
     if(from && r.date < from) return false;
     if(to && r.date > to) return false;
-    if(
-      facilityFilter &&
-      String(r.facility || '').trim().toLowerCase() !== String(facilityFilter).trim().toLowerCase()
-    ) return false;
+    if(!reportRideMatchesFacilityFilter(r, facilityFilter)) return false;
     if(driverFilter && r.driver !== driverFilter) return false;
     if(paidFilter && r.paid !== paidFilter) return false;
     if(repView === 'square' && !isSquarePaidRide(r)) return false;
