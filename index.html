@@ -10999,9 +10999,11 @@ function invoiceAddressLabel(r, invoiceFacilityName){
 }
 
 function parseInvoiceMileageLine(r, money){
-  const notes = String(r && r.notes || '');
+  const calcNotes = String(r && r.calcNotes || '');
+  const notes = [calcNotes, String(r && r.notes || '')].filter(Boolean).join('\n');
   const ridetype = normalizeRideType(r && r.ridetype);
   const triptype = normalizeTripType(r && r.triptype);
+  const mileageLabel = ridetype === 'wc' ? 'extra miles' : 'miles';
   const cleanMoney = (value)=>{
     const n = parseFloat(String(value || '').replace(/,/g,''));
     return Number.isFinite(n) ? n : 0;
@@ -11009,7 +11011,7 @@ function parseInvoiceMileageLine(r, money){
   const formatMoney = (value)=>`$${cleanMoney(value).toFixed(2)}`;
 
   const explicit = notes.match(/(\d+(?:\.\d+)?)\s*(?:extra\s*)?miles?\s*(?:=|\$)\s*\$?(\d+(?:,\d{3})*(?:\.\d+)?)/i);
-  if(explicit) return `Mileage: ${parseFloat(explicit[1]).toFixed(1)} miles = ${formatMoney(explicit[2])}`;
+  if(explicit) return `Mileage: ${parseFloat(explicit[1]).toFixed(1)} ${mileageLabel} = ${formatMoney(explicit[2])}`;
 
   const formula = notes.match(/(\d+(?:\.\d+)?)\s*miles?[\s\S]*?\(([^)]*)\)/i);
   if(formula){
@@ -11017,7 +11019,7 @@ function parseInvoiceMileageLine(r, money){
     const nums = (formula[2].match(/\d+(?:,\d{3})*(?:\.\d+)?/g) || []).map(cleanMoney);
     if(Number.isFinite(miles) && nums.length >= 2){
       const mileCharge = nums.length >= 3 ? nums[nums.length - 2] : nums[nums.length - 1] - nums[0];
-      if(mileCharge > 0) return `Mileage: ${miles.toFixed(1)} miles = ${formatMoney(mileCharge)}`;
+      if(mileCharge > 0) return `Mileage: ${miles.toFixed(1)} ${mileageLabel} = ${formatMoney(mileCharge)}`;
     }
   }
 
@@ -11025,8 +11027,10 @@ function parseInvoiceMileageLine(r, money){
   if(extra){
     const miles = parseFloat(extra[1]);
     const charge = ridetype === 'wc' ? miles : miles * 10;
-    return `Mileage: ${miles.toFixed(1)} miles = ${formatMoney(charge)}`;
+    return `Mileage: ${miles.toFixed(1)} ${mileageLabel} = ${formatMoney(charge)}`;
   }
+
+  if(ridetype === 'wc') return '';
 
   if(money && (money.billableMiles || money.miles)){
     const miles = parseFloat(money.billableMiles || money.miles);
