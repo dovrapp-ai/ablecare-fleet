@@ -955,6 +955,9 @@ body[data-user-role="manager"] .owner-only-setting{display:none !important}
 .mobile-status.warning{background:#fee2e2;color:#b91c1c}
 .mobile-ride-tags{display:flex;flex-wrap:wrap;gap:5px;margin-top:7px}
 .mobile-tag{background:#f1f5f9;color:#334155;padding:4px 7px;border-radius:999px;font-size:11px;font-weight:900}
+.mobile-report-price{display:inline-block;padding:2px 7px;border-radius:999px;font-weight:900}
+.mobile-report-price.paid{background:#dcfce7;color:#15803d}
+.mobile-report-price.unpaid{background:#fef3c7;color:#b45309}
 .mobile-ride-actions{display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px;margin-top:8px}
 .mobile-action-btn.dark{background:#0f172a;color:#fff;padding:8px 5px;font-size:12px;border-radius:10px}
 .mobile-action-btn.light{background:#e2e8f0;color:#334155;padding:8px 5px;font-size:12px;border-radius:10px}
@@ -7785,6 +7788,9 @@ async function renderMobileDashboard(){
             const paid=r.paid==='yes';
             const paidLabel=paid?'Paid':'Unpaid';
             const priceLabel=r.price?('$'+String(r.price).replace(/[^0-9.]/g,'')):'—';
+            const priceHtml=r.price
+              ? `<span class="mobile-report-price ${paid?'paid':'unpaid'}">${mobileEsc(priceLabel)}</span>`
+              : mobileEsc(priceLabel);
             const milesLabel=formatReportMilesLabel(r);
             const driverLabel=[r.driver,r.helper].filter(Boolean).join(' + ') || 'No driver';
             const vanLabel=r.van?`Van #${r.van}`:'No van';
@@ -7800,7 +7806,7 @@ async function renderMobileDashboard(){
                   <div style="font-size:13px;font-weight:900;color:#0f172a;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${mobileEsc(fmtDateMDY(r.date)||'')} ${timeLabel?('• '+mobileEsc(timeLabel)):''}</div>
                   <div style="font-size:16px;font-weight:900;color:#0f172a;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${mobileEsc(title)}</div>
                   ${sub?`<div style="font-size:13px;color:#64748b;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${mobileEsc(sub)}</div>`:''}
-                  <div style="font-size:12px;color:#64748b;margin-top:6px">${mobileEsc(typeLabel)} · ${mobileEsc(milesLabel)} · ${mobileEsc(priceLabel)}</div>
+                  <div style="font-size:12px;color:#64748b;margin-top:6px">${mobileEsc(typeLabel)} · ${mobileEsc(milesLabel)} · ${priceHtml}</div>
                 </div>
                 <div style="display:flex;flex-direction:column;align-items:flex-end;gap:5px;min-width:108px">
                   <button class="mobile-driver-open" onclick="event.stopPropagation();openLogEdit('${editKey}')">Edit</button>
