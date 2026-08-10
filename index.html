@@ -6450,7 +6450,7 @@ async function renderDayView(){
         ${r.van?`<span class="ride-block-tag">Van #${escHtml(r.van)}</span>`:''}
         ${r.wait==='yes'?`<span class="ride-block-tag" style="background:#fff7ed;color:#c2410c">Wait</span>`:''}
         ${r.estimatedMiles!=null&&r.estimatedMiles!==''?`<span class="ride-block-tag" style="background:#f0fdf4;color:#16a34a;font-weight:800">${escHtml(r.estimatedMiles)} mi</span>`:''}
-        ${isUnpaid&&!r.status?`<span class="ride-block-tag" style="background:#fff7ed;color:#c2410c">Unpaid</span>`:''}
+        ${isUnpaid&&!r.status?`<span class="ride-block-tag" style="background:#fff7ed;color:#c2410c">Unpaid ${escHtml(r.price)}</span>`:''}
         ${r.price&&r.paid==='yes'?`<span class="ride-block-tag" style="background:#f0fdf4;color:#16a34a">Paid ${escHtml(r.price)}</span>`:''}
       </div>
       ${!isReturn?returnRequestSummaryHtml(r):''}
