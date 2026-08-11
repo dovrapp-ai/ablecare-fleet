@@ -3164,6 +3164,7 @@ let pendingBrandLogoDataUrl='';
 let DASHBOARD_ACCOUNTS=[];
 let DASHBOARD_LOGIN_ACTIVITY={};
 let currentDashboardUser=null;
+let pinSettingsReady=false;
 
 // —— ADMIN MODE ——
 // This is for "hide the branding editor from normal users" (especially customer deployments).
@@ -3228,7 +3229,7 @@ let complianceDocDrafts=[];
 let complianceLoaded=false;
 
 // ── FIREBASE ──
-function tryAutoInit(){
+async function tryAutoInit(){
   if(typeof firebase === 'undefined'){
     alert('Connection error — please check your internet and reload the page.');
     return;
@@ -3238,7 +3239,10 @@ function tryAutoInit(){
     if(!firebase.apps.length) firebase.initializeApp(cfg);
     db = firebase.database();
     firebaseReady=true;
-    loadSettings();
+    await loadSettings();
+    pinSettingsReady=true;
+    const pinLabel=document.querySelector('#screen-pin .pin-label');
+    if(pinLabel) pinLabel.textContent='Enter owner PIN to access';
     initDash();
   } catch(e){
     console.error('Firebase init error:', e);
@@ -4934,6 +4938,10 @@ function fillRideModalFromImport(rideDraft){
 
 // ── PIN ──
 function pinKey(k){
+  if(!pinSettingsReady){
+    document.getElementById('pin-error').textContent='Secure access is still loading. Please wait a moment.';
+    return;
+  }
   if(k==='del'){pinBuf=pinBuf.slice(0,-1);document.getElementById('pin-error').textContent='';}
   else if(k==='ok'){checkPin();}
   else if(pinBuf.length<4){pinBuf+=k;if(pinBuf.length===4)setTimeout(checkPin,150);}
