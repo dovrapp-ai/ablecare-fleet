@@ -1009,6 +1009,11 @@ body[data-user-role="manager"] .owner-only-setting{display:none !important}
 .mobile-reminder-contact{display:grid;grid-template-columns:92px 1fr auto;gap:7px;margin-top:9px;align-items:center;background:#fff7ed;border:1px solid #fed7aa;border-radius:12px;padding:8px}
 .mobile-reminder-contact select,.mobile-reminder-contact input{width:100%;border:1px solid #fdba74;border-radius:9px;padding:9px 8px;font-size:13px;background:#fff;color:#0f172a}
 .mobile-reminder-contact button{border:none;border-radius:10px;background:#0ea5e9;color:#fff;font-weight:900;padding:10px 11px;font-size:12px}
+.reminder-group-choice{display:flex;align-items:center;gap:7px;padding:7px 10px;border:2px solid #99f6e4;border-radius:10px;background:#f0fdfa;color:#0f766e;font-size:12px;font-weight:900;cursor:pointer;transition:.15s ease}
+.reminder-group-choice input{width:18px;height:18px;accent-color:#0f766e;cursor:pointer}
+.reminder-group-choice.is-selected{background:#0f766e;border-color:#0f766e;color:#fff;box-shadow:0 0 0 3px rgba(15,118,110,.18)}
+.reminder-group-choice.is-disabled{opacity:.45;cursor:not-allowed}
+.reminder-group-card-selected{border:3px solid #0f766e!important;background:#f0fdfa!important;box-shadow:0 0 0 4px rgba(15,118,110,.12)!important}
 .mobile-bottom-bar{position:sticky;bottom:0;background:rgba(255,255,255,0.96);backdrop-filter:blur(10px);border-top:1px solid #e2e8f0;padding:12px 14px 14px}
 .mobile-bottom-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px}
 .mobile-bottom-primary,.mobile-bottom-secondary{border:none;border-radius:18px;padding:15px 10px;font-size:15px;font-weight:800;cursor:pointer}
@@ -6591,7 +6596,18 @@ function reminderContactEditor(item){
 function reminderGroupCheckbox(item, mobile=false){
   const disabled=item.sent||item.channel!=='email'||!item.toEmail?'disabled':'';
   const cls=mobile?'mobile-reminder-group-select':'reminder-group-select';
-  return `<label style="display:flex;align-items:center;gap:7px;font-size:12px;font-weight:800;color:#0f766e;cursor:pointer"><input class="${cls}" type="checkbox" value="${escHtml(item.rideKey)}" ${disabled}> Group email</label>`;
+  return `<label class="reminder-group-choice${disabled?' is-disabled':''}"><input class="${cls}" type="checkbox" value="${escHtml(item.rideKey)}" ${disabled}><span>Group email</span></label>`;
+}
+
+function updateReminderGroupSelection(input){
+  const label=input.closest('.reminder-group-choice');
+  const card=input.closest('.mobile-reminder-card')||input.closest('[data-reminder-card]');
+  if(label){
+    label.classList.toggle('is-selected',input.checked);
+    const text=label.querySelector('span');
+    if(text) text.textContent=input.checked?'✓ Selected for group email':'Group email';
+  }
+  if(card) card.classList.toggle('reminder-group-card-selected',input.checked);
 }
 
 function selectedReminderKeys(selector){return [...document.querySelectorAll(`${selector}:checked`)].map((input)=>input.value);}
@@ -6628,7 +6644,7 @@ async function loadReminders(){
       const title=reminderRideTitle(ride);
       const disabled=item.sent||item.blockedReason?'disabled':'';
       const actionLabel=item.sent?'Sent':'Send';
-      return `<div style="background:#fff;border-radius:14px;padding:16px 18px;border:1px solid #e8eef4;box-shadow:0 1px 4px rgba(0,0,0,0.04)">
+      return `<div data-reminder-card style="background:#fff;border-radius:14px;padding:16px 18px;border:1px solid #e8eef4;box-shadow:0 1px 4px rgba(0,0,0,0.04)">
         <div style="display:flex;justify-content:space-between;gap:12px;align-items:flex-start;flex-wrap:wrap">
           <div>
             <div style="font-size:15px;font-weight:900;color:#0d1b2a">${escHtml(title)}</div>
@@ -6857,6 +6873,10 @@ document.addEventListener('click', (event)=>{
   }else{
     saveReminderContact(rideKey, button);
   }
+});
+document.addEventListener('change', (event)=>{
+  const input=event.target.closest('.reminder-group-select,.mobile-reminder-group-select');
+  if(input) updateReminderGroupSelection(input);
 });
 
 async function sendRideReminder(rideKey){
