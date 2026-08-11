@@ -2141,6 +2141,7 @@ body[data-user-role="manager"] .owner-only-setting{display:none !important}
             <input type="date" id="reminder-date" class="date-input" style="font-size:13px"/>
             <button class="add-btn" style="padding:9px 14px;font-size:13px" onclick="loadReminders()">Load Preview</button>
             <button class="add-btn" style="padding:9px 14px;font-size:13px;background:#0d1b2a" onclick="sendAllReadyReminders()">Send Ready</button>
+            <button class="add-btn" style="padding:9px 14px;font-size:13px;background:#0f766e" onclick="sendSelectedReminderGroup()">Email Selected Together</button>
             <button class="add-btn" style="padding:9px 14px;font-size:13px;background:#243b63" onclick="dryRunReminderBatch()">Dry Run</button>
           </div>
         </div>
@@ -2234,6 +2235,7 @@ body[data-user-role="manager"] .owner-only-setting{display:none !important}
               </div>
               <div class="mobile-quick-actions">
                 <button class="mobile-soft-btn" onclick="mobileSendAllReadyReminders()">Send Ready</button>
+                <button class="mobile-soft-btn" style="background:#ccfbf1;color:#115e59" onclick="mobileSendSelectedReminderGroup()">Email Selected Together</button>
                 <button class="mobile-soft-btn" onclick="mobileDryRunReminders()">Dry Run</button>
               </div>
               <div id="mobile-reminder-summary" class="mobile-subtle" style="margin-top:10px"></div>
@@ -6578,6 +6580,27 @@ function reminderContactEditor(item){
   </div>`;
 }
 
+function reminderGroupCheckbox(item, mobile=false){
+  const disabled=item.sent||item.channel!=='email'||!item.toEmail?'disabled':'';
+  const cls=mobile?'mobile-reminder-group-select':'reminder-group-select';
+  return `<label style="display:flex;align-items:center;gap:7px;font-size:12px;font-weight:800;color:#0f766e;cursor:pointer"><input class="${cls}" type="checkbox" value="${escHtml(item.rideKey)}" ${disabled}> Group email</label>`;
+}
+
+function selectedReminderKeys(selector){return [...document.querySelectorAll(`${selector}:checked`)].map((input)=>input.value);}
+
+async function sendReminderGroup(date, rideKeys, reload){
+  if(rideKeys.length<2){alert('Select at least two email rides for the same facility.');return;}
+  if(!confirm(`Send one combined facility email containing ${rideKeys.length} rides?`))return;
+  try{
+    const data=await reminderApi('/api/reminders/send-group',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({date,rideKeys})});
+    alert(`One email sent to ${data.group.toEmail} with ${data.group.rideCount} rides.`);
+    await reload();
+  }catch(e){alert(e.message||'Grouped reminder failed.');}
+}
+
+function sendSelectedReminderGroup(){const date=document.getElementById('reminder-date')?.value||reminderDefaultDate();return sendReminderGroup(date,selectedReminderKeys('.reminder-group-select'),loadReminders);}
+function mobileSendSelectedReminderGroup(){return sendReminderGroup(mobileReminderDateValue(),selectedReminderKeys('.mobile-reminder-group-select'),mobileLoadReminders);}
+
 async function loadReminders(){
   const date=document.getElementById('reminder-date')?.value||reminderDefaultDate();
   const list=document.getElementById('reminder-list');
@@ -6603,7 +6626,7 @@ async function loadReminders(){
             <div style="font-size:15px;font-weight:900;color:#0d1b2a">${escHtml(title)}</div>
             <div style="font-size:12px;color:#6b82a8;margin-top:3px">${escHtml(ride.pickup||'No pickup saved')}</div>
           </div>
-          <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">${reminderBadge(item)}<button class="add-btn" style="padding:8px 12px;font-size:12px;background:#0d1b2a" ${disabled} onclick="sendRideReminder('${escHtml(item.rideKey)}')">${actionLabel}</button></div>
+          <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">${reminderGroupCheckbox(item)}${reminderBadge(item)}<button class="add-btn" style="padding:8px 12px;font-size:12px;background:#0d1b2a" ${disabled} onclick="sendRideReminder('${escHtml(item.rideKey)}')">${actionLabel}</button></div>
         </div>
         <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-top:10px;font-size:12px;color:#334155">
           <span style="font-weight:800">${escHtml(reminderChannelLabel(item))}</span>
@@ -6704,6 +6727,7 @@ function mobileReminderCard(item){
     ${mobileReminderContactEditor(item)}
     <div class="mobile-reminder-message">${escHtml(item.text)}</div>
     <div class="mobile-ride-actions">
+      ${reminderGroupCheckbox(item,true)}
       <button class="mobile-action-btn dark" ${sendDisabled} data-mobile-reminder-send="${escHtml(item.rideKey)}">${item.sent?'Sent':'Send'}</button>
     </div>
   </div>`;

@@ -478,6 +478,25 @@ function buildReminderText(ride) {
   return parts.join(' ');
 }
 
+function buildGroupedReminderText(candidates) {
+  const rides = (candidates || []).map((candidate) => candidate.ride || {});
+  const facility = String(rides[0]?.facility || 'your facility').trim();
+  const lines = [`Reminder from AbleCare Mobility: the following ${rides.length} rides are scheduled for tomorrow for ${facility}:`, ''];
+  rides.forEach((ride, index) => {
+    const client = String(ride.client || 'Patient').trim();
+    const time = displayTime(ride.time) || 'Time not saved';
+    lines.push(`${index + 1}. ${client} - pickup ${time}`);
+    if (ride.pickup) lines.push(`   Pickup: ${ride.pickup}`);
+    normalizeRideStops(ride.stops || ride.additionalStops).forEach((stop, stopIndex) => lines.push(`   Stop ${stopIndex + 1}: ${stop}`));
+    if (ride.dropoff) lines.push(`   Drop off: ${ride.dropoff}`);
+    if (ride.ridetype) lines.push(`   Ride type: ${String(ride.ridetype).toLowerCase() === 'str' ? 'Stretcher' : 'Wheelchair'}`);
+    if (ride.triptype) lines.push(`   Trip: ${String(ride.triptype).toLowerCase() === 'rt' ? 'Round trip' : 'One way'}`);
+    lines.push('');
+  });
+  lines.push('Please reply to this email or call AbleCare if anything changed.');
+  return lines.join('\n');
+}
+
 function buildRideConfirmationText(ride) {
   const client = String(ride.client || ride.facility || 'the rider').trim();
   const date = displayDate(ride.date);
@@ -571,6 +590,9 @@ async function listReminderCandidates(date) {
           pickup: ride.pickup || '',
           dropoff: ride.dropoff || '',
           driver: ride.driver || '',
+          ridetype: ride.ridetype || '',
+          triptype: ride.triptype || '',
+          stops: normalizeRideStops(ride.stops || ride.additionalStops),
           facilityEmail,
           entrySource: ride.entrySource || '',
           communicationSource,
@@ -622,6 +644,39 @@ async function sendReminderEmail(candidate) {
     sender,
     replyToMessageId: '',
   };
+}
+
+async function sendGroupedReminderEmail(candidates) {
+  const sender = configuredEnvValue('OUTLOOK_SENDER_EMAIL');
+  const first = candidates[0];
+  const facility = String(first.ride?.facility || 'Facility').trim();
+  const toEmail = cleanEmail(first.toEmail);
+  const text = buildGroupedReminderText(candidates);
+  const message = { message: { subject: `AbleCare Mobility - ${candidates.length} ride reminders for tomorrow - ${facility}`, body: { contentType: 'Text', content: text }, toRecipients: [{ emailAddress: { address: toEmail } }] }, saveToSentItems: true };
+  await microsoftGraphRequest('POST', `/users/${encodeURIComponent(sender)}/sendMail`, message);
+  return { id: '', subject: message.message.subject, to: toEmail, sender, text };
+}
+
+async function sendGroupedReminders(date, rideKeys) {
+  const uniqueKeys = [...new Set((rideKeys || []).map((key) => String(key || '').trim()).filter(Boolean))];
+  if (uniqueKeys.length < 2) { const err = new Error('Select at least two rides to email together.'); err.status = 400; throw err; }
+  const allCandidates = await listReminderCandidates(date);
+  const candidates = uniqueKeys.map((key) => allCandidates.find((item) => item.rideKey === key));
+  if (candidates.some((candidate) => !candidate)) { const err = new Error('One or more selected rides are no longer available. Reload the reminder list.'); err.status = 404; throw err; }
+  if (candidates.some((candidate) => candidate.sent)) { const err = new Error('One or more selected rides already has a sent reminder.'); err.status = 409; throw err; }
+  const facilities = new Set(candidates.map((candidate) => String(candidate.ride?.facility || '').trim().toLowerCase()).filter(Boolean));
+  const emails = new Set(candidates.map((candidate) => cleanEmail(candidate.toEmail)).filter(Boolean));
+  if (facilities.size !== 1) { const err = new Error('Selected rides must all belong to the same facility.'); err.status = 400; throw err; }
+  if (emails.size !== 1 || candidates.some((candidate) => !cleanEmail(candidate.toEmail))) { const err = new Error('Selected rides must all use the same saved facility email address.'); err.status = 400; throw err; }
+  const providerResult = await sendGroupedReminderEmail(candidates);
+  const groupId = `group_${Date.now()}`;
+  const logs = [];
+  for (const candidate of candidates) {
+    candidate.text = providerResult.text;
+    const result = { channel: 'email', provider: 'outlook', providerResult: { ...providerResult, groupId } };
+    logs.push(await writeReminderLog(date, candidate.rideKey, candidate, result, 'manual-group'));
+  }
+  return { groupId, facility: candidates[0].ride.facility, toEmail: candidates[0].toEmail, rideCount: candidates.length, text: providerResult.text, logs };
 }
 
 async function sendConfirmationEmail({ ride, toEmail, text }) {
@@ -1392,6 +1447,14 @@ const server = http.createServer(async (req, res) => {
       const result = await sendReminder(candidate, requestedChannel || null);
       const log = await writeReminderLog(date, rideKey, candidate, result, 'manual');
       sendJson(res, 200, { ok: true, log });
+      return;
+    }
+
+    if (url.pathname === '/api/reminders/send-group' && req.method === 'POST') {
+      const body = await readRequestBody(req);
+      const date = validateDateString(body.date);
+      const group = await sendGroupedReminders(date, Array.isArray(body.rideKeys) ? body.rideKeys : []);
+      sendJson(res, 200, { ok: true, group });
       return;
     }
 
