@@ -1,0 +1,13 @@
+{
+  "name": "AbleCare Driver",
+  "short_name": "AbleCare",
+  "description": "AbleCare Mobility driver schedule and time clock",
+  "start_url": "/driver.html",
+  "scope": "/",
+  "display": "standalone",
+  "background_color": "#f3f7fa",
+  "theme_color": "#0b1f33",
+  "icons": [
+    {"src": "/driver-icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any maskable"}
+  ]
+}
