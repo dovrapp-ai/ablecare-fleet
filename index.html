@@ -5101,8 +5101,9 @@ function initDash(){
 // ── MAP ──
 async function refreshMap(){
   if(!db)return;
-  const[drivers,locSnap]=await Promise.all([loadDrivers(),locsRef().once('value')]);
+  const[drivers,locSnap,shiftSnap]=await Promise.all([loadDrivers(),locsRef().once('value'),shiftsRef().once('value')]);
   const locs=locSnap.val()||{};
+  const shifts=shiftSnap.val()||{};
   mapLastLocs=locs;
   const now=Date.now(),stale=600000;
   let onlineCount=0;
@@ -5119,8 +5120,10 @@ async function refreshMap(){
   drivers.forEach((d,i)=>{
     const color=COLORS[i%COLORS.length];
     const loc=locs[safe(d.name)];
-    const isIn=loc&&loc.status==='in';
-    const hasPos=isIn&&loc.lat&&loc.lng&&(now-loc.ts)<stale;
+    const driverShifts=Object.values(shifts[safe(d.name)]||{});
+    const activeShift=driverShifts.filter(s=>s&&s.clockIn&&!s.clockOut).sort((a,b)=>b.clockIn-a.clockIn)[0]||null;
+    const isIn=!!activeShift;
+    const hasPos=isIn&&loc&&loc.lat&&loc.lng&&loc.ts>=activeShift.clockIn&&(now-loc.ts)<stale;
     if(isIn) onlineCount++;
     if(hasPos){
       activeBounds.push([Number(loc.lat),Number(loc.lng)]);
@@ -5135,7 +5138,7 @@ async function refreshMap(){
     row.className=`driver-row${isIn?' online':''}`;
     row.innerHTML=`<div class="driver-avatar" style="background:${color}">${d.name[0]}</div>
       <div class="driver-info"><div class="driver-name-row">${d.name}</div>
-      <div class="driver-detail">${hasPos?`${loc.lat.toFixed(4)}, ${loc.lng.toFixed(4)}`:(isIn?'On shift — acquiring GPS':'Last seen: '+ago)}</div></div>
+      <div class="driver-detail">${hasPos?`${loc.lat.toFixed(4)}, ${loc.lng.toFixed(4)}`:(isIn?'On shift — GPS unavailable':'Last seen: '+ago)}</div></div>
       <div style="text-align:right"><div class="status-badge ${isIn?'status-in':'status-out'}">${isIn?'● IN':'OUT'}</div>${isIn?`<div class="driver-time">${ago}</div>`:''}</div>`;
     const actionBox=row.querySelector('div[style*="text-align:right"]');
     if(actionBox){
@@ -5598,7 +5601,7 @@ async function renderTimesheet(){
     const color=COLORS[di%COLORS.length];
     const raw=all[safe(d.name)]||{};
     const shifts=Object.entries(raw).filter(([k,s])=>s.clockIn>=fromTs&&s.clockIn<=toTs).sort((a,b)=>a[1].clockIn-b[1].clockIn);
-    const totalMs=shifts.reduce((a,[,s])=>a+(s.durationMs||0),0);
+    const totalMs=shifts.reduce((a,[,s])=>a+(s.durationMs||(!s.clockOut&&s.clockIn?Math.max(0,Date.now()-s.clockIn):0)),0);
     const block=document.createElement('div');block.className='ts-driver-block';
     const grossPay = d.hourlyRate ? (totalMs/3600000) * d.hourlyRate : null;
     const rateStr = d.hourlyRate ? `$${parseFloat(d.hourlyRate).toFixed(2)}/hr` : 'No rate set';
@@ -5614,9 +5617,9 @@ async function renderTimesheet(){
       const byDay={};
       shifts.forEach(([k,s])=>{const day=dateStr(new Date(s.clockIn));if(!byDay[day])byDay[day]=[];byDay[day].push([k,s]);});
       Object.entries(byDay).forEach(([day,dayShifts])=>{
-        const dayMs=dayShifts.reduce((a,[,s])=>a+(s.durationMs||0),0);
+        const dayMs=dayShifts.reduce((a,[,s])=>a+(s.durationMs||(!s.clockOut&&s.clockIn?Math.max(0,Date.now()-s.clockIn):0)),0);
         block.innerHTML+=`<div class="ts-day-header"><span>${fmtDate(day)}</span><span>${fmtH(dayMs)}</span></div>`;
-        dayShifts.forEach(([k,s])=>{block.innerHTML+=`<div class="ts-entry"><div class="ts-times"><div class="ts-in">↑ IN &nbsp; ${fmtTime(s.clockIn)}</div><div class="ts-out">↓ OUT  ${s.clockOut?fmtTime(s.clockOut):'Still on shift'}</div></div><div class="ts-dur">${s.durationMs?fmtDur(s.durationMs):'—'}</div><button class="edit-btn" onclick="openEditModal('${d.name}','${k}',${s.clockIn},${s.clockOut||0})">Edit</button></div>`;});
+        dayShifts.forEach(([k,s])=>{const activeMs=!s.clockOut?Math.max(0,Date.now()-s.clockIn):0;block.innerHTML+=`<div class="ts-entry"><div class="ts-times"><div class="ts-in">↑ IN &nbsp; ${fmtTime(s.clockIn)}</div><div class="ts-out">${s.clockOut?'↓ OUT  '+fmtTime(s.clockOut):`<span data-live-shift-start="${s.clockIn}" data-live-prefix="Still on shift · ">Still on shift · ${fmtLiveElapsed(activeMs)}</span>`}</div></div><div class="ts-dur">${s.clockOut&&s.durationMs?fmtDur(s.durationMs):''}</div><button class="edit-btn" onclick="openEditModal('${d.name}','${k}',${s.clockIn},${s.clockOut||0})">Edit</button></div>`;});
       });
     }
     content.appendChild(block);
@@ -7427,7 +7430,7 @@ function mobileEmpty(msg){
   return `<div class="mobile-empty">${mobileEsc(msg)}</div>`;
 }
 
-function updateMobileMap(drivers,locs){
+function updateMobileMap(drivers,locs,shifts){
   const el=document.getElementById('mobile-map-preview');
   if(!el) return;
   if(typeof L==='undefined'){
@@ -7448,7 +7451,8 @@ function updateMobileMap(drivers,locs){
   const bounds=[];
   drivers.forEach((d,i)=>{
     const loc=locs[safe(d.name)];
-    const fresh=loc&&loc.status==='in'&&loc.lat&&loc.lng&&(now-loc.ts)<600000;
+    const activeShift=Object.values((shifts||{})[safe(d.name)]||{}).filter(s=>s&&s.clockIn&&!s.clockOut).sort((a,b)=>b.clockIn-a.clockIn)[0]||null;
+    const fresh=activeShift&&loc&&loc.lat&&loc.lng&&loc.ts>=activeShift.clockIn&&(now-loc.ts)<600000;
     if(!fresh) return;
     const color=COLORS[i%COLORS.length];
     const icon=L.divIcon({
@@ -7673,6 +7677,30 @@ async function saveMobileComplianceItem(){
   showToast('Compliance document saved.');
 }
 
+function fmtLiveElapsed(ms){
+  const total=Math.max(0,Math.floor((Number(ms)||0)/1000));
+  const h=Math.floor(total/3600),m=Math.floor((total%3600)/60),s=total%60;
+  return `${h}:${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}`;
+}
+
+function updateLiveShiftTimers(){
+  const now=Date.now();
+  document.querySelectorAll('[data-live-shift-start]').forEach(el=>{
+    const start=Number(el.dataset.liveShiftStart)||0;
+    const prefix=el.dataset.livePrefix||'';
+    if(start) el.textContent=prefix+fmtLiveElapsed(now-start);
+  });
+  const total=document.getElementById('mobile-hours-total');
+  if(total&&total.dataset.completedMs!=null){
+    const completed=Number(total.dataset.completedMs)||0;
+    const starts=String(total.dataset.activeStarts||'').split(',').map(Number).filter(Boolean);
+    const live=starts.reduce((sum,start)=>sum+Math.max(0,now-start),0);
+    total.textContent=fmtHDecimal(completed+live);
+  }
+}
+
+setInterval(updateLiveShiftTimers,1000);
+
 async function renderMobileDashboard(){
   const renderSeq=++mobileRenderSeq;
   const shell=document.getElementById('screen-mobile');
@@ -7760,36 +7788,49 @@ async function renderMobileDashboard(){
     const now=Date.now();
     const mapRows=drivers.map(d=>{
       const loc=locs[safe(d.name)];
-      const isIn=loc&&loc.status==='in';
-      const fresh=isIn&&loc.lat&&loc.lng&&(now-loc.ts)<600000;
+      const activeShift=Object.values(shifts[safe(d.name)]||{}).filter(s=>s&&s.clockIn&&!s.clockOut).sort((a,b)=>b.clockIn-a.clockIn)[0]||null;
+      const isIn=!!activeShift;
+      const fresh=isIn&&loc&&loc.lat&&loc.lng&&loc.ts>=activeShift.clockIn&&(now-loc.ts)<600000;
       return `<div class="mobile-driver-row">
         <div>
           <div class="mobile-driver-name">${mobileEsc(d.name)}</div>
-          <div class="mobile-driver-detail">${fresh?'On shift - GPS active':isIn?'On shift - location stale':'Off shift'}${loc&&loc.ts?' - '+formatAgo(now-loc.ts)+' ago':''}</div>
+          <div class="mobile-driver-detail">${fresh?'On shift - GPS active':isIn?'On shift - GPS unavailable':'Off shift'}${isIn?' - clocked in '+fmtTime(activeShift.clockIn):loc&&loc.ts?' - '+formatAgo(now-loc.ts)+' ago':''}</div>
         </div>
         <button class="mobile-driver-open" onclick="focusMobileDriver('${mobileKey(d.name)}')">Locate</button>
       </div>`;
     }).join('');
     document.getElementById('mobile-map-driver-list').innerHTML=mapRows||mobileEmpty('No driver location data yet.');
-    if(mobilePanel==='map') setTimeout(()=>updateMobileMap(drivers,locs),0);
+    if(mobilePanel==='map') setTimeout(()=>updateMobileMap(drivers,locs,shifts),0);
     renderMobileCompliance();
     populateMobileReportFilters(drivers);
     if(mobilePanel==='invoice') populateMobileInvoiceForm();
 
     const range=getPPRange(ppOffset);
     let totalMs=0;
+    let completedTotalMs=0;
+    const activeStarts=[];
     const hourRows=drivers.map(d=>{
       const raw=shifts[safe(d.name)]||{};
       const driverShifts=Object.values(raw).filter(s=>s.clockIn>=range.start.getTime()&&s.clockIn<=range.end.getTime());
-      const ms=driverShifts.reduce((sum,s)=>sum+(s.durationMs||0),0);
+      const activeShift=driverShifts.filter(s=>s&&s.clockIn&&!s.clockOut).sort((a,b)=>b.clockIn-a.clockIn)[0]||null;
+      const completedMs=driverShifts.reduce((sum,s)=>sum+(s.durationMs||0),0);
+      const activeMs=activeShift?Math.max(0,now-activeShift.clockIn):0;
+      const ms=completedMs+activeMs;
       totalMs+=ms;
-      return `<div class="mobile-hours-row">
-        <div style="font-size:15px;font-weight:800">${mobileEsc(d.name)}</div>
-        <div class="mobile-subtle">${fmtHDecimal(ms)} hrs - ${driverShifts.length} shifts</div>
-      </div>`;
+      completedTotalMs+=completedMs;
+      if(activeShift) activeStarts.push(activeShift.clockIn);
+      return `<div class="mobile-hours-row"><div class="mobile-hours-grid">
+        <div><div style="font-size:15px;font-weight:800">${mobileEsc(d.name)}</div>
+        <div class="mobile-hours-small">${activeShift?'Clocked in '+fmtTime(activeShift.clockIn):driverShifts.length+' shift'+(driverShifts.length===1?'':'s')+' this period'}</div></div>
+        <div style="text-align:right"><div class="mobile-hours-big"${activeShift?` data-live-shift-start="${activeShift.clockIn}"`:''}>${activeShift?fmtLiveElapsed(activeMs):fmtHDecimal(ms)}</div>
+        <div class="mobile-hours-small">${activeShift?'Still on shift':'hours'}</div></div>
+      </div></div>`;
     }).join('');
     mobileSetText('mobile-hours-total',fmtHDecimal(totalMs));
+    const mobileHoursTotal=document.getElementById('mobile-hours-total');
+    if(mobileHoursTotal){mobileHoursTotal.dataset.completedMs=String(completedTotalMs);mobileHoursTotal.dataset.activeStarts=activeStarts.join(',');}
     document.getElementById('mobile-hours-list').innerHTML=hourRows||mobileEmpty('No shifts found for this pay period.');
+    updateLiveShiftTimers();
 
     mobileEnsureReportRangeDefaults();
     const rangeFrom=mobileReportFrom;
