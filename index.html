@@ -3131,18 +3131,27 @@ body[data-user-role="manager"] .owner-only-setting{display:none !important}
 
 <div class="modal-overlay" id="driver-rate-modal">
   <div class="modal-box" style="max-width:320px">
-    <div class="modal-title">Set Hourly Rate</div>
+    <div class="modal-title">Set Regular & Overtime Rates</div>
     <div class="modal-driver" id="dr-driver-name"></div>
     <div class="modal-field">
-      <label>Hourly Rate ($/hr)</label>
+      <label>Regular Hourly Rate ($/hr)</label>
       <div style="display:flex;align-items:center;gap:8px">
         <span style="font-size:18px;font-weight:700;color:#0d1b2a">$</span>
         <input type="number" id="dr-rate" placeholder="e.g. 18.00" step="0.50" min="0" style="flex:1;padding:10px 14px;border:2px solid #e8eef4;border-radius:10px;font-size:18px;font-weight:700;color:#0d1b2a;outline:none;font-family:inherit"/>
         <span style="font-size:14px;color:#6b82a8">/hr</span>
       </div>
     </div>
+    <div class="modal-field">
+      <label>Overtime Rate ($/hr after 40 hours)</label>
+      <div style="display:flex;align-items:center;gap:8px">
+        <span style="font-size:18px;font-weight:700;color:#0d1b2a">$</span>
+        <input type="number" id="dr-overtime-rate" placeholder="e.g. 27.00" step="0.50" min="0" style="flex:1;padding:10px 14px;border:2px solid #e8eef4;border-radius:10px;font-size:18px;font-weight:700;color:#0d1b2a;outline:none;font-family:inherit"/>
+        <span style="font-size:14px;color:#6b82a8">/hr</span>
+      </div>
+      <div style="font-size:11px;color:#6b82a8;margin-top:6px">Applied after 40 Monday–Friday hours in one week.</div>
+    </div>
     <div class="modal-actions">
-      <button class="modal-save" onclick="saveDriverRate()">Save Rate</button>
+      <button class="modal-save" onclick="saveDriverRate()">Save Rates</button>
       <button class="modal-cancel" onclick="closeDriverRateModal()">Cancel</button>
     </div>
   </div>
@@ -5587,6 +5596,45 @@ function setTsMode(mode){
   if(mode==='pp')renderTimesheet();
 }
 function initTimesheet(){updatePPDisplay();renderTimesheet();}
+
+function shiftDurationForPayroll(s,now=Date.now()){
+  if(!s||!s.clockIn) return 0;
+  if(s.durationMs) return Math.max(0,Number(s.durationMs)||0);
+  if(!s.clockOut) return Math.max(0,now-Number(s.clockIn));
+  return Math.max(0,Number(s.clockOut)-Number(s.clockIn));
+}
+
+function mondayWeekKey(ts){
+  const d=new Date(Number(ts));
+  d.setHours(0,0,0,0);
+  const day=d.getDay();
+  d.setDate(d.getDate()+(day===0?-6:1-day));
+  return dateStr(d);
+}
+
+function calculateWeeklyPayroll(allShifts,fromTs,toTs,regularRate,overtimeRate,now=Date.now()){
+  const weeklyLimitMs=40*60*60*1000;
+  const weeklyUsed={};
+  let regularMs=0,overtimeMs=0,shiftCount=0;
+  (allShifts||[]).filter(s=>s&&s.clockIn).sort((a,b)=>a.clockIn-b.clockIn).forEach(s=>{
+    const duration=shiftDurationForPayroll(s,now);
+    const day=new Date(Number(s.clockIn)).getDay();
+    let shiftRegular=duration,shiftOvertime=0;
+    if(day>=1&&day<=5){
+      const week=mondayWeekKey(s.clockIn);
+      const used=weeklyUsed[week]||0;
+      shiftRegular=Math.min(duration,Math.max(0,weeklyLimitMs-used));
+      shiftOvertime=Math.max(0,duration-shiftRegular);
+      weeklyUsed[week]=used+duration;
+    }
+    if(s.clockIn>=fromTs&&s.clockIn<=toTs){regularMs+=shiftRegular;overtimeMs+=shiftOvertime;shiftCount++;}
+  });
+  const regular=Number(regularRate)||0,overtime=Number(overtimeRate)||0;
+  const regularPay=(regularMs/3600000)*regular;
+  const overtimePay=(overtimeMs/3600000)*overtime;
+  return{regularMs,overtimeMs,totalMs:regularMs+overtimeMs,shiftCount,regularRate:regular,overtimeRate:overtime,regularPay,overtimePay,grossPay:regularPay+overtimePay};
+}
+
 async function renderTimesheet(){
   if(!db)return;
   let fromTs,toTs;
@@ -5601,16 +5649,18 @@ async function renderTimesheet(){
     const color=COLORS[di%COLORS.length];
     const raw=all[safe(d.name)]||{};
     const shifts=Object.entries(raw).filter(([k,s])=>s.clockIn>=fromTs&&s.clockIn<=toTs).sort((a,b)=>a[1].clockIn-b[1].clockIn);
-    const totalMs=shifts.reduce((a,[,s])=>a+(s.durationMs||(!s.clockOut&&s.clockIn?Math.max(0,Date.now()-s.clockIn):0)),0);
+    const payroll=calculateWeeklyPayroll(Object.values(raw),fromTs,toTs,d.hourlyRate,d.overtimeRate);
+    const totalMs=payroll.totalMs;
     const block=document.createElement('div');block.className='ts-driver-block';
-    const grossPay = d.hourlyRate ? (totalMs/3600000) * d.hourlyRate : null;
     const rateStr = d.hourlyRate ? `$${parseFloat(d.hourlyRate).toFixed(2)}/hr` : 'No rate set';
+    const overtimeRateStr = d.overtimeRate ? `$${parseFloat(d.overtimeRate).toFixed(2)}/hr OT` : 'OT rate not set';
     block.innerHTML=`<div class="ts-driver-header"><div class="driver-avatar" style="background:${color};width:36px;height:36px;border-radius:9px;font-size:15px;font-weight:900;color:#fff;display:flex;align-items:center;justify-content:center;flex-shrink:0">${d.name[0]}</div>
       <div style="flex:1"><div style="font-size:16px;font-weight:800;color:#0d1b2a">${d.name}</div>
-      <div style="font-size:11px;color:#6b82a8">${rateStr}</div></div>
+      <div style="font-size:11px;color:#6b82a8">Regular ${rateStr} · ${overtimeRateStr}</div>
+      <div style="font-size:11px;color:#475569;margin-top:3px">${fmtHDecimal(payroll.regularMs)} regular hrs · ${fmtHDecimal(payroll.overtimeMs)} overtime hrs</div></div>
       <div style="text-align:right">
         <div class="ts-driver-total">${fmtH(totalMs)}</div>
-        ${grossPay!=null?`<div style="font-size:13px;font-weight:800;color:#16a34a">$${grossPay.toFixed(2)}</div>`:`<div style="font-size:11px;color:#f59e0b">Set rate in Settings</div>`}
+        ${d.hourlyRate?`<div style="font-size:13px;font-weight:800;color:#16a34a">$${payroll.grossPay.toFixed(2)} total</div><div style="font-size:10px;color:#64748b">$${payroll.regularPay.toFixed(2)} regular · $${payroll.overtimePay.toFixed(2)} OT</div>`:`<div style="font-size:11px;color:#f59e0b">Set rates in Settings</div>`}
       </div></div>`;
     if(!shifts.length){block.innerHTML+=`<div style="padding:16px 18px;color:#6b82a8;font-size:13px">No shifts in this period</div>`;}
     else{
@@ -6052,28 +6102,33 @@ async function renderDriverPins(){
     row.innerHTML=`<div class="driver-avatar" style="background:${color};width:36px;height:36px;border-radius:9px;font-size:15px;font-weight:900;color:#fff;display:flex;align-items:center;justify-content:center;flex-shrink:0">${d.name[0]}</div>
       <div class="driver-pin-name">${d.name}</div>
       <div class="driver-pin-val">PIN: ${d.pin?'••••':'Not set'}</div>
-      <div class="driver-pin-val" style="color:${d.hourlyRate?'#16a34a':'#f59e0b'}">${d.hourlyRate?'$'+parseFloat(d.hourlyRate).toFixed(2)+'/hr':'No rate set'}</div>
-      <button class="driver-pin-btn" onclick="openDriverRateModal('${d.name}',${d.hourlyRate||0})">Set Rate</button>
+      <div class="driver-pin-val" style="color:${d.hourlyRate?'#16a34a':'#f59e0b'}">${d.hourlyRate?'Regular $'+parseFloat(d.hourlyRate).toFixed(2)+'/hr':'No regular rate'}</div>
+      <div class="driver-pin-val" style="color:${d.overtimeRate?'#7c3aed':'#f59e0b'}">${d.overtimeRate?'OT $'+parseFloat(d.overtimeRate).toFixed(2)+'/hr':'No OT rate'}</div>
+      <button class="driver-pin-btn" onclick="openDriverRateModal('${d.name}',${d.hourlyRate||0},${d.overtimeRate||0})">Set Rates</button>
       <button class="driver-pin-btn" onclick="openDriverPinModal('${d.name}')">Change PIN</button>`;
     list.appendChild(row);
   });
 }
 
 let drRateDriverName=null;
-function openDriverRateModal(name,currentRate){
+function openDriverRateModal(name,currentRate,currentOvertimeRate){
   drRateDriverName=name;
   document.getElementById('dr-driver-name').textContent=name;
   document.getElementById('dr-rate').value=currentRate||'';
+  document.getElementById('dr-overtime-rate').value=currentOvertimeRate||(currentRate?Number(currentRate)*1.5:'');
   document.getElementById('driver-rate-modal').style.display='flex';
 }
 function closeDriverRateModal(){document.getElementById('driver-rate-modal').style.display='none';drRateDriverName=null;}
 async function saveDriverRate(){
   const rate=parseFloat(document.getElementById('dr-rate').value);
+  const overtimeRate=parseFloat(document.getElementById('dr-overtime-rate').value);
   if(!rate||rate<=0){alert('Please enter a valid hourly rate.');return;}
-  await drvsRef().child(safe(drRateDriverName)).update({hourlyRate:rate});
+  if(!overtimeRate||overtimeRate<=0){alert('Please enter a valid overtime rate.');return;}
+  const driverName=drRateDriverName;
+  await drvsRef().child(safe(driverName)).update({hourlyRate:rate,overtimeRate});
   closeDriverRateModal();
   renderDriverPins();
-  alert(`✓ ${drRateDriverName}'s rate set to $${rate.toFixed(2)}/hr`);
+  alert(`✓ ${driverName}'s rates saved: $${rate.toFixed(2)}/hr regular and $${overtimeRate.toFixed(2)}/hr overtime`);
 }
 function openDriverPinModal(name){
   document.getElementById('dp-driver-name').textContent=name;
@@ -7815,15 +7870,20 @@ async function renderMobileDashboard(){
       const activeShift=driverShifts.filter(s=>s&&s.clockIn&&!s.clockOut).sort((a,b)=>b.clockIn-a.clockIn)[0]||null;
       const completedMs=driverShifts.reduce((sum,s)=>sum+(s.durationMs||0),0);
       const activeMs=activeShift?Math.max(0,now-activeShift.clockIn):0;
-      const ms=completedMs+activeMs;
+      const payroll=calculateWeeklyPayroll(Object.values(raw),range.start.getTime(),range.end.getTime(),d.hourlyRate,d.overtimeRate,now);
+      const ms=payroll.totalMs;
       totalMs+=ms;
       completedTotalMs+=completedMs;
       if(activeShift) activeStarts.push(activeShift.clockIn);
       return `<div class="mobile-hours-row"><div class="mobile-hours-grid">
         <div><div style="font-size:15px;font-weight:800">${mobileEsc(d.name)}</div>
-        <div class="mobile-hours-small">${activeShift?'Clocked in '+fmtTime(activeShift.clockIn):driverShifts.length+' shift'+(driverShifts.length===1?'':'s')+' this period'}</div></div>
+        <div class="mobile-hours-small">${activeShift?'Clocked in '+fmtTime(activeShift.clockIn):driverShifts.length+' shift'+(driverShifts.length===1?'':'s')+' this period'}</div>
+        <div class="mobile-hours-small" style="margin-top:5px">Regular: ${fmtHDecimal(payroll.regularMs)} hrs${d.hourlyRate?' × $'+Number(d.hourlyRate).toFixed(2):' · rate not set'}</div>
+        <div class="mobile-hours-small" style="color:${payroll.overtimeMs?'#7c3aed':'#64748b'}">Overtime: ${fmtHDecimal(payroll.overtimeMs)} hrs${d.overtimeRate?' × $'+Number(d.overtimeRate).toFixed(2):' · OT rate not set'}</div></div>
         <div style="text-align:right"><div class="mobile-hours-big"${activeShift?` data-live-shift-start="${activeShift.clockIn}"`:''}>${activeShift?fmtLiveElapsed(activeMs):fmtHDecimal(ms)}</div>
-        <div class="mobile-hours-small">${activeShift?'Still on shift':'hours'}</div></div>
+        <div class="mobile-hours-small">${activeShift?'Still on shift':'hours'}</div>
+        <div style="font-size:14px;font-weight:900;color:#16a34a;margin-top:7px">${d.hourlyRate?'$'+payroll.grossPay.toFixed(2):'Set rates'}</div>
+        <div class="mobile-hours-small">${d.hourlyRate?'$'+payroll.regularPay.toFixed(2)+' regular · $'+payroll.overtimePay.toFixed(2)+' OT':''}</div></div>
       </div></div>`;
     }).join('');
     mobileSetText('mobile-hours-total',fmtHDecimal(totalMs));
