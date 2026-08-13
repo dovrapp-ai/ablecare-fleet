@@ -11003,7 +11003,7 @@ function renderInvoicePreview(data){
     const addressLabel = invoiceAddressLabel(r, facilityName);
     const details = [
       `Service: ${invoiceServiceName(r)}`,
-      r.client ? `Patient: ${r.client}` : '',
+      r.client ? `Resident: ${r.client}` : '',
       destination ? `${addressLabel}: ${destination}` : '',
       parseInvoiceMileageLine(r, money),
       parseInvoiceWaitLine(r, money)
@@ -11258,7 +11258,7 @@ function buildQuickBooksInvoiceExport(){
     const waitLine = parseInvoiceWaitLine(r, money);
     const parts = [
       `Service: ${service}`,
-      resident ? `Patient: ${resident}` : '',
+      resident ? `Resident: ${resident}` : '',
       destination ? `${addressLabel}: ${destination}` : '',
       mileageLine,
       waitLine
