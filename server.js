@@ -1,6 +1,7 @@
 const http = require('http');
 const fs = require('fs');
 const path = require('path');
+const { handleRingCentralMcp } = require('./ringcentral-mcp');
 
 const PORT = Number(process.env.PORT || 5173);
 const ROOT = __dirname;
@@ -1162,6 +1163,7 @@ function serveStatic(req, res, pathname) {
       '.js': 'text/javascript; charset=utf-8',
       '.css': 'text/css; charset=utf-8',
       '.json': 'application/json; charset=utf-8',
+      '.webmanifest': 'application/manifest+json; charset=utf-8',
       '.png': 'image/png',
       '.jpg': 'image/jpeg',
       '.jpeg': 'image/jpeg',
@@ -1182,6 +1184,12 @@ const server = http.createServer(async (req, res) => {
   const url = new URL(req.url, `http://${req.headers.host || 'localhost'}`);
 
   try {
+    if (url.pathname === '/mcp') {
+      const body = req.method === 'POST' ? await readRequestBody(req) : undefined;
+      await handleRingCentralMcp(req, res, body, ringCentralRequest);
+      return;
+    }
+
     if (url.pathname === '/api/health') {
       sendJson(res, 200, {
         ok: true,
