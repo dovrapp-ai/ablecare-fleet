@@ -2610,6 +2610,9 @@ body[data-user-role="manager"] .owner-only-setting{display:none !important}
         <!-- Warnings -->
         <div id="opt-warnings" style="margin-top:12px"></div>
 
+        <!-- Earlier pickup proposals (never changes appointment times) -->
+        <div id="opt-pickup-proposals" style="margin-top:12px"></div>
+
         <!-- Action buttons -->
         <div style="display:flex;gap:10px;margin-top:20px;flex-wrap:wrap">
           <button class="add-btn" style="flex:1;padding:14px" onclick="applyOptimizedSchedule()">Save & Send to Driver App</button>
@@ -8356,7 +8359,7 @@ function buildFallbackMatrix(addresses){
 
 
 
-async function optimizeWithAI(rides, drivers, distMatrix, addresses){
+async function optimizeWithAI(rides, drivers, distMatrix, addresses, options={}){
   const BASE = BASE_ADDRESS;
   const driverNames = drivers.map(d => d.name);
 
@@ -8653,8 +8656,75 @@ async function optimizeWithAI(rides, drivers, distMatrix, addresses){
     unassignedRideCount
   };
 
-  optimizedSchedule = result;
+  if(options.generatePickupProposals !== false && unassignedRideCount > 0){
+    result.pickupProposals = await findEarlierPickupProposals(rides, drivers, distMatrix, addresses, result);
+  } else {
+    result.pickupProposals = [];
+  }
+
+  if(options.setActiveSchedule !== false) optimizedSchedule = result;
   return result;
+}
+
+async function findEarlierPickupProposals(rides, drivers, distMatrix, addresses, originalResult){
+  const proposals=[];
+  let best=null;
+  const maxEarlierMinutes=90;
+  const stepMinutes=15;
+
+  for(const ride of rides){
+    const originalMins=parseTimeToMinutes(ride.time || '');
+    if(originalMins===null) continue;
+    for(let earlier=stepMinutes;earlier<=maxEarlierMinutes;earlier+=stepMinutes){
+      const proposedMins=originalMins-earlier;
+      if(proposedMins < 0) continue;
+      const proposedTime=minutesToHHMM(proposedMins);
+      const testRides=rides.map(r => r._key===ride._key ? {...r,time:proposedTime} : {...r});
+      const testResult=await optimizeWithAI(testRides,drivers,distMatrix,addresses,{
+        generatePickupProposals:false,
+        setActiveSchedule:false
+      });
+      const conflictsResolved=(originalResult.unassignedRideCount||0)-(testResult.unassignedRideCount||0);
+      if(conflictsResolved<=0) continue;
+      const candidate={ride,earlier,proposedTime,testResult,conflictsResolved};
+      if(!best || candidate.conflictsResolved>best.conflictsResolved ||
+        (candidate.conflictsResolved===best.conflictsResolved && candidate.earlier<best.earlier)) best=candidate;
+      break;
+    }
+  }
+
+  if(best){
+    const ride=best.ride;
+    const name=ride.client || ride.facility || 'the client';
+    const originalDisplay=fmtTime12(ride.time || '') || ride.time;
+    const proposedDisplay=fmtTime12(best.proposedTime) || best.proposedTime;
+    const appointment=ride.appointmentTime || ride.appointment_time || '';
+    proposals.push({
+      rideKey:ride._key,
+      client:ride.client || '',
+      facility:ride.facility || '',
+      originalPickupTime:ride.time || '',
+      proposedPickupTime:best.proposedTime,
+      appointmentTime:appointment,
+      earlierMinutes:best.earlier,
+      conflictsResolved:best.conflictsResolved,
+      message:`Hi, this is AbleCare Mobility. Would it be possible for us to pick up ${name} at ${proposedDisplay} instead of ${originalDisplay}? The appointment time will stay the same. Please let us know if this earlier pickup works for you. Thank you!`,
+      proposedSchedule:best.testResult
+    });
+  }
+  return proposals;
+}
+
+function parseTimeToMinutes(t){
+  if(!t || typeof t!=='string' || !t.includes(':')) return null;
+  const parts=t.split(':').map(Number);
+  if(parts.length<2 || parts.some(Number.isNaN)) return null;
+  return parts[0]*60+parts[1];
+}
+
+function minutesToHHMM(mins){
+  const safe=Math.max(0,Math.round(mins));
+  return `${String(Math.floor(safe/60)%24).padStart(2,'0')}:${String(safe%60).padStart(2,'0')}`;
 }
 
 function getSuggestedHelper(assignedDriver){
@@ -8799,6 +8869,55 @@ function renderOptimizerResults(result, drivers){
     div.innerHTML = `<b>⚠️ ${w.driver || ''} — ${w.type === 'tight' ? 'Tight Window' : w.type === 'wait' ? 'Wait Required' : 'Conflict'}</b>${w.message}`;
     warningsEl.appendChild(div);
   });
+
+  renderEarlierPickupProposals(result);
+}
+
+function renderEarlierPickupProposals(result){
+  const el=document.getElementById('opt-pickup-proposals');
+  if(!el) return;
+  const proposals=result.pickupProposals || [];
+  if(!proposals.length){el.innerHTML='';return;}
+  el.innerHTML=`<div style="background:#fefce8;border:1.5px solid #fde047;border-radius:14px;padding:16px">
+    <div style="font-size:15px;font-weight:900;color:#854d0e;margin-bottom:5px">💡 Earlier pickup can resolve this conflict</div>
+    <div style="font-size:12px;color:#713f12;margin-bottom:12px"><strong>Appointment times are locked.</strong> Only the pickup time below is being proposed, and nothing changes until the client agrees and you approve it.</div>
+    ${proposals.map((p,idx)=>`<div style="background:#fff;border:1px solid #fde68a;border-radius:10px;padding:13px">
+      <div style="font-weight:800;color:#713f12">${escHtml(p.facility || '')}${p.client ? ' — '+escHtml(p.client) : ''}</div>
+      <div style="font-size:13px;color:#374151;margin-top:5px">Pickup: <s>${escHtml(fmtTime12(p.originalPickupTime)||p.originalPickupTime)}</s> → <strong style="color:#15803d">${escHtml(fmtTime12(p.proposedPickupTime)||p.proposedPickupTime)}</strong> (${p.earlierMinutes} minutes earlier)</div>
+      ${p.appointmentTime ? `<div style="font-size:12px;color:#2563eb;margin-top:4px">🔒 Appointment stays ${escHtml(fmtTime12(p.appointmentTime)||p.appointmentTime)}</div>` : '<div style="font-size:12px;color:#2563eb;margin-top:4px">🔒 Appointment time will not be changed</div>'}
+      <div style="font-size:12px;color:#166534;margin-top:4px">This resolves ${p.conflictsResolved} scheduling conflict${p.conflictsResolved!==1?'s':''}.</div>
+      <div style="background:#f8fafc;border-radius:8px;padding:10px;margin-top:10px;font-size:12px;color:#334155">${escHtml(p.message)}</div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:10px">
+        <button onclick="copyPickupProposalMessage(${idx})" style="background:#fff;border:1px solid #d1d5db;border-radius:8px;padding:8px 11px;font-size:12px;font-weight:800;cursor:pointer">Copy client message</button>
+        <button onclick="acceptPickupProposal(${idx})" style="background:#16a34a;color:#fff;border:none;border-radius:8px;padding:8px 11px;font-size:12px;font-weight:800;cursor:pointer">Client approved — use earlier pickup</button>
+      </div>
+    </div>`).join('')}
+  </div>`;
+}
+
+async function copyPickupProposalMessage(index){
+  const proposal=optimizedSchedule?.pickupProposals?.[index];
+  if(!proposal) return;
+  try{await navigator.clipboard.writeText(proposal.message);alert('Client message copied.');}
+  catch(e){prompt('Copy this client message:',proposal.message);}
+}
+
+function acceptPickupProposal(index){
+  const proposal=optimizedSchedule?.pickupProposals?.[index];
+  if(!proposal?.proposedSchedule) return;
+  const next=proposal.proposedSchedule;
+  next.approvedPickupChanges={
+    ...(optimizedSchedule.approvedPickupChanges || {}),
+    [proposal.rideKey]:{
+      originalPickupTime:proposal.originalPickupTime,
+      proposedPickupTime:proposal.proposedPickupTime,
+      approvedAt:Date.now()
+    }
+  };
+  next.pickupProposals=[];
+  optimizedSchedule=next;
+  loadDrivers().then(drivers=>renderOptimizerResults(optimizedSchedule,drivers.filter(d=>availableDriversForOpt.includes(d.name))));
+  alert('Earlier pickup approved in this preview. It will be saved only when you click Save & Send to Driver App. The appointment time remains unchanged.');
 }
 
 function updateOptimizedRideHelper(rideKey, driverName, helperName){
@@ -8980,6 +9099,11 @@ async function applyOptimizedSchedule(){
       updates[`rides/${ride._key}/routeMiles`] = ride.routeMiles||ride.estimatedMiles||0;
       updates[`rides/${ride._key}/deadheadMiles`] = ride.deadheadMiles||0;
       updates[`rides/${ride._key}/helper`] = '';
+    }
+  });
+  Object.entries(optimizedSchedule.approvedPickupChanges || {}).forEach(([rideKey,change])=>{
+    if(rideKey && change.proposedPickupTime){
+      updates[`rides/${rideKey}/time`] = change.proposedPickupTime;
     }
   });
   if(Object.keys(updates).length){
