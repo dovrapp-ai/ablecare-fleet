@@ -11001,9 +11001,10 @@ function renderInvoicePreview(data){
     };
     const destination = invoiceDestinationAddress(r, facilityName);
     const addressLabel = invoiceAddressLabel(r, facilityName);
+    const resident = String(r.client || '').trim().toUpperCase();
     const details = [
       `Service: ${invoiceServiceName(r)}`,
-      r.client ? `Resident: ${r.client}` : '',
+      resident ? `Resident: ${resident}` : '',
       destination ? `${addressLabel}: ${destination}` : '',
       parseInvoiceMileageLine(r, money),
       parseInvoiceWaitLine(r, money)
@@ -11251,7 +11252,7 @@ function buildQuickBooksInvoiceExport(){
   const lines = (rides || []).map((r, index)=>{
     const money = getInvoiceLineAmount(r);
     const service = invoiceServiceName(r);
-    const resident = r.client || '';
+    const resident = String(r.client || '').trim().toUpperCase();
     const destination = invoiceDestinationAddress(r, facilityName);
     const addressLabel = invoiceAddressLabel(r, facilityName);
     const mileageLine = parseInvoiceMileageLine(r, money);
