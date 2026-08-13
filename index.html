@@ -2916,6 +2916,10 @@ body[data-user-role="manager"] .owner-only-setting{display:none !important}
         <option value="">Assign later...</option>
       </select>
     </div>
+    <div id="ret-ai-recommendation" style="background:#eff6ff;border:1.5px solid #bfdbfe;border-radius:12px;padding:13px 14px;margin-bottom:14px">
+      <div style="font-size:12px;font-weight:900;color:#1d4ed8">🤖 AI DRIVER RECOMMENDATION</div>
+      <div id="ret-ai-recommendation-body" style="font-size:12px;color:#475569;margin-top:6px">Checking driver schedules and locations...</div>
+    </div>
     <div class="modal-field" id="ret-helper-field" style="display:none">
       <label>🛏 Helper (Stretcher)</label>
       <input type="text" id="ret-helper" list="helper-options" placeholder="Choose or type helper name..."/>
@@ -8048,6 +8052,8 @@ async function mobileFindClosestDriver(){
 }
 
 let returnOfKey=null;
+let returnDriverRecommendations=[];
+let returnRecommendationRun=0;
 
 function currentTimeInputValue(){
   const d=new Date();
@@ -8085,12 +8091,165 @@ async function openReturnModal(originalKey){
   document.getElementById('ret-helper-field').style.display='block';
   document.getElementById('ret-helper').value=orig.helper||'';
 
+  ['ret-date','ret-time','ret-pickup','ret-dropoff'].forEach(id=>{
+    const el=document.getElementById(id);
+    if(el && !el.dataset.returnRecommendBound){
+      el.addEventListener('change',scheduleReturnDriverRecommendation);
+      el.addEventListener('input',scheduleReturnDriverRecommendation);
+      el.dataset.returnRecommendBound='1';
+    }
+  });
+
   document.getElementById('return-modal').style.display='flex';
+  recommendReturnDriver(orig);
 }
 
 function closeReturnModal(){
   document.getElementById('return-modal').style.display='none';
   returnOfKey=null;
+}
+
+let returnRecommendationTimer=null;
+function scheduleReturnDriverRecommendation(){
+  clearTimeout(returnRecommendationTimer);
+  returnRecommendationTimer=setTimeout(async()=>{
+    if(!returnOfKey) return;
+    const snap=await ridesRef().child(returnOfKey).once('value');
+    if(snap.val()) recommendReturnDriver(snap.val());
+  },350);
+}
+
+function returnTimeToMinutes(value){
+  if(!value || !value.includes(':')) return null;
+  const [h,m]=value.split(':').map(Number);
+  return Number.isFinite(h)&&Number.isFinite(m)?h*60+m:null;
+}
+
+function returnMinutesLabel(value){
+  const safe=Math.max(0,Math.round(value));
+  return `${Math.floor(safe/60)%24}:${String(safe%60).padStart(2,'0')}`;
+}
+
+function returnRideServiceMinutes(ride){
+  return isStretcherLikeRideType(ride?.ridetype)?18:10;
+}
+
+function getScheduledDriverPosition(driverName, rides, requestMins){
+  const assigned=rides.filter(r=>r.driver===driverName && !r.returnOf && returnTimeToMinutes(r.time)!==null)
+    .sort((a,b)=>returnTimeToMinutes(a.time)-returnTimeToMinutes(b.time));
+  let location=BASE_ADDRESS;
+  let source='base / schedule estimate';
+  let freeAt=270;
+  let nextRide=null;
+  assigned.forEach(ride=>{
+    const start=returnTimeToMinutes(ride.time);
+    const estimatedEnd=start+returnRideServiceMinutes(ride)+20;
+    if(estimatedEnd<=requestMins){
+      location=ride.dropoff||ride.pickup||BASE_ADDRESS;
+      source=`schedule after ${fmtTime12(ride.time)} ride`;
+      freeAt=Math.max(freeAt,estimatedEnd);
+    }else if(!nextRide && start>=requestMins){
+      nextRide=ride;
+    }else if(start<requestMins && estimatedEnd>requestMins){
+      location=ride.dropoff||ride.pickup||BASE_ADDRESS;
+      source=`estimated finishing ${fmtTime12(ride.time)} ride`;
+      freeAt=estimatedEnd;
+    }
+  });
+  return {location,source,freeAt,nextRide};
+}
+
+async function recommendReturnDriver(origData){
+  const body=document.getElementById('ret-ai-recommendation-body');
+  if(!body) return;
+  const run=++returnRecommendationRun;
+  body.innerHTML='Checking live locations, today’s rides, and travel times...';
+  const date=document.getElementById('ret-date').value;
+  const requestTime=document.getElementById('ret-time').value||currentTimeInputValue();
+  const requestMins=returnTimeToMinutes(requestTime);
+  const pickup=document.getElementById('ret-pickup').value.trim();
+  const dropoff=document.getElementById('ret-dropoff').value.trim();
+  if(!date||requestMins===null||!pickup||!dropoff){
+    body.textContent='Enter the return date, time, pickup, and drop-off to get a recommendation.';
+    return;
+  }
+
+  try{
+    const [drivers,ridesSnap,locSnap,shiftSnap]=await Promise.all([
+      loadDrivers(),ridesRef().once('value'),locsRef().once('value'),shiftsRef().once('value')
+    ]);
+    if(run!==returnRecommendationRun) return;
+    const dayRides=Object.values(ridesSnap.val()||{}).filter(r=>r.date===date && !r.hideFromDashboard);
+    const locations=locSnap.val()||{};
+    const shifts=shiftSnap.val()||{};
+    const now=Date.now();
+    const origins=[];
+    const candidates=drivers.map(driver=>{
+      const scheduled=getScheduledDriverPosition(driver.name,dayRides,requestMins);
+      const key=safe(driver.name);
+      const loc=locations[key]||{};
+      const driverShifts=Object.values(shifts[key]||{}).filter(Boolean);
+      const activeShift=driverShifts.sort((a,b)=>(b.clockIn||0)-(a.clockIn||0))[0];
+      const freshGps=activeShift&&!activeShift.clockOut&&Number.isFinite(Number(loc.lat))&&Number.isFinite(Number(loc.lng))&&
+        loc.ts>=activeShift.clockIn&&(now-loc.ts)<600000;
+      const origin=freshGps?`${Number(loc.lat)},${Number(loc.lng)}`:scheduled.location;
+      origins.push(origin);
+      return {driver,scheduled,origin,locationSource:freshGps?'live GPS (under 10 minutes old)':scheduled.source,freshGps};
+    });
+    const addresses=[...new Set([...origins,pickup,dropoff,...candidates.map(c=>c.scheduled.nextRide?.pickup).filter(Boolean)])];
+    const matrix=await buildDistanceMatrix(addresses);
+    if(run!==returnRecommendationRun) return;
+    const drive=(from,to)=>matrix[from]?.[to]?.durationMins??20;
+    const miles=(from,to)=>matrix[from]?.[to]?.distMiles??8;
+    returnDriverRecommendations=candidates.map(c=>{
+      const toPickup=drive(c.origin,pickup);
+      const returnTrip=drive(pickup,dropoff);
+      const availableAt=Math.max(requestMins,c.scheduled.freeAt||requestMins);
+      const pickupAt=availableAt+toPickup;
+      const finishAt=pickupAt+returnTrip+returnRideServiceMinutes(origData);
+      const next=c.scheduled.nextRide;
+      const nextMins=next?returnTimeToMinutes(next.time):null;
+      const nextTravel=next?drive(dropoff,next.pickup||next.facility||BASE_ADDRESS):0;
+      const nextSlack=nextMins===null?null:nextMins-(finishAt+nextTravel);
+      const lateBy=nextSlack!==null&&nextSlack<0?Math.abs(nextSlack):0;
+      let eligibilityPenalty=0;
+      let equipmentNote='';
+      if(isStretcherLikeRideType(origData.ridetype)){
+        if(c.driver.name==='Raul') equipmentNote='Preferred stretcher driver';
+        else if(c.driver.name==='Joel') equipmentNote='Stretcher-capable if helper is available';
+        else {equipmentNote='Stretcher/helper availability must be confirmed';eligibilityPenalty=35;}
+      }
+      const score=toPickup+(miles(c.origin,pickup)*2)+(lateBy*8)+eligibilityPenalty;
+      return {...c,toPickup,returnTrip,pickupAt,finishAt,next,nextSlack,lateBy,equipmentNote,score};
+    }).sort((a,b)=>a.score-b.score);
+    renderReturnDriverRecommendations();
+  }catch(e){
+    console.error('Return driver recommendation failed',e);
+    body.textContent='Could not calculate a recommendation. You can still choose a driver manually.';
+  }
+}
+
+function renderReturnDriverRecommendations(){
+  const body=document.getElementById('ret-ai-recommendation-body');
+  if(!body) return;
+  if(!returnDriverRecommendations.length){body.textContent='No active drivers were available to compare.';return;}
+  body.innerHTML=returnDriverRecommendations.slice(0,3).map((r,index)=>{
+    const best=index===0;
+    const scheduleImpact=r.next
+      ? (r.lateBy?`⚠ Could make ${fmtTime12(r.next.time)} pickup about ${Math.round(r.lateBy)} min late`:`✓ About ${Math.max(0,Math.round(r.nextSlack))} min before ${fmtTime12(r.next.time)} pickup`)
+      : '✓ No later scheduled pickup found';
+    return `<div style="background:${best?'#fff':'transparent'};border:${best?'1px solid #93c5fd':'0'};border-radius:9px;padding:${best?'10px':'8px 2px'};margin-top:8px">
+      <div style="display:flex;align-items:center;gap:7px"><strong style="color:${best?'#1d4ed8':'#334155'}">${best?'Recommended: ':''}${escHtml(r.driver.name)}</strong>${best?`<button type="button" onclick="chooseRecommendedReturnDriver('${escHtml(r.driver.name)}')" style="margin-left:auto;background:#2563eb;color:#fff;border:0;border-radius:7px;padding:6px 9px;font-size:11px;font-weight:800;cursor:pointer">Choose ${escHtml(r.driver.name)}</button>`:''}</div>
+      <div style="margin-top:4px">~${Math.round(r.toPickup)} min to client · pickup around ${fmtTime12(returnMinutesLabel(r.pickupAt))}</div>
+      <div style="color:${r.lateBy?'#b45309':'#15803d'};margin-top:2px">${scheduleImpact}</div>
+      <div style="color:#64748b;margin-top:2px">Location: ${escHtml(r.locationSource)}${r.equipmentNote?' · '+escHtml(r.equipmentNote):''}</div>
+    </div>`;
+  }).join('')+'<div style="font-size:10px;color:#64748b;margin-top:8px">Recommendation only. Nothing is assigned until you choose a driver and send the return.</div>';
+}
+
+function chooseRecommendedReturnDriver(driverName){
+  const sel=document.getElementById('ret-driver');
+  if(sel) sel.value=driverName;
 }
 
 async function sendReturnRidePushNotification(payload){
