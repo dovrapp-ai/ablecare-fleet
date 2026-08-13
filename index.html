@@ -240,8 +240,8 @@ button,input,select,textarea{-webkit-appearance:none;font-family:inherit}
 .remove-btn:hover{background:#fee2e2}
 
 /* ── MODAL ── */
-.modal-overlay{position:fixed;inset:0;background:#00000066;display:none;align-items:center;justify-content:center;z-index:2000;padding:20px}
-.modal-box{background:#fff;border-radius:20px;padding:32px;width:100%;max-width:400px;box-shadow:0 20px 60px rgba(0,0,0,0.2)}
+.modal-overlay{position:fixed;inset:0;background:#00000066;display:none;align-items:center;justify-content:center;z-index:2000;padding:20px;overflow-y:auto}
+.modal-box{background:#fff;border-radius:20px;padding:32px;width:100%;max-width:400px;max-height:calc(100dvh - 40px);overflow-y:auto;overscroll-behavior-y:contain;touch-action:pan-y;scrollbar-gutter:stable;box-shadow:0 20px 60px rgba(0,0,0,0.2)}
 body.modal-open{overflow:hidden}
 .modal-title{font-size:18px;font-weight:800;color:#0d1b2a;margin-bottom:4px}
 .modal-driver{font-size:13px;color:#6b82a8;margin-bottom:24px}
@@ -6240,9 +6240,13 @@ function openFacilityModal(idx){
   if(portalLinkEl) portalLinkEl.value = (portalKey && f && f.name) ? buildFacilityPortalLink(f.name, portalKey) : '';
 
   document.getElementById('fac-delete-btn').style.display=f?'block':'none';
-  document.getElementById('facility-modal').style.display='flex';
+  document.body.classList.add('modal-open');
+  const modal=document.getElementById('facility-modal');
+  modal.style.display='flex';
+  const box=modal.querySelector('.modal-box');
+  if(box) box.scrollTop=0;
 }
-function closeFacilityModal(){document.getElementById('facility-modal').style.display='none';facEditKey=null;}
+function closeFacilityModal(){document.getElementById('facility-modal').style.display='none';document.body.classList.remove('modal-open');facEditKey=null;}
 async function saveFacility(){
   const name=document.getElementById('fac-name').value.trim();
   if(!name){alert('Facility name is required.');return;}
