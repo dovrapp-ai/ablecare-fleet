@@ -897,6 +897,30 @@ body[data-user-role="manager"] .owner-only-setting{display:none !important}
 @media(max-width:760px){
   .map-title-bar{align-items:flex-start;flex-direction:column}
   #map{height:430px;min-height:360px}
+  #optimizer-modal .opt-ride-row{
+    display:grid;
+    grid-template-columns:22px minmax(0,1fr);
+    align-items:start;
+  }
+  #optimizer-modal .opt-ride-info{min-width:0}
+  #optimizer-modal .opt-ride-row > div:last-child{
+    grid-column:2;
+    width:100%;
+    min-width:0 !important;
+    display:grid !important;
+    grid-template-columns:minmax(0,1fr) minmax(0,1fr);
+    gap:8px !important;
+    margin-top:2px;
+  }
+  #optimizer-modal .opt-move-select,
+  #optimizer-modal .opt-ride-row > div:last-child button{
+    width:100%;
+    min-width:0;
+    max-width:100%;
+  }
+  #optimizer-modal .opt-helper-edit{grid-template-columns:auto minmax(0,1fr)}
+  #optimizer-modal .opt-helper-select,
+  #optimizer-modal .opt-helper-input{width:100%;min-width:0;max-width:100%}
 }
 
 .mobile-phone-shell{width:100%;max-width:430px;min-height:calc(100vh - 150px);background:#f8fafc;position:relative;overflow:hidden;box-shadow:0 8px 28px rgba(15,23,42,0.16)}
@@ -3177,8 +3201,8 @@ window.addEventListener('load', function() {
 });
 // ── CONFIG (loaded from Firebase settings, these are defaults) ──
 let OWNER_PIN='6622';
-let PAY_PERIOD_DAYS=12;
-let PAY_PERIOD_REF_DATE='2026-04-13'; // Monday April 13
+let PAY_PERIOD_DAYS=14;
+let PAY_PERIOD_REF_DATE='2026-08-01'; // Saturday after the July 31 payday
 const COLORS=['#00b4d8','#0096b7','#48cae4','#34d399','#f472b6'];
 const CHAPEL_HILL_PICKUP='Chapel Hill Nursing, 4511 Robosson Road, Randallstown, MD 21133';
 let BRANDING={displayName:'AbleCare Fleet',subtitle:'Owner Dashboard',logoUrl:'',logoDataUrl:'',domain:''};
@@ -5901,7 +5925,7 @@ async function initSettings(){
   // Pay period
   document.getElementById('s-pp-days').value=s.payPeriodDays||PAY_PERIOD_DAYS;
   document.getElementById('s-pp-ref').value=s.payPeriodRef||PAY_PERIOD_REF_DATE;
-  document.getElementById('s-pp-start').value='1';
+  document.getElementById('s-pp-start').value=String(new Date((s.payPeriodRef||PAY_PERIOD_REF_DATE)+'T00:00:00').getDay());
 
   // Business info
   document.getElementById('s-company').value=s.company||'AbleCare Mobility LLC';
