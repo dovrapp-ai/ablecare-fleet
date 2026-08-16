@@ -6563,7 +6563,7 @@ async function renderDayView(){
     ]);
     allRidesCache=ridesSnap.val()||{};
     allRideLogCache=logSnap.val()||{};
-    allRides=buildCalendarRides();
+    allRides=buildCalendarRides().filter(r=>!isRideCancelledForScheduling(r));
   }catch(e){
     if(renderSeq!==dayViewRenderSeq) return;
     console.error('Could not load rides calendar data:', e);
@@ -7975,7 +7975,8 @@ async function renderMobileDashboard(){
       .filter(([,v])=>!v.hideFromDashboard && !v.returnOf)
       .map(([k,v])=>({...v,_key:k,_source:'schedule'}));
     const mobileLogs=Object.entries(allRideLogCache||{}).map(([k,v])=>({...v,_key:k,_source:'log'}));
-    const allRides=annotateScheduledRidesWithReportLogs(rawMobileRides, mobileLogs.filter(isVisibleRideLog));
+    const allRides=annotateScheduledRidesWithReportLogs(rawMobileRides, mobileLogs.filter(isVisibleRideLog))
+      .filter(r=>!isRideCancelledForScheduling(r));
     const mobileRideDates=new Set(allRides.map(r=>r.date).filter(Boolean));
     renderMobileWeekStrip(mobileRideDates);
     const dayRides=allRides.filter(r=>r.date===ds).sort((a,b)=>(a.time||'').localeCompare(b.time||''));
@@ -8554,6 +8555,11 @@ let optimizedSchedule = null;
 
 let availableDriversForOpt=[];
 
+function isRideCancelledForScheduling(ride){
+  const status=String(ride?.status||'').toLowerCase().trim().replace(/[\s-]+/g,'_');
+  return status.includes('cancel')||status==='noshow'||status==='no_show';
+}
+
 async function openOptimizer(){
   document.getElementById('optimizer-modal').style.display='flex';
   document.getElementById('opt-loading').style.display='none';
@@ -8605,7 +8611,7 @@ async function runOptimizer(ds){
   const snap=await ridesRef().once('value');
   const all=snap.val()||{};
   const rides=Object.entries(all)
-    .filter(([k,v])=>v.date===ds)
+    .filter(([k,v])=>v.date===ds&&!isRideCancelledForScheduling(v))
     .map(([k,v])=>({...v,_key:k}))
     .sort((a,b)=>(a.time||'').localeCompare(b.time||''));
 
@@ -9419,6 +9425,17 @@ async function applyOptimizedSchedule(){
   document.getElementById('opt-loading').style.display='block';
   document.getElementById('opt-results').style.display='none';
   document.getElementById('opt-error').style.display='none';
+  setOptProgress(2,'Checking for newly cancelled rides...');
+  const latestRides=(await ridesRef().once('value')).val()||{};
+  Object.values(optimizedSchedule.schedules||{}).forEach(sched=>{
+    sched.rides=(sched.rides||[]).filter(ride=>latestRides[ride.rideKey]&&!isRideCancelledForScheduling(latestRides[ride.rideKey]));
+  });
+  optimizedSchedule.unassignedRides=(optimizedSchedule.unassignedRides||[])
+    .filter(ride=>latestRides[ride._key]&&!isRideCancelledForScheduling(latestRides[ride._key]));
+  optimizedSchedule.assignedRideCount=Object.values(optimizedSchedule.schedules||{})
+    .reduce((sum,sched)=>sum+(sched.rides||[]).length,0);
+  optimizedSchedule.unassignedRideCount=optimizedSchedule.unassignedRides.length;
+  optimizedSchedule.totalRideCount=optimizedSchedule.assignedRideCount+optimizedSchedule.unassignedRideCount;
   setOptProgress(5,'Refreshing trip miles before saving...');
   await refreshOptimizedScheduleMiles();
   setOptProgress(65,'Saving schedule...');
@@ -9901,7 +9918,7 @@ async function backfillRidePhonesForDate(ds){
   const snap=await ridesRef().once('value');
   const updates={};
   Object.entries(snap.val()||{}).forEach(([key,r])=>{
-    if(!r||r.date!==ds)return;
+    if(!r||r.date!==ds||isRideCancelledForScheduling(r))return;
     const facilityPhone=facilityPhoneForRide(r.facility);
     const existingFacilityPhone=normalizePhoneValue(r.facilityPhone || r.facility_phone || '');
     const existingClientPhone=normalizePhoneValue(r.clientPhone || r.client_phone || r.phone || '');
@@ -9915,7 +9932,7 @@ async function sendSelectedSchedule(){
   const ds=dateStr(selectedDate);
   await backfillRidePhonesForDate(ds);
   const ridesSnap=await ridesRef().once('value');
-  const rides=Object.values(ridesSnap.val()||{}).filter(r=>r.date===ds);
+  const rides=Object.values(ridesSnap.val()||{}).filter(r=>r.date===ds&&!isRideCancelledForScheduling(r));
   if(!rides.length){alert('No rides scheduled for the selected day.');return;}
   const byDriver={};rides.forEach(r=>{if(!r.driver)return;if(!byDriver[r.driver])byDriver[r.driver]=[];byDriver[r.driver].push(r);});
   const unassigned=rides.filter(r=>!r.driver);
@@ -9946,7 +9963,7 @@ async function sendTomorrowSchedule(){
   const tomorrow=new Date();tomorrow.setDate(tomorrow.getDate()+1);
   const ds=dateStr(tomorrow);
   await backfillRidePhonesForDate(ds);
-  const rides=Object.values(allRidesCache).filter(r=>r.date===ds);
+  const rides=Object.values(allRidesCache).filter(r=>r.date===ds&&!isRideCancelledForScheduling(r));
   if(!rides.length){alert('No rides scheduled for tomorrow.');return;}
   const byDriver={};rides.forEach(r=>{if(!r.driver)return;if(!byDriver[r.driver])byDriver[r.driver]=[];byDriver[r.driver].push(r);});
   const unassigned=rides.filter(r=>!r.driver);
@@ -10128,7 +10145,7 @@ async function logAllRidesForDay(){
   const ds = dateStr(selectedDate);
   const snap = await ridesRef().once('value');
   const all = snap.val()||{};
-  const dayRides = Object.entries(all).filter(([k,v])=>v.date===ds && !v.returnOf);
+  const dayRides = Object.entries(all).filter(([k,v])=>v.date===ds && !v.returnOf && !isRideCancelledForScheduling(v));
   if(!dayRides.length){alert('No rides on this day to log.');return;}
 
   // Check how many already logged
