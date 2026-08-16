@@ -9690,6 +9690,7 @@ async function saveRide(){
       oneWayMiles:parseFloat(ridePriceSuggestion.miles.toFixed(1)),
       category:ridePriceSuggestion.category,
       rateLabel:ridePriceSuggestion.rate.label,
+      mileageSource:ridePriceSuggestion.mileageSource,
       calculatedAt:Date.now()
     };
   }
@@ -12218,7 +12219,8 @@ async function calculateRidePriceSuggestion(showMissingAlert=false){
   if(status)status.textContent='Calculating the driving route and your rate...';
   if(resultEl)resultEl.style.display='none';
   try{
-    const miles=await getDrivingMiles(pickup,dropoff);
+    const route=await getDrivingRoute(pickup,dropoff);
+    const miles=route.miles;
     if(sequence!==ridePriceSuggestionSequence)return;
     const facility=document.getElementById('r-facility')?.value.trim()||'';
     const ridetype=rideToggles.ridetype;
@@ -12226,7 +12228,7 @@ async function calculateRidePriceSuggestion(showMissingAlert=false){
     const category=ridePricingCategory(facility,pickup,dropoff);
     const rate=rideSuggestionRate(category,ridetype,triptype);
     const pricing=calculatePriceWithRate(miles,ridetype,triptype,rate);
-    ridePriceSuggestion={pickup,dropoff,miles,ridetype,triptype,category,rate,pricing};
+    ridePriceSuggestion={pickup,dropoff,miles,mileageSource:route.source,ridetype,triptype,category,rate,pricing};
     const typeLabel=rideTypeLabel(ridetype);
     const tripLabel=triptype==='rt'?'round trip':'one way';
     document.getElementById('ride-price-suggestion-amount').textContent=`$${pricing.total.toFixed(2)}`;
@@ -12234,7 +12236,7 @@ async function calculateRidePriceSuggestion(showMissingAlert=false){
     const mileageText=isStretcherLikeRideType(ridetype)
       ? `${miles.toFixed(1)} one-way mi × ${pricing.legs} leg${pricing.legs>1?'s':''} × $${rate.ratePerMile.toFixed(2)}/mi = $${pricing.mileCharge.toFixed(2)}`
       : `${pricing.billableMiles.toFixed(1)} extra mi per leg × ${pricing.legs} leg${pricing.legs>1?'s':''} × $${rate.ratePerMile.toFixed(2)}/mi = $${pricing.mileCharge.toFixed(2)}`;
-    document.getElementById('ride-price-suggestion-breakdown').innerHTML=`Google Maps driving distance: <b>${miles.toFixed(1)} mi one way</b><br>Base: $${rate.base.toFixed(2)} · ${mileageText}`;
+    document.getElementById('ride-price-suggestion-breakdown').innerHTML=`${escHtml(route.source)}: <b>${miles.toFixed(1)} mi one way</b><br>Base: $${rate.base.toFixed(2)} · ${mileageText}`;
     if(status)status.textContent='Recommendation ready.';
     if(resultEl)resultEl.style.display='block';
   }catch(e){
@@ -12307,9 +12309,10 @@ async function calculateQuote(){
   }
 }
 
-async function getDrivingMiles(origin, destination){
-  return new Promise((resolve, reject)=>{
-    if(typeof google==='undefined'){ reject(new Error('Maps not loaded')); return; }
+async function getDrivingRoute(origin, destination){
+  if(typeof google!=='undefined'&&google.maps?.DistanceMatrixService){
+    try{
+      const miles=await Promise.race([new Promise((resolve, reject)=>{
     const service = new google.maps.DistanceMatrixService();
     service.getDistanceMatrix({
       origins: [origin],
@@ -12323,7 +12326,20 @@ async function getDrivingMiles(origin, destination){
         reject(new Error('Route not found'));
       }
     });
-  });
+      }),new Promise((_,reject)=>setTimeout(()=>reject(new Error('Google Maps timed out')),12000))]);
+      return {miles,source:'Google Maps driving distance'};
+    }catch(e){
+      console.warn('Google Maps route unavailable; using driving-route fallback.',e);
+    }
+  }
+  const response=await fetch(`/api/route-distance?origin=${encodeURIComponent(origin)}&destination=${encodeURIComponent(destination)}`);
+  const data=await response.json().catch(()=>({}));
+  if(!response.ok||!Number.isFinite(Number(data.miles)))throw new Error(data.error||'Route not found');
+  return {miles:Number(data.miles),source:data.source||'Driving-route estimate'};
+}
+
+async function getDrivingMiles(origin, destination){
+  return (await getDrivingRoute(origin,destination)).miles;
 }
 
 function bookQuoteAsRide(){

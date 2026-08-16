@@ -44,6 +44,50 @@ function sendJson(res, status, body) {
   res.end(json);
 }
 
+async function geocodeRouteAddress(address) {
+  const query = String(address || '').trim();
+  if (!query) throw new Error('Address is required');
+  const simplified = query
+    .replace(/\b(?:building|bldg|suite|ste|unit|floor|fl)\s*[a-z0-9-]+\b/ig, ' ')
+    .replace(/\s+,/g, ',')
+    .replace(/\s+/g, ' ')
+    .trim();
+  const queries = [...new Set([simplified, query].filter(Boolean))];
+  for (const candidate of queries) {
+    const photonUrl = new URL('https://photon.komoot.io/api/');
+    photonUrl.searchParams.set('q', candidate);
+    photonUrl.searchParams.set('limit', '1');
+    photonUrl.searchParams.set('lat', '39.29');
+    photonUrl.searchParams.set('lon', '-76.70');
+    const photonResponse = await fetch(photonUrl, {
+      headers: { 'User-Agent': 'AbleCare-Fleet-Dashboard/1.0' },
+    });
+    if (!photonResponse.ok) continue;
+    const photonData = await photonResponse.json();
+    const coordinates = photonData?.features?.[0]?.geometry?.coordinates;
+    if (!Array.isArray(coordinates) || coordinates.length < 2) continue;
+    const [lon, lat] = coordinates.map(Number);
+    if (Number.isFinite(lat) && Number.isFinite(lon)) return { lat, lon };
+  }
+  throw new Error('Address not found');
+}
+
+async function fallbackDrivingRoute(origin, destination) {
+  const [from, to] = await Promise.all([
+    geocodeRouteAddress(origin),
+    geocodeRouteAddress(destination),
+  ]);
+  const routeUrl = `https://router.project-osrm.org/route/v1/driving/${from.lon},${from.lat};${to.lon},${to.lat}?overview=false&alternatives=false&steps=false`;
+  const routeResponse = await fetch(routeUrl, {
+    headers: { 'User-Agent': 'AbleCare-Fleet-Dashboard/1.0' },
+  });
+  if (!routeResponse.ok) throw new Error(`Driving route failed (${routeResponse.status})`);
+  const routeData = await routeResponse.json();
+  const meters = Number(routeData?.routes?.[0]?.distance);
+  if (!Number.isFinite(meters) || meters <= 0) throw new Error('Driving route not found');
+  return { miles: meters / 1609.344, source: 'OpenStreetMap driving route' };
+}
+
 function readRequestBody(req) {
   return new Promise((resolve, reject) => {
     const chunks = [];
@@ -1187,6 +1231,22 @@ const server = http.createServer(async (req, res) => {
         ok: true,
         service: 'ablecare-fleet-dashboard',
         checkedAt: new Date().toISOString(),
+      });
+      return;
+    }
+
+    if (url.pathname === '/api/route-distance') {
+      const origin = String(url.searchParams.get('origin') || '').trim();
+      const destination = String(url.searchParams.get('destination') || '').trim();
+      if (!origin || !destination) {
+        sendJson(res, 400, { ok: false, error: 'Both origin and destination are required.' });
+        return;
+      }
+      const route = await fallbackDrivingRoute(origin, destination);
+      sendJson(res, 200, {
+        ok: true,
+        miles: Number(route.miles.toFixed(3)),
+        source: route.source,
       });
       return;
     }
