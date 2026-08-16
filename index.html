@@ -966,6 +966,7 @@ body[data-user-role="manager"] .owner-only-setting{display:none !important}
 .mobile-quick-actions{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:12px}
 .mobile-soft-btn,.mobile-action-btn,.mobile-driver-open,.mobile-opt-btn,.mobile-calc-btn{border:none;border-radius:16px;font-weight:800;cursor:pointer}
 .mobile-soft-btn{padding:13px 10px;font-size:14px;background:#f8fafc;color:#334155;border:1px solid #e2e8f0}
+.mobile-soft-btn.active{background:#e0f2fe;color:#0369a1;border-color:#7dd3fc}
 .mobile-ride-card{border-radius:12px;padding:9px 10px;margin-bottom:7px;border-left:5px solid #06b6d4}
 .mobile-ride-card.unassigned{background:#fffdf4;border-color:#f3d87a;border-left-color:#06b6d4}
 .mobile-ride-top{display:grid;grid-template-columns:68px minmax(0,1fr) auto;gap:8px;align-items:center}
@@ -2319,10 +2320,18 @@ body[data-user-role="manager"] .owner-only-setting{display:none !important}
 
           <div class="mobile-panel" id="mobile-panel-hours">
             <div class="mobile-section-title" style="margin-top:0">Hours</div>
-            <div class="mobile-hours-period">
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:10px">
+              <button type="button" class="mobile-soft-btn active" id="mobile-hours-mode-pp" onclick="setMobileHoursMode('pp')">Pay Period</button>
+              <button type="button" class="mobile-soft-btn" id="mobile-hours-mode-custom" onclick="setMobileHoursMode('custom')">Custom Range</button>
+            </div>
+            <div class="mobile-hours-period" id="mobile-hours-period-nav">
               <button type="button" onclick="mobileShiftPayPeriod(-1)" aria-label="Previous pay period">‹</button>
               <div class="mobile-hours-period-label" id="mobile-hours-period-label">Current pay period</div>
               <button type="button" onclick="mobileShiftPayPeriod(1)" aria-label="Next pay period">›</button>
+            </div>
+            <div id="mobile-hours-custom-range" style="display:none;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:10px">
+              <div><div class="mobile-input-label">From</div><input class="mobile-input" type="date" id="mobile-hours-from" onchange="mobileSetHoursCustomRange()"/></div>
+              <div><div class="mobile-input-label">To</div><input class="mobile-input" type="date" id="mobile-hours-to" onchange="mobileSetHoursCustomRange()"/></div>
             </div>
             <div class="mobile-hours-row">
               <div class="mobile-hours-grid">
@@ -2330,7 +2339,7 @@ body[data-user-role="manager"] .owner-only-setting{display:none !important}
                   <div class="mobile-hours-big" id="mobile-hours-total">0.0</div>
                   <div class="mobile-hours-small">Total hours this pay period</div>
                 </div>
-                <button class="mobile-driver-open" onclick="downloadExcel()">Export</button>
+                <button class="mobile-driver-open" onclick="mobileDownloadHoursExcel()">Export</button>
               </div>
             </div>
             <div id="mobile-hours-list"></div>
@@ -2926,7 +2935,7 @@ body[data-user-role="manager"] .owner-only-setting{display:none !important}
 </div>
 <div class="modal-overlay" id="edit-modal">
   <div class="modal-box">
-    <div class="modal-title">Edit Shift</div>
+    <div class="modal-title" id="edit-modal-title">Edit Shift</div>
     <div class="modal-driver" id="edit-modal-driver"></div>
     <div class="modal-field">
       <label>Clock In</label>
@@ -2938,7 +2947,7 @@ body[data-user-role="manager"] .owner-only-setting{display:none !important}
     </div>
     <div class="modal-actions">
       <button class="modal-save" onclick="saveShiftEdit()">Save</button>
-      <button class="modal-delete" onclick="deleteShift()">Delete</button>
+      <button class="modal-delete" id="edit-shift-delete" onclick="deleteShift()">Delete</button>
       <button class="modal-cancel" onclick="closeEditModal()">Cancel</button>
     </div>
   </div>
@@ -3274,7 +3283,7 @@ let pinBuf='';
 let lastPastedEmail='';
 let addrDebounce=null,selectedCoords=null,lastQuery='',rideAddrDebounce=null,lastRideAddrQuery='',quoteAddrDebounce=null,lastQuoteAddrQuery='';
 let tsMode='pp',ppOffset=0;
-let editContext={driverName:null,shiftKey:null};
+let editContext={driverName:null,shiftKey:null,isNew:false};
 let rideEditKey=null;
 let rideSourceContext='manual';
 let rideToggles={ridetype:'wc',triptype:'rt',van:'',paid:'no',wait:'no',paymethod:'cc'};
@@ -5780,21 +5789,38 @@ async function removeDriver(name){
 // ── EDIT SHIFT MODAL ──
 async function openEditModal(driverName,shiftKey,clockIn,clockOut){
   if(!shiftKey||shiftKey==='undefined'){const snap=await shiftsRef().child(safe(driverName)).once('value');const all=snap.val()||{};shiftKey=Object.keys(all).find(k=>all[k].clockIn===clockIn)||null;}
-  editContext={driverName,shiftKey};
+  editContext={driverName,shiftKey,isNew:false};
+  document.getElementById('edit-modal-title').textContent='Edit Shift';
   document.getElementById('edit-modal-driver').textContent=driverName;
   document.getElementById('edit-in').value=toLocalDT(clockIn);
   document.getElementById('edit-out').value=toLocalDT(clockOut||null);
+  document.getElementById('edit-shift-delete').style.display='';
   document.getElementById('edit-modal').style.display='flex';
 }
-function closeEditModal(){document.getElementById('edit-modal').style.display='none';editContext={driverName:null,shiftKey:null};}
+function openCreateShiftModal(driverName){
+  editContext={driverName,shiftKey:null,isNew:true};
+  document.getElementById('edit-modal-title').textContent='Add Hours';
+  document.getElementById('edit-modal-driver').textContent=driverName;
+  document.getElementById('edit-in').value='';
+  document.getElementById('edit-out').value='';
+  document.getElementById('edit-shift-delete').style.display='none';
+  document.getElementById('edit-modal').style.display='flex';
+}
+function closeEditModal(){document.getElementById('edit-modal').style.display='none';editContext={driverName:null,shiftKey:null,isNew:false};}
 async function saveShiftEdit(){
-  const{driverName,shiftKey}=editContext;if(!driverName||!shiftKey)return;
+  const{driverName,shiftKey,isNew}=editContext;if(!driverName)return;
   const inVal=document.getElementById('edit-in').value;const outVal=document.getElementById('edit-out').value;
   if(!inVal){alert('Clock In time is required.');return;}
   const clockIn=new Date(inVal).getTime();const clockOut=outVal?new Date(outVal).getTime():null;
   const durationMs=clockOut?(clockOut-clockIn):null;
   if(clockOut&&clockOut<=clockIn){alert('Clock Out must be after Clock In.');return;}
-  await shiftsRef().child(safe(driverName)).child(shiftKey).update({clockIn,clockOut,durationMs});
+  if(isNew){
+    const newShift=shiftsRef().child(safe(driverName)).push();
+    await newShift.set({driver:driverName,clockIn,clockOut,durationMs,source:'dashboard-manual',createdAt:Date.now(),createdBy:currentUserName()});
+  }else{
+    if(!shiftKey)return;
+    await shiftsRef().child(safe(driverName)).child(shiftKey).update({clockIn,clockOut,durationMs,updatedAt:Date.now(),updatedBy:currentUserName()});
+  }
   closeEditModal();renderTimesheet();
   if(document.getElementById('screen-mobile')?.classList.contains('active'))renderMobileDashboard();
 }
@@ -7074,6 +7100,9 @@ async function dryRunReminderBatch(){
 // ── RETURN RIDE ──
 // Mobile dashboard merged from the standalone phone test file
 let mobilePanel='rides';
+let mobileHoursMode='pp';
+let mobileHoursFrom='';
+let mobileHoursTo='';
 let mobileMap=null;
 let mobileMapMarkers={};
 let mobileLocCache={};
@@ -7190,8 +7219,71 @@ function mobileShiftPayPeriod(dir){
   renderMobileDashboard();
 }
 
+function setMobileHoursMode(mode){
+  mobileHoursMode=mode==='custom'?'custom':'pp';
+  if(mobileHoursMode==='custom'&&(!mobileHoursFrom||!mobileHoursTo)){
+    const range=getMobileHoursRange();
+    const mobileModePP=document.getElementById('mobile-hours-mode-pp');
+    const mobileModeCustom=document.getElementById('mobile-hours-mode-custom');
+    const mobilePeriodNav=document.getElementById('mobile-hours-period-nav');
+    const mobileCustomRange=document.getElementById('mobile-hours-custom-range');
+    if(mobileModePP)mobileModePP.classList.toggle('active',mobileHoursMode==='pp');
+    if(mobileModeCustom)mobileModeCustom.classList.toggle('active',mobileHoursMode==='custom');
+    if(mobilePeriodNav)mobilePeriodNav.style.display=mobileHoursMode==='pp'?'grid':'none';
+    if(mobileCustomRange)mobileCustomRange.style.display=mobileHoursMode==='custom'?'grid':'none';
+    const mobileHoursFromEl=document.getElementById('mobile-hours-from');
+    const mobileHoursToEl=document.getElementById('mobile-hours-to');
+    if(mobileHoursFromEl&&document.activeElement!==mobileHoursFromEl)mobileHoursFromEl.value=mobileHoursFrom;
+    if(mobileHoursToEl&&document.activeElement!==mobileHoursToEl)mobileHoursToEl.value=mobileHoursTo;
+    mobileHoursFrom=dateStr(range.start);
+    mobileHoursTo=dateStr(range.end);
+  }
+  renderMobileDashboard();
+}
+
+function mobileSetHoursCustomRange(){
+  mobileHoursFrom=document.getElementById('mobile-hours-from')?.value||'';
+  mobileHoursTo=document.getElementById('mobile-hours-to')?.value||'';
+  if(mobileHoursFrom&&mobileHoursTo&&mobileHoursTo<mobileHoursFrom){
+    alert('The To date must be on or after the From date.');
+    return;
+  }
+  if(mobileHoursFrom&&mobileHoursTo)renderMobileDashboard();
+}
+
+function getMobileHoursRange(){
+  if(mobileHoursMode==='custom'&&mobileHoursFrom&&mobileHoursTo){
+    return {start:new Date(`${mobileHoursFrom}T00:00:00`),end:new Date(`${mobileHoursTo}T23:59:59.999`)};
+  }
+  return getPPRange(ppOffset);
+}
+
+async function mobileDownloadHoursExcel(){
+  const previousMode=tsMode;
+  const previousFrom=document.getElementById('ts-from').value;
+  const previousTo=document.getElementById('ts-to').value;
+  if(mobileHoursMode==='custom'){
+    if(!mobileHoursFrom||!mobileHoursTo){alert('Choose both custom-range dates first.');return;}
+    tsMode='custom';
+    document.getElementById('ts-from').value=mobileHoursFrom;
+    document.getElementById('ts-to').value=mobileHoursTo;
+  }else{
+    tsMode='pp';
+  }
+  try{await downloadExcel();}
+  finally{
+    tsMode=previousMode;
+    document.getElementById('ts-from').value=previousFrom;
+    document.getElementById('ts-to').value=previousTo;
+  }
+}
+
 function openMobileShiftEdit(encodedDriver,encodedShiftKey,clockIn,clockOut){
   openEditModal(decodeURIComponent(encodedDriver),decodeURIComponent(encodedShiftKey),Number(clockIn),Number(clockOut)||0);
+}
+
+function openMobileCreateShift(encodedDriver){
+  openCreateShiftModal(decodeURIComponent(encodedDriver));
 }
 
 function mobileShiftDay(dir){
@@ -7966,9 +8058,9 @@ async function renderMobileDashboard(){
       totalMs+=ms;
       completedTotalMs+=completedMs;
       if(activeShift) activeStarts.push(activeShift.clockIn);
+      const driverArg=encodeURIComponent(d.name).replace(/'/g,'%27');
       const shiftRows=driverShiftEntries.map(([key,s])=>{
         const duration=shiftDurationForPayroll(s,now);
-        const driverArg=encodeURIComponent(d.name).replace(/'/g,'%27');
         const keyArg=encodeURIComponent(key).replace(/'/g,'%27');
         return `<div class="mobile-shift-entry">
           <div><div class="mobile-shift-date">${mobileEsc(new Date(s.clockIn).toLocaleDateString('en-US',{weekday:'short',month:'short',day:'numeric'}))} · ${fmtHDecimal(duration)} hrs</div>
@@ -7985,7 +8077,7 @@ async function renderMobileDashboard(){
         <div class="mobile-hours-small">${activeShift?'Still on shift':'hours'}</div>
         <div style="font-size:14px;font-weight:900;color:#16a34a;margin-top:7px">${d.hourlyRate?'$'+payroll.grossPay.toFixed(2):'Set rates'}</div>
         <div class="mobile-hours-small">${d.hourlyRate?'$'+payroll.regularPay.toFixed(2)+' regular · $'+payroll.overtimePay.toFixed(2)+' OT':''}</div></div>
-      </div><div class="mobile-shift-list">${shiftRows||'<div class="mobile-hours-small" style="padding-top:8px">No shifts in this period</div>'}</div></div>`;
+      </div><div class="mobile-shift-list"><div style="display:flex;align-items:center;justify-content:space-between;gap:8px;padding:8px 0 4px"><div class="mobile-hours-small">${driverShifts.length?driverShifts.length+' shift'+(driverShifts.length===1?'':'s'):'0 hours — no shifts yet'}</div><button type="button" class="mobile-shift-edit" onclick="openMobileCreateShift('${driverArg}')">+ Add Hours</button></div>${shiftRows||'<div class="mobile-hours-small" style="padding:8px 0">Use Add Hours to enter a manual shift.</div>'}</div></div>`;
     }).join('');
     mobileSetText('mobile-hours-total',fmtHDecimal(totalMs));
     const mobileHoursTotal=document.getElementById('mobile-hours-total');
