@@ -998,6 +998,15 @@ body[data-user-role="manager"] .owner-only-setting{display:none !important}
 .mobile-hours-grid{display:grid;grid-template-columns:1fr auto;gap:10px;align-items:center}
 .mobile-hours-big{font-size:24px;font-weight:800;color:#0f172a}
 .mobile-hours-small{font-size:12px;color:#64748b;margin-top:3px}
+.mobile-hours-period{display:grid;grid-template-columns:40px 1fr 40px;align-items:center;gap:8px;margin-bottom:10px}
+.mobile-hours-period button{height:38px;border:1px solid #cbd5e1;border-radius:10px;background:#fff;color:#0f172a;font-size:20px;font-weight:900}
+.mobile-hours-period-label{text-align:center;font-size:13px;font-weight:900;color:#334155}
+.mobile-shift-list{border-top:1px solid #e2e8f0;margin-top:12px;padding-top:4px}
+.mobile-shift-entry{display:grid;grid-template-columns:minmax(0,1fr) auto;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid #eef2f7}
+.mobile-shift-entry:last-child{border-bottom:0;padding-bottom:0}
+.mobile-shift-date{font-size:12px;font-weight:900;color:#334155}
+.mobile-shift-times{font-size:12px;color:#64748b;margin-top:3px;line-height:1.4}
+.mobile-shift-edit{border:0;border-radius:9px;background:#e0f2fe;color:#0369a1;padding:8px 11px;font-size:12px;font-weight:900}
 .mobile-settings-label,.mobile-input-label{font-size:12px;color:#64748b;margin-bottom:6px;font-weight:700;text-transform:uppercase}
 .mobile-settings-value{font-size:15px;font-weight:800;color:#0f172a}
 .mobile-input,.mobile-select{width:100%;border:1px solid #dbe2ea;border-radius:14px;padding:12px;font-size:14px;margin-bottom:10px;background:#fff}
@@ -2310,6 +2319,11 @@ body[data-user-role="manager"] .owner-only-setting{display:none !important}
 
           <div class="mobile-panel" id="mobile-panel-hours">
             <div class="mobile-section-title" style="margin-top:0">Hours</div>
+            <div class="mobile-hours-period">
+              <button type="button" onclick="mobileShiftPayPeriod(-1)" aria-label="Previous pay period">‹</button>
+              <div class="mobile-hours-period-label" id="mobile-hours-period-label">Current pay period</div>
+              <button type="button" onclick="mobileShiftPayPeriod(1)" aria-label="Next pay period">›</button>
+            </div>
             <div class="mobile-hours-row">
               <div class="mobile-hours-grid">
                 <div>
@@ -5782,12 +5796,14 @@ async function saveShiftEdit(){
   if(clockOut&&clockOut<=clockIn){alert('Clock Out must be after Clock In.');return;}
   await shiftsRef().child(safe(driverName)).child(shiftKey).update({clockIn,clockOut,durationMs});
   closeEditModal();renderTimesheet();
+  if(document.getElementById('screen-mobile')?.classList.contains('active'))renderMobileDashboard();
 }
 async function deleteShift(){
   const{driverName,shiftKey}=editContext;if(!driverName||!shiftKey)return;
   if(!confirm('Delete this shift entry?'))return;
   await shiftsRef().child(safe(driverName)).child(shiftKey).remove();
   closeEditModal();renderTimesheet();
+  if(document.getElementById('screen-mobile')?.classList.contains('active'))renderMobileDashboard();
 }
 
 // ── EXCEL EXPORT ──
@@ -7168,6 +7184,16 @@ function switchMobilePanel(name){
   renderMobileDashboard();
 }
 
+function mobileShiftPayPeriod(dir){
+  ppOffset+=Number(dir)||0;
+  updatePPDisplay();
+  renderMobileDashboard();
+}
+
+function openMobileShiftEdit(encodedDriver,encodedShiftKey,clockIn,clockOut){
+  openEditModal(decodeURIComponent(encodedDriver),decodeURIComponent(encodedShiftKey),Number(clockIn),Number(clockOut)||0);
+}
+
 function mobileShiftDay(dir){
   selectedDate=new Date(selectedDate);
   selectedDate.setDate(selectedDate.getDate()+dir);
@@ -7920,12 +7946,18 @@ async function renderMobileDashboard(){
     if(mobilePanel==='invoice') populateMobileInvoiceForm();
 
     const range=getPPRange(ppOffset);
+    const mobilePeriodLabel=document.getElementById('mobile-hours-period-label');
+    if(mobilePeriodLabel){
+      const opts={month:'short',day:'numeric'};
+      mobilePeriodLabel.textContent=`${range.start.toLocaleDateString('en-US',opts)} – ${range.end.toLocaleDateString('en-US',{...opts,year:'numeric'})}`;
+    }
     let totalMs=0;
     let completedTotalMs=0;
     const activeStarts=[];
     const hourRows=drivers.map(d=>{
       const raw=shifts[safe(d.name)]||{};
-      const driverShifts=Object.values(raw).filter(s=>s.clockIn>=range.start.getTime()&&s.clockIn<=range.end.getTime());
+      const driverShiftEntries=Object.entries(raw).filter(([,s])=>s&&s.clockIn>=range.start.getTime()&&s.clockIn<=range.end.getTime()).sort((a,b)=>a[1].clockIn-b[1].clockIn);
+      const driverShifts=driverShiftEntries.map(([,s])=>s);
       const activeShift=driverShifts.filter(s=>s&&s.clockIn&&!s.clockOut).sort((a,b)=>b.clockIn-a.clockIn)[0]||null;
       const completedMs=driverShifts.reduce((sum,s)=>sum+(s.durationMs||0),0);
       const activeMs=activeShift?Math.max(0,now-activeShift.clockIn):0;
@@ -7934,6 +7966,16 @@ async function renderMobileDashboard(){
       totalMs+=ms;
       completedTotalMs+=completedMs;
       if(activeShift) activeStarts.push(activeShift.clockIn);
+      const shiftRows=driverShiftEntries.map(([key,s])=>{
+        const duration=shiftDurationForPayroll(s,now);
+        const driverArg=encodeURIComponent(d.name).replace(/'/g,'%27');
+        const keyArg=encodeURIComponent(key).replace(/'/g,'%27');
+        return `<div class="mobile-shift-entry">
+          <div><div class="mobile-shift-date">${mobileEsc(new Date(s.clockIn).toLocaleDateString('en-US',{weekday:'short',month:'short',day:'numeric'}))} · ${fmtHDecimal(duration)} hrs</div>
+          <div class="mobile-shift-times">IN ${mobileEsc(fmtTime(s.clockIn))} · ${s.clockOut?'OUT '+mobileEsc(fmtTime(s.clockOut)):'Still on shift'}</div></div>
+          <button type="button" class="mobile-shift-edit" onclick="openMobileShiftEdit('${driverArg}','${keyArg}',${Number(s.clockIn)||0},${Number(s.clockOut)||0})">Edit</button>
+        </div>`;
+      }).join('');
       return `<div class="mobile-hours-row"><div class="mobile-hours-grid">
         <div><div style="font-size:15px;font-weight:800">${mobileEsc(d.name)}</div>
         <div class="mobile-hours-small">${activeShift?'Clocked in '+fmtTime(activeShift.clockIn):driverShifts.length+' shift'+(driverShifts.length===1?'':'s')+' this period'}</div>
@@ -7943,7 +7985,7 @@ async function renderMobileDashboard(){
         <div class="mobile-hours-small">${activeShift?'Still on shift':'hours'}</div>
         <div style="font-size:14px;font-weight:900;color:#16a34a;margin-top:7px">${d.hourlyRate?'$'+payroll.grossPay.toFixed(2):'Set rates'}</div>
         <div class="mobile-hours-small">${d.hourlyRate?'$'+payroll.regularPay.toFixed(2)+' regular · $'+payroll.overtimePay.toFixed(2)+' OT':''}</div></div>
-      </div></div>`;
+      </div><div class="mobile-shift-list">${shiftRows||'<div class="mobile-hours-small" style="padding-top:8px">No shifts in this period</div>'}</div></div>`;
     }).join('');
     mobileSetText('mobile-hours-total',fmtHDecimal(totalMs));
     const mobileHoursTotal=document.getElementById('mobile-hours-total');
@@ -9367,6 +9409,7 @@ function selectFacility(name){
   resetRidePriceSuggestion();
   scheduleRidePriceSuggestion(100);
 }
+
 function onFacilityType(){
   const name=document.getElementById('r-facility').value.trim();
   document.querySelectorAll('.facility-btn').forEach(b=>b.classList.toggle('active',b.textContent===name));
