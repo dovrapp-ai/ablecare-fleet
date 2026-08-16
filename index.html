@@ -5739,6 +5739,7 @@ async function renderTimesheet(){
       <div style="text-align:right">
         <div class="ts-driver-total">${fmtH(totalMs)}</div>
         ${d.hourlyRate?`<div style="font-size:13px;font-weight:800;color:#16a34a">$${payroll.grossPay.toFixed(2)} total</div><div style="font-size:10px;color:#64748b">$${payroll.regularPay.toFixed(2)} regular · $${payroll.overtimePay.toFixed(2)} OT</div>`:`<div style="font-size:11px;color:#f59e0b">Set rates in Settings</div>`}
+        <button class="edit-btn" style="margin-top:7px" onclick="openCreateShiftModal('${mobileKey(d.name)}')">+ Add Hours</button>
       </div></div>`;
     if(!shifts.length){block.innerHTML+=`<div style="padding:16px 18px;color:#6b82a8;font-size:13px">No shifts in this period</div>`;}
     else{
@@ -7222,19 +7223,7 @@ function mobileShiftPayPeriod(dir){
 function setMobileHoursMode(mode){
   mobileHoursMode=mode==='custom'?'custom':'pp';
   if(mobileHoursMode==='custom'&&(!mobileHoursFrom||!mobileHoursTo)){
-    const range=getMobileHoursRange();
-    const mobileModePP=document.getElementById('mobile-hours-mode-pp');
-    const mobileModeCustom=document.getElementById('mobile-hours-mode-custom');
-    const mobilePeriodNav=document.getElementById('mobile-hours-period-nav');
-    const mobileCustomRange=document.getElementById('mobile-hours-custom-range');
-    if(mobileModePP)mobileModePP.classList.toggle('active',mobileHoursMode==='pp');
-    if(mobileModeCustom)mobileModeCustom.classList.toggle('active',mobileHoursMode==='custom');
-    if(mobilePeriodNav)mobilePeriodNav.style.display=mobileHoursMode==='pp'?'grid':'none';
-    if(mobileCustomRange)mobileCustomRange.style.display=mobileHoursMode==='custom'?'grid':'none';
-    const mobileHoursFromEl=document.getElementById('mobile-hours-from');
-    const mobileHoursToEl=document.getElementById('mobile-hours-to');
-    if(mobileHoursFromEl&&document.activeElement!==mobileHoursFromEl)mobileHoursFromEl.value=mobileHoursFrom;
-    if(mobileHoursToEl&&document.activeElement!==mobileHoursToEl)mobileHoursToEl.value=mobileHoursTo;
+    const range=getPPRange(ppOffset);
     mobileHoursFrom=dateStr(range.start);
     mobileHoursTo=dateStr(range.end);
   }
@@ -7248,7 +7237,9 @@ function mobileSetHoursCustomRange(){
     alert('The To date must be on or after the From date.');
     return;
   }
-  if(mobileHoursFrom&&mobileHoursTo)renderMobileDashboard();
+  if(mobileHoursFrom&&mobileHoursTo){
+    setTimeout(()=>{if(mobileHoursMode==='custom')renderMobileDashboard();},0);
+  }
 }
 
 function getMobileHoursRange(){
@@ -8037,7 +8028,19 @@ async function renderMobileDashboard(){
     populateMobileReportFilters(drivers);
     if(mobilePanel==='invoice') populateMobileInvoiceForm();
 
-    const range=getPPRange(ppOffset);
+    const range=getMobileHoursRange();
+    const mobileModePP=document.getElementById('mobile-hours-mode-pp');
+    const mobileModeCustom=document.getElementById('mobile-hours-mode-custom');
+    const mobilePeriodNav=document.getElementById('mobile-hours-period-nav');
+    const mobileCustomRange=document.getElementById('mobile-hours-custom-range');
+    if(mobileModePP)mobileModePP.classList.toggle('active',mobileHoursMode==='pp');
+    if(mobileModeCustom)mobileModeCustom.classList.toggle('active',mobileHoursMode==='custom');
+    if(mobilePeriodNav)mobilePeriodNav.style.display=mobileHoursMode==='pp'?'grid':'none';
+    if(mobileCustomRange)mobileCustomRange.style.display=mobileHoursMode==='custom'?'grid':'none';
+    const mobileHoursFromEl=document.getElementById('mobile-hours-from');
+    const mobileHoursToEl=document.getElementById('mobile-hours-to');
+    if(mobileHoursFromEl&&document.activeElement!==mobileHoursFromEl)mobileHoursFromEl.value=mobileHoursFrom;
+    if(mobileHoursToEl&&document.activeElement!==mobileHoursToEl)mobileHoursToEl.value=mobileHoursTo;
     const mobilePeriodLabel=document.getElementById('mobile-hours-period-label');
     if(mobilePeriodLabel){
       const opts={month:'short',day:'numeric'};
