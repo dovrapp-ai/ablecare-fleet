@@ -2745,7 +2745,7 @@ body[data-user-role="manager"] .owner-only-setting{display:none !important}
 
     <div class="modal-field">
       <label>📍 Pickup Address</label>
-      <input type="text" id="r-pickup" placeholder="Pickup address..." oninput="onRideAddressInput('pickup')" autocomplete="off" style="width:100%;padding:10px 14px;border:2px solid #e8eef4;border-radius:10px;font-size:13px;color:#0d1b2a;outline:none;font-family:inherit"/>
+      <input type="text" id="r-pickup" placeholder="Pickup address..." oninput="onRideAddressInput('pickup')" onblur="scheduleRidePriceSuggestion()" autocomplete="off" style="width:100%;padding:10px 14px;border:2px solid #e8eef4;border-radius:10px;font-size:13px;color:#0d1b2a;outline:none;font-family:inherit"/>
       <div class="suggestions"><div class="suggestions-list ride-address-suggestions" id="r-pickup-suggestions" style="display:none"></div></div>
       <div id="r-pickup-note" style="font-size:11px;color:#00b4d8;margin-top:4px;display:none"></div>
     </div>
@@ -2758,7 +2758,7 @@ body[data-user-role="manager"] .owner-only-setting{display:none !important}
 
     <div class="modal-field">
       <label>🏥 Drop Off Address</label>
-      <input type="text" id="r-dropoff" placeholder="Appointment / drop off location..." oninput="onRideAddressInput('dropoff')" autocomplete="off" style="width:100%;padding:10px 14px;border:2px solid #e8eef4;border-radius:10px;font-size:13px;color:#0d1b2a;outline:none;font-family:inherit"/>
+      <input type="text" id="r-dropoff" placeholder="Appointment / drop off location..." oninput="onRideAddressInput('dropoff')" onblur="scheduleRidePriceSuggestion()" autocomplete="off" style="width:100%;padding:10px 14px;border:2px solid #e8eef4;border-radius:10px;font-size:13px;color:#0d1b2a;outline:none;font-family:inherit"/>
       <div class="suggestions"><div class="suggestions-list ride-address-suggestions" id="r-dropoff-suggestions" style="display:none"></div></div>
       <div id="r-dropoff-note" style="font-size:11px;color:#00b4d8;margin-top:4px;display:none"></div>
     </div>
@@ -2778,6 +2778,27 @@ body[data-user-role="manager"] .owner-only-setting{display:none !important}
           <button class="toggle-btn active" id="tt-rt" onclick="setToggle('triptype','rt')">RT</button>
           <button class="toggle-btn" id="tt-1way" onclick="setToggle('triptype','1way')">1 Way</button>
         </div>
+      </div>
+    </div>
+
+    <div class="modal-field" id="ride-price-suggestion" style="padding:13px 14px;border:1.5px solid #bae6fd;border-radius:12px;background:#f0faff">
+      <div style="display:flex;align-items:center;justify-content:space-between;gap:10px">
+        <div>
+          <div style="font-size:12px;font-weight:900;color:#075985;text-transform:uppercase;letter-spacing:.5px">Suggested Client Charge</div>
+          <div id="ride-price-suggestion-status" style="font-size:12px;color:#64748b;margin-top:4px">Enter pickup and drop-off addresses to calculate.</div>
+        </div>
+        <button type="button" class="toggle-btn" onclick="calculateRidePriceSuggestion(true)" style="padding:8px 10px;white-space:nowrap">Calculate</button>
+      </div>
+      <div id="ride-price-suggestion-result" style="display:none;margin-top:12px">
+        <div style="display:flex;align-items:end;justify-content:space-between;gap:12px;flex-wrap:wrap">
+          <div>
+            <div id="ride-price-suggestion-amount" style="font-size:30px;font-weight:950;color:#0891b2"></div>
+            <div id="ride-price-suggestion-rate" style="font-size:12px;font-weight:800;color:#334155;margin-top:2px"></div>
+          </div>
+          <button type="button" class="add-btn" onclick="useRidePriceSuggestion()" style="padding:9px 12px">Use Suggested Price</button>
+        </div>
+        <div id="ride-price-suggestion-breakdown" style="font-size:12px;color:#475569;line-height:1.5;margin-top:8px"></div>
+        <div style="font-size:11px;color:#64748b;margin-top:6px">Recommendation only — you can edit the Price field before saving.</div>
       </div>
     </div>
 
@@ -5433,6 +5454,7 @@ function onRideAddressInput(kind){
   const inputId=kind==='dropoff'?'r-dropoff':'r-pickup';
   const listId=kind==='dropoff'?'r-dropoff-suggestions':'r-pickup-suggestions';
   const q=document.getElementById(inputId).value.trim();
+  resetRidePriceSuggestion('Finish entering both addresses to calculate.');
   if(rideAddrDebounce) clearTimeout(rideAddrDebounce);
   if(q.length>2){
     renderRideAddressMessage(listId,'Searching addresses...');
@@ -5465,6 +5487,8 @@ function selectRideAddressSuggestion(kind,label,encoded=false){
   const listId=kind==='dropoff'?'r-dropoff-suggestions':'r-pickup-suggestions';
   document.getElementById(inputId).value=encoded?decodeURIComponent(label):label;
   document.getElementById(listId).style.display='none';
+  resetRidePriceSuggestion();
+  scheduleRidePriceSuggestion(100);
 }
 
 function quoteAddressElementIds(kind,mobile=false){
@@ -9340,11 +9364,15 @@ function selectFacility(name){
   document.getElementById('r-facility').value=name;
   document.querySelectorAll('.facility-btn').forEach(b=>b.classList.toggle('active',b.textContent===name));
   applyFacilityAddresses(name);
+  resetRidePriceSuggestion();
+  scheduleRidePriceSuggestion(100);
 }
 function onFacilityType(){
   const name=document.getElementById('r-facility').value.trim();
   document.querySelectorAll('.facility-btn').forEach(b=>b.classList.toggle('active',b.textContent===name));
   applyFacilityAddresses(name);
+  resetRidePriceSuggestion();
+  scheduleRidePriceSuggestion();
 }
 function renderRideStopsEditor(stops=[]){
   const list=document.getElementById('ride-stops-list');
@@ -9402,7 +9430,7 @@ function onWaitHoursChange(){
   }
   chargeEl.style.display='block';
 }
-function setToggle(group,val){rideToggles[group]=val;updateRideToggles();if(group==='ridetype')showHideStretcherFields();}
+function setToggle(group,val){rideToggles[group]=val;updateRideToggles();if(group==='ridetype')showHideStretcherFields();if(group==='ridetype'||group==='triptype'){resetRidePriceSuggestion();scheduleRidePriceSuggestion(100);}}
 function updateRideToggles(){
   document.getElementById('rt-wc').classList.toggle('active',rideToggles.ridetype==='wc');
   document.getElementById('rt-str').classList.toggle('active',rideToggles.ridetype==='str');
@@ -9515,6 +9543,8 @@ function resetRideRecurrence(isEditing=false){
 }
 async function openRideModal(key,defaultDate){
   key=key||null;rideEditKey=key;
+  loadQuotePricing();
+  resetRidePriceSuggestion();
   const drivers=await loadDrivers();
   await refreshHelperDatalist();
   const sel=document.getElementById('r-driver');
@@ -9589,6 +9619,7 @@ async function openRideModal(key,defaultDate){
   const box=modal.querySelector('.modal-box');
   if(box) box.scrollTop=0;
   syncEmailReviewPanel();
+  if(!key) scheduleRidePriceSuggestion(100);
 }
 function closeRideModal(){
   document.getElementById('ride-modal').style.display='none';
@@ -9651,6 +9682,17 @@ async function saveRide(){
     updatedBy:currentUserName(),
     updatedByRole:currentUserRole(),
   };
+  if(ridePriceSuggestion){
+    ride.estimatedMiles=parseFloat(ridePriceSuggestion.miles.toFixed(1));
+    ride.billableMiles=parseFloat((ridePriceSuggestion.miles*ridePriceSuggestion.pricing.legs).toFixed(1));
+    ride.priceSuggestion={
+      amount:parseFloat(ridePriceSuggestion.pricing.total.toFixed(2)),
+      oneWayMiles:parseFloat(ridePriceSuggestion.miles.toFixed(1)),
+      category:ridePriceSuggestion.category,
+      rateLabel:ridePriceSuggestion.rate.label,
+      calculatedAt:Date.now()
+    };
+  }
   if(pendingImportReviewMeta){
     ride.importSource = pendingImportReviewMeta.source || 'claude-outlook';
     ride.importReviewStatus = 'approved';
@@ -11961,7 +12003,7 @@ function fallbackParseEmail(text){
 const DEFAULT_QUOTE_PRICING = {
   wc: {
     rt:   { base: 165, freeMiles: 10, ratePerMile: 1 },
-    '1way': { base: 100, freeMiles: 10, ratePerMile: 1 },
+    '1way': { base: 95, freeMiles: 10, ratePerMile: 1 },
   },
   str: {
     rt:   { base: 700, freeMiles: 0, ratePerMile: 10 }, // $350 x 2 legs
@@ -11976,6 +12018,9 @@ const DEFAULT_QUOTE_PRICING = {
 let quotePricing = JSON.parse(JSON.stringify(DEFAULT_QUOTE_PRICING));
 let quoteToggles = { ridetype: 'wc', triptype: 'rt' };
 let quoteData = null;
+let ridePriceSuggestion = null;
+let ridePriceSuggestionTimer = null;
+let ridePriceSuggestionSequence = 0;
 
 function loadQuotePricing(){
   try{
@@ -12111,6 +12156,103 @@ function calcPrice(miles, ridetype, triptype){
     const total = p.base + mileCharge;
     return { total, base: p.base, miles, billableMiles, mileCharge, legs, p };
   }
+}
+
+function ridePricingCategory(facility,pickup,dropoff){
+  const text=`${facility||''} ${pickup||''} ${dropoff||''}`.toLowerCase();
+  if(/\bwaap\b|wound\s*(?:care|&|and)?|amputation\s*prevention|vein\s*(?:and|&)\s*vascular|1300\s+york\s+(?:road|rd)/i.test(text)) return 'waap';
+  if(/chapel\s+hill(?:\s+nursing|\s+manor)?/i.test(text)) return 'chapel-hill';
+  return 'standard';
+}
+
+function rideSuggestionRate(category,ridetype,triptype){
+  const stretcherLike=isStretcherLikeRideType(ridetype);
+  if(category==='waap'){
+    if(stretcherLike) return {base:triptype==='rt'?600:325,freeMiles:0,ratePerMile:10,label:'WAAP / wound care stretcher rate'};
+    return {base:triptype==='rt'?140:95,freeMiles:10,ratePerMile:1,label:'WAAP / wound care wheelchair rate'};
+  }
+  if(category==='chapel-hill'&&!stretcherLike){
+    return {base:triptype==='rt'?130:95,freeMiles:10,ratePerMile:1,label:'Chapel Hill wheelchair rate'};
+  }
+  const saved=quotePricing[ridetype]?.[triptype]||DEFAULT_QUOTE_PRICING[ridetype]?.[triptype]||DEFAULT_QUOTE_PRICING.wc[triptype];
+  return {...saved,label:category==='chapel-hill'?'Standard stretcher rate — verify Chapel Hill contract':'Standard / private-pay rate'};
+}
+
+function calculatePriceWithRate(miles,ridetype,triptype,rate){
+  const legs=triptype==='rt'?2:1;
+  if(isStretcherLikeRideType(ridetype)){
+    const mileCharge=miles*rate.ratePerMile*legs;
+    return {total:rate.base+mileCharge,base:rate.base,miles,mileCharge,billableMiles:miles,legs,p:rate};
+  }
+  const billableMiles=Math.max(0,miles-rate.freeMiles);
+  const mileCharge=billableMiles*rate.ratePerMile*legs;
+  return {total:rate.base+mileCharge,base:rate.base,miles,billableMiles,mileCharge,legs,p:rate};
+}
+
+function resetRidePriceSuggestion(message='Enter pickup and drop-off addresses to calculate.'){
+  ridePriceSuggestion=null;
+  ridePriceSuggestionSequence++;
+  if(ridePriceSuggestionTimer){clearTimeout(ridePriceSuggestionTimer);ridePriceSuggestionTimer=null;}
+  const status=document.getElementById('ride-price-suggestion-status');
+  const result=document.getElementById('ride-price-suggestion-result');
+  if(status)status.textContent=message;
+  if(result)result.style.display='none';
+}
+
+function scheduleRidePriceSuggestion(delay=700){
+  if(ridePriceSuggestionTimer)clearTimeout(ridePriceSuggestionTimer);
+  ridePriceSuggestionTimer=setTimeout(()=>calculateRidePriceSuggestion(false),delay);
+}
+
+async function calculateRidePriceSuggestion(showMissingAlert=false){
+  const pickup=document.getElementById('r-pickup')?.value.trim()||'';
+  const dropoff=document.getElementById('r-dropoff')?.value.trim()||'';
+  const status=document.getElementById('ride-price-suggestion-status');
+  const resultEl=document.getElementById('ride-price-suggestion-result');
+  if(!pickup||!dropoff){
+    resetRidePriceSuggestion();
+    if(showMissingAlert)alert('Please enter both pickup and drop-off addresses.');
+    return;
+  }
+  const sequence=++ridePriceSuggestionSequence;
+  if(status)status.textContent='Calculating the driving route and your rate...';
+  if(resultEl)resultEl.style.display='none';
+  try{
+    const miles=await getDrivingMiles(pickup,dropoff);
+    if(sequence!==ridePriceSuggestionSequence)return;
+    const facility=document.getElementById('r-facility')?.value.trim()||'';
+    const ridetype=rideToggles.ridetype;
+    const triptype=rideToggles.triptype;
+    const category=ridePricingCategory(facility,pickup,dropoff);
+    const rate=rideSuggestionRate(category,ridetype,triptype);
+    const pricing=calculatePriceWithRate(miles,ridetype,triptype,rate);
+    ridePriceSuggestion={pickup,dropoff,miles,ridetype,triptype,category,rate,pricing};
+    const typeLabel=rideTypeLabel(ridetype);
+    const tripLabel=triptype==='rt'?'round trip':'one way';
+    document.getElementById('ride-price-suggestion-amount').textContent=`$${pricing.total.toFixed(2)}`;
+    document.getElementById('ride-price-suggestion-rate').textContent=`${rate.label} · ${typeLabel} · ${tripLabel}`;
+    const mileageText=isStretcherLikeRideType(ridetype)
+      ? `${miles.toFixed(1)} one-way mi × ${pricing.legs} leg${pricing.legs>1?'s':''} × $${rate.ratePerMile.toFixed(2)}/mi = $${pricing.mileCharge.toFixed(2)}`
+      : `${pricing.billableMiles.toFixed(1)} extra mi per leg × ${pricing.legs} leg${pricing.legs>1?'s':''} × $${rate.ratePerMile.toFixed(2)}/mi = $${pricing.mileCharge.toFixed(2)}`;
+    document.getElementById('ride-price-suggestion-breakdown').innerHTML=`Google Maps driving distance: <b>${miles.toFixed(1)} mi one way</b><br>Base: $${rate.base.toFixed(2)} · ${mileageText}`;
+    if(status)status.textContent='Recommendation ready.';
+    if(resultEl)resultEl.style.display='block';
+  }catch(e){
+    if(sequence!==ridePriceSuggestionSequence)return;
+    ridePriceSuggestion=null;
+    if(status)status.textContent='Could not calculate the route. Check both addresses, then tap Calculate.';
+    if(resultEl)resultEl.style.display='none';
+  }
+}
+
+function useRidePriceSuggestion(){
+  if(!ridePriceSuggestion)return;
+  const price=document.getElementById('r-price');
+  const miles=document.getElementById('r-miles');
+  if(price)price.value=`$${ridePriceSuggestion.pricing.total.toFixed(2)}`;
+  if(miles)miles.value=(ridePriceSuggestion.miles*ridePriceSuggestion.pricing.legs).toFixed(1);
+  const status=document.getElementById('ride-price-suggestion-status');
+  if(status)status.textContent='Suggested price copied below. You can still edit it.';
 }
 
 async function calculateQuote(){
