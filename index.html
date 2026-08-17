@@ -10100,6 +10100,7 @@ function groupSentScheduleAssignments(rides){
 }
 
 function sentAssignmentStatusText(ride){
+  if(isRideCancelledForScheduling(ride)) return 'Cancelled';
   if(ride?._scheduleRole==='helper'){
     const helperStatus=String(ride.helperStatus||'').toLowerCase();
     if(ride.helperDropoffCompletedAt||['complete','completed'].includes(helperStatus)) return 'Helper drop-off completed';
@@ -10145,12 +10146,17 @@ async function renderSentSchedule(mobile=false){
     let legacyFallback=false;
     if(!snapshot.length&&sentAt){
       legacyFallback=true;
-      snapshot=Object.entries(liveRides).filter(([,ride])=>ride?.date===ds&&!isRideCancelledForScheduling(ride)).map(([key,ride])=>scheduleSnapshotRide(key,ride));
+      snapshot=Object.entries(liveRides).filter(([,ride])=>{
+        if(ride?.date!==ds) return false;
+        if(!isRideCancelledForScheduling(ride)) return true;
+        const cancelledAt=Number(ride.statusUpdatedAt||ride.updatedAt||0);
+        return !!cancelledAt&&cancelledAt>=Number(sentAt);
+      }).map(([key,ride])=>scheduleSnapshotRide(key,ride));
     }
     const rides=snapshot.map(saved=>{
       const live=liveRides[saved.rideKey]||{};
       return {...saved,status:live.status??saved.status,helperStatus:live.helperStatus??saved.helperStatus,pickupCompletedAt:live.pickupCompletedAt??saved.pickupCompletedAt,dropoffCompletedAt:live.dropoffCompletedAt??saved.dropoffCompletedAt,helperPickupCompletedAt:live.helperPickupCompletedAt??saved.helperPickupCompletedAt,helperDropoffCompletedAt:live.helperDropoffCompletedAt??saved.helperDropoffCompletedAt};
-    }).filter(ride=>!isRideCancelledForScheduling(ride)).sort((a,b)=>(a.time||'99:99').localeCompare(b.time||'99:99'));
+    }).sort((a,b)=>(a.time||'99:99').localeCompare(b.time||'99:99'));
     if(meta) meta.textContent=sentAt?`Sent ${fmtScheduleStamp(sentAt)} · ${rides.length} ride${rides.length===1?'':'s'}${legacyFallback?' · Current records for this earlier schedule':''}`:'No schedule has been sent for this date.';
     if(!sentAt){content.innerHTML=mobileEmpty('No sent schedule for '+new Date(ds+'T12:00:00').toLocaleDateString('en-US',{weekday:'long',month:'long',day:'numeric'})+'.');return;}
     const grouped=groupSentScheduleAssignments(rides);
