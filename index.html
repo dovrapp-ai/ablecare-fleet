@@ -596,6 +596,23 @@ body[data-user-role="manager"] .owner-only-setting{display:none !important}
 .email-review-empty{color:#94a3b8;font-style:italic}
 
 /* ── MOBILE IMPROVEMENTS ── */
+.sent-schedule-wrap{max-width:1280px;margin:0 auto}
+.sent-schedule-toolbar{background:#fff;border:1px solid #e2e8f0;border-radius:16px;padding:16px 18px;display:flex;align-items:center;gap:10px;flex-wrap:wrap;box-shadow:0 4px 18px rgba(15,23,42,.05);margin-bottom:14px}
+.sent-schedule-title{font-size:20px;font-weight:900;color:#0f172a;flex:1;min-width:220px}
+.sent-schedule-meta{font-size:12px;color:#64748b;margin-top:3px}
+.sent-schedule-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(310px,1fr));gap:14px;align-items:start}
+.sent-driver-card{background:#fff;border:1px solid #e2e8f0;border-radius:16px;overflow:hidden;box-shadow:0 4px 18px rgba(15,23,42,.05)}
+.sent-driver-head{background:#0d1b2a;color:#fff;padding:13px 15px;display:flex;justify-content:space-between;align-items:center;gap:10px}
+.sent-driver-name{font-size:16px;font-weight:900}
+.sent-driver-count{font-size:11px;font-weight:900;color:#7dd3fc}
+.sent-ride{padding:12px 14px;border-top:1px solid #eef2f7}
+.sent-ride:first-child{border-top:none}
+.sent-ride-top{display:flex;justify-content:space-between;gap:8px;align-items:flex-start}
+.sent-ride-time{font-size:15px;font-weight:900;color:#0369a1;white-space:nowrap}
+.sent-ride-client{font-size:14px;font-weight:900;color:#0f172a;text-align:right}
+.sent-ride-route{font-size:11px;line-height:1.45;color:#475569;margin-top:7px}
+.sent-ride-tags{display:flex;flex-wrap:wrap;gap:5px;margin-top:8px}
+@media(max-width:700px){.sent-schedule-grid{grid-template-columns:1fr}.sent-schedule-toolbar{padding:13px}.sent-schedule-title{font-size:17px}}
 @media(max-width:900px){
   .ride-modal-layout{grid-template-columns:1fr}
   .ride-email-pane{position:static}
@@ -1403,6 +1420,7 @@ body[data-user-role="manager"] .owner-only-setting{display:none !important}
     <div class="tab" onclick="switchTab('hours')" id="tab-hours"><span class="tab-icon">🕐</span> Hours</div>
     <div class="tab" onclick="switchTab('drivers')" id="tab-drivers"><span class="tab-icon">👥</span> Drivers</div>
     <div class="tab" onclick="switchTab('rides')" id="tab-rides"><span class="tab-icon">🚐</span> Rides</div>
+    <div class="tab" onclick="switchTab('sent-schedules')" id="tab-sent-schedules"><span class="tab-icon">S</span> Sent Schedules</div>
     <div class="tab" onclick="switchTab('reminders')" id="tab-reminders"><span class="tab-icon">!</span> Reminders</div>
     <div class="tab" onclick="switchTab('quote')" id="tab-quote"><span class="tab-icon">💰</span> Quote</div>
     <div class="tab" onclick="switchTab('invoice')" id="tab-invoice"><span class="tab-icon">📄</span> Invoice</div>
@@ -1684,9 +1702,14 @@ body[data-user-role="manager"] .owner-only-setting{display:none !important}
             <option value="">All Drivers</option>
           </select>
           <select id="rep-paid" class="settings-input" style="font-size:13px">
-            <option value="">All</option>
+            <option value="">All Payments</option>
             <option value="yes">Paid</option>
             <option value="no">Unpaid</option>
+          </select>
+          <select id="rep-invoice" class="settings-input" style="font-size:13px">
+            <option value="">All Invoices</option>
+            <option value="invoiced">Invoiced</option>
+            <option value="uninvoiced">Uninvoiced</option>
           </select>
           <button class="add-btn" style="padding:8px 16px;font-size:13px" onclick="loadReports()">Apply</button>
           <button class="export-btn" onclick="exportReportsExcel()" style="margin-left:auto">📥 Export Excel</button>
@@ -2168,6 +2191,23 @@ body[data-user-role="manager"] .owner-only-setting{display:none !important}
   </div>
 
 
+  <!-- SENT SCHEDULES TAB -->
+  <div class="screen" id="screen-sent-schedules">
+    <div class="sent-schedule-wrap">
+      <div class="sent-schedule-toolbar">
+        <div style="flex:1;min-width:220px">
+          <div class="sent-schedule-title">Sent Schedules</div>
+          <div class="sent-schedule-meta" id="sent-schedule-meta">Choose a date to review what was sent.</div>
+        </div>
+        <button class="cal-nav" onclick="shiftSentScheduleDay(-1)">‹</button>
+        <input type="date" class="date-input" id="sent-schedule-date" onchange="selectSentScheduleDate(this.value)"/>
+        <button class="cal-nav" onclick="shiftSentScheduleDay(1)">›</button>
+        <button class="cal-today-btn" onclick="goToTodaySentSchedule()">Today</button>
+      </div>
+      <div id="sent-schedule-content"></div>
+    </div>
+  </div>
+
   <!-- REMINDERS TAB -->
   <div class="screen" id="screen-reminders">
     <div style="max-width:1100px;margin:0 auto">
@@ -2223,6 +2263,7 @@ body[data-user-role="manager"] .owner-only-setting{display:none !important}
         <div class="mobile-content">
           <div class="mobile-tabs">
             <button class="mobile-tab active" onclick="switchMobilePanel('rides')" id="mobile-tab-rides">Rides</button>
+            <button class="mobile-tab" onclick="switchMobilePanel('sent-schedules')" id="mobile-tab-sent-schedules">Sent Schedules</button>
             <button class="mobile-tab" onclick="switchMobilePanel('reminders')" id="mobile-tab-reminders">Reminders</button>
             <button class="mobile-tab" onclick="switchMobilePanel('reports')" id="mobile-tab-reports">Reports</button>
             <button class="mobile-tab" onclick="switchMobilePanel('hours')" id="mobile-tab-hours">Hours</button>
@@ -2260,6 +2301,25 @@ body[data-user-role="manager"] .owner-only-setting{display:none !important}
 
             <div class="mobile-section-title">Today's Rides</div>
             <div id="mobile-needs-list"></div>
+          </div>
+
+          <div class="mobile-panel" id="mobile-panel-sent-schedules">
+            <div class="mobile-section-title" style="margin-top:0">Sent Schedules</div>
+            <div class="mobile-card">
+              <div class="mobile-date-jump">
+                <div>
+                  <div class="mobile-input-label">Schedule Date</div>
+                  <input class="mobile-date-input" id="mobile-sent-schedule-date" type="date" onchange="selectSentScheduleDate(this.value,true)" />
+                </div>
+                <button class="mobile-top-btn primary" style="padding:12px 14px" onclick="goToTodaySentSchedule(true)">Today</button>
+              </div>
+              <div class="mobile-quick-actions">
+                <button class="mobile-soft-btn" onclick="shiftSentScheduleDay(-1,true)">Previous Day</button>
+                <button class="mobile-soft-btn" onclick="shiftSentScheduleDay(1,true)">Next Day</button>
+              </div>
+              <div class="mobile-subtle" id="mobile-sent-schedule-meta" style="margin-top:10px">Choose a date to review what was sent.</div>
+            </div>
+            <div id="mobile-sent-schedule-content"></div>
           </div>
 
           <div class="mobile-panel" id="mobile-panel-reminders">
@@ -2426,7 +2486,7 @@ body[data-user-role="manager"] .owner-only-setting{display:none !important}
                   <select class="mobile-select" id="mobile-rep-driver" style="margin-bottom:0"></select>
                 </div>
               </div>
-              <div style="display:flex;gap:10px;margin-top:10px;align-items:flex-end">
+              <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:10px;align-items:flex-end">
                 <div style="flex:1">
                   <div class="mobile-input-label">Payment</div>
                   <select class="mobile-select" id="mobile-rep-paid" style="margin-bottom:0">
@@ -2435,7 +2495,15 @@ body[data-user-role="manager"] .owner-only-setting{display:none !important}
                     <option value="no">Unpaid</option>
                   </select>
                 </div>
-                <button class="mobile-action-btn dark" style="flex:1" onclick="mobileApplyReportFilters()">Filter</button>
+                <div>
+                  <div class="mobile-input-label">Invoice</div>
+                  <select class="mobile-select" id="mobile-rep-invoice" style="margin-bottom:0">
+                    <option value="">All Invoices</option>
+                    <option value="invoiced">Invoiced</option>
+                    <option value="uninvoiced">Uninvoiced</option>
+                  </select>
+                </div>
+                <button class="mobile-action-btn dark" style="grid-column:1/-1" onclick="mobileApplyReportFilters()">Apply Filters</button>
               </div>
             </div>
             <div class="mobile-report-summary-grid">
@@ -3289,6 +3357,7 @@ let rideSourceContext='manual';
 let rideToggles={ridetype:'wc',triptype:'rt',van:'',paid:'no',wait:'no',paymethod:'cc'};
 let rideRecurrenceDays=new Set();
 let selectedDate=new Date();
+let sentScheduleDate=new Date();
 let miniMonthOffset=0;
 let ridesFilter='all';
 let lastRenderedRideDate='';
@@ -5127,6 +5196,7 @@ function switchTab(name){
   if(name==='drivers') renderManage();
   if(name==='dispatch') initDispatchMap();
   if(name==='rides') initRides();
+  if(name==='sent-schedules') initSentSchedules();
   if(name==='reminders') initReminders();
   if(name==='settings') initSettings();
   if(name==='quote') initQuote();
@@ -6256,6 +6326,43 @@ async function saveDriverPin(){
   }
 }
 
+function isNonBillableCancelledRide(ride){
+  const status=String(ride?.status||'').toLowerCase().trim().replace(/[\s-]+/g,'_');
+  return status.includes('cancel')&&status!=='cancelled_pickup'&&status!=='canceled_pickup';
+}
+
+function cancelledReportBillingLabel(ride,formattedPrice=''){
+  if(!isNonBillableCancelledRide(ride)) return '';
+  const rawPrice=String(formattedPrice||ride?.price||'').trim();
+  const price=rawPrice&&rawPrice!=='—'&&!rawPrice.startsWith('$')?`$${rawPrice}`:rawPrice;
+  return ride?.paid==='yes'&&price&&price!=='—' ? `Cancelled · ${price} Paid` : 'Cancelled';
+}
+
+function formatRideStageTime(value){
+  const ts=Number(value);
+  if(!ts||!Number.isFinite(ts)) return '';
+  return new Date(ts).toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit'});
+}
+
+function rideCompletionTimesHtml(ride,mobile=false){
+  const lines=[];
+  const driverPickup=formatRideStageTime(ride?.pickupCompletedAt);
+  const driverDropoff=formatRideStageTime(ride?.dropoffCompletedAt);
+  const helperPickup=formatRideStageTime(ride?.helperPickupCompletedAt);
+  const helperDropoff=formatRideStageTime(ride?.helperDropoffCompletedAt);
+  if(driverPickup||driverDropoff){
+    lines.push(`<strong>Driver:</strong>${driverPickup?` Pickup ${escHtml(driverPickup)}`:''}${driverPickup&&driverDropoff?' · ':''}${driverDropoff?`Drop-off ${escHtml(driverDropoff)}`:''}`);
+  }
+  if(helperPickup||helperDropoff){
+    lines.push(`<strong>Helper:</strong>${helperPickup?` Pickup ${escHtml(helperPickup)}`:''}${helperPickup&&helperDropoff?' · ':''}${helperDropoff?`Drop-off ${escHtml(helperDropoff)}`:''}`);
+  }
+  if(!lines.length) return '';
+  const style=mobile
+    ? 'background:#ecfeff;color:#075985;border-radius:10px;padding:8px 10px;margin-top:9px;font-size:12px;line-height:1.5'
+    : 'color:#075985;font-size:11px;font-weight:700;margin-top:3px;line-height:1.35';
+  return `<div style="${style}">${lines.map(line=>`<div>${line}</div>`).join('')}</div>`;
+}
+
 function renderFacilitiesList(){
   const list=document.getElementById('facilities-list');list.innerHTML='';
   FACILITIES.forEach((f,i)=>{
@@ -6623,6 +6730,7 @@ async function renderDayView(){
         ${r.pickup?`<div><strong>Pickup:</strong> ${escHtml(r.pickup)}</div>`:'<div style="color:#94a3b8"><strong>Pickup:</strong> not saved</div>'}
         ${rideStopsHtml(r.stops || r.additionalStops)}
         ${r.dropoff?`<div><strong>Dropoff:</strong> ${escHtml(r.dropoff)}</div>`:'<div style="color:#94a3b8"><strong>Dropoff:</strong> not saved</div>'}
+        ${rideCompletionTimesHtml(r)}
       </div>
       <div class="ride-focus-tags">
         <span class="ride-block-tag">${rideTypeShortLabel(r.ridetype)}</span>
@@ -7122,6 +7230,7 @@ let mobileReportTo='';
 let mobileReportFacility='';
 let mobileReportDriver='';
 let mobileReportPaid='';
+let mobileReportInvoice='';
 let confirmationRideKey=null;
 
 function mobileSetText(id,value){
@@ -7209,6 +7318,7 @@ function switchMobilePanel(name){
   const panel=document.getElementById('mobile-panel-'+name);
   if(tab) tab.classList.add('active');
   if(panel) panel.classList.add('active');
+  if(name==='sent-schedules') renderSentSchedule(true);
   if(name==='quote'){
     loadQuotePricing();
     renderQuoteRateInputs();
@@ -7393,6 +7503,7 @@ function mobileApplyReportFilters(){
   mobileReportFacility=String(document.getElementById('mobile-rep-facility')?.value||'').trim();
   mobileReportDriver=String(document.getElementById('mobile-rep-driver')?.value||'').trim();
   mobileReportPaid=String(document.getElementById('mobile-rep-paid')?.value||'').trim();
+  mobileReportInvoice=String(document.getElementById('mobile-rep-invoice')?.value||'').trim();
   renderMobileDashboard();
 }
 
@@ -7405,6 +7516,7 @@ function populateMobileReportFilters(drivers){
   const facEl=document.getElementById('mobile-rep-facility');
   const drvEl=document.getElementById('mobile-rep-driver');
   const paidEl=document.getElementById('mobile-rep-paid');
+  const invoiceEl=document.getElementById('mobile-rep-invoice');
   if(facEl){
     facEl.innerHTML='<option value="">All Facilities</option><option value="__private_pay__">Private Pay</option>' +
       FACILITIES.map(f=>`<option value="${mobileEsc(f.name)}">${mobileEsc(f.name)}</option>`).join('');
@@ -7416,6 +7528,7 @@ function populateMobileReportFilters(drivers){
     drvEl.value=mobileReportDriver||'';
   }
   if(paidEl) paidEl.value=mobileReportPaid||'';
+  if(invoiceEl) invoiceEl.value=mobileReportInvoice||'';
 }
 
 function populateMobileInvoiceForm(){
@@ -7648,6 +7761,7 @@ function mobileRideCard(r){
       ${r.status?`<div class="mobile-tag" style="${statusStyle}">${mobileEsc(statusText)}</div>`:''}
       ${!isReturn?returnRequestSummaryHtml(r,'mobile'):''}
     </div>
+    ${rideCompletionTimesHtml(r,true)}
     <div class="mobile-ride-actions" style="grid-template-columns:repeat(${actionCount},minmax(0,1fr))">
       ${canReturn?`<button class="mobile-action-btn light" style="background:#dcfce7;color:#15803d" onclick="openReturnModal('${key}')">Return</button>`:''}
       <button class="mobile-action-btn dark" onclick="openRideModal('${key}')">Open Ride</button>
@@ -8116,6 +8230,9 @@ async function renderMobileDashboard(){
         if(!reportRideMatchesFacilityFilter(r,mobileReportFacility)) return false;
         if(mobileReportDriver&&r.driver!==mobileReportDriver&&r.helper!==mobileReportDriver) return false;
         if(mobileReportPaid&&r.paid!==mobileReportPaid) return false;
+        const hasInvoice=!!String(r.invoice||'').trim();
+        if(mobileReportInvoice==='invoiced'&&!hasInvoice) return false;
+        if(mobileReportInvoice==='uninvoiced'&&hasInvoice) return false;
         return true;
       });
 
@@ -8159,6 +8276,8 @@ async function renderMobileDashboard(){
             const editKey=mobileKey(r._key);
             const invoiceValue=String(r.invoice||'').trim();
             const invoiceLabel=invoiceValue?`Invoice #${invoiceValue}`:'Add Invoice';
+            const cancelledBilling=isNonBillableCancelledRide(r);
+            const cancelledBillingLabel=cancelledReportBillingLabel(r,priceLabel);
             return `<div style="border-top:1px solid #eef2f7;padding-top:10px;margin-top:10px;cursor:pointer" onclick="openLogEdit('${editKey}')">
               <div style="display:grid;grid-template-columns:minmax(0,1fr) auto;gap:10px;align-items:flex-start">
                 <div style="min-width:0">
@@ -8169,8 +8288,10 @@ async function renderMobileDashboard(){
                 </div>
                 <div style="display:flex;flex-direction:column;align-items:flex-end;gap:5px;min-width:108px">
                   <button class="mobile-driver-open" onclick="event.stopPropagation();openLogEdit('${editKey}')">Edit</button>
-                  <button class="mobile-tag" style="border:none;cursor:pointer;background:${paid?'#dcfce7':'#fef3c7'};color:${paid?'#15803d':'#b45309'}" onclick="mobileToggleReportPaid(event,'${editKey}','${paid?'yes':'no'}')">${mobileEsc(paidLabel)}</button>
-                  <button class="mobile-tag" style="border:none;cursor:pointer;background:${invoiceValue?'#e0f2fe':'#f1f5f9'};color:${invoiceValue?'#0369a1':'#475569'};max-width:150px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis" onclick="mobilePromptReportInvoice(event,'${editKey}','${mobileKey(invoiceValue)}')">${mobileEsc(invoiceLabel)}</button>
+                  ${cancelledBilling
+                    ? `<div class="mobile-tag" style="background:#fef2f2;color:#dc2626;max-width:170px;text-align:center">${mobileEsc(cancelledBillingLabel)}</div>`
+                    : `<button class="mobile-tag" style="border:none;cursor:pointer;background:${paid?'#dcfce7':'#fef3c7'};color:${paid?'#15803d':'#b45309'}" onclick="mobileToggleReportPaid(event,'${editKey}','${paid?'yes':'no'}')">${mobileEsc(paidLabel)}</button>
+                       <button class="mobile-tag" style="border:none;cursor:pointer;background:${invoiceValue?'#e0f2fe':'#f1f5f9'};color:${invoiceValue?'#0369a1':'#475569'};max-width:150px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis" onclick="mobilePromptReportInvoice(event,'${editKey}','${mobileKey(invoiceValue)}')">${mobileEsc(invoiceLabel)}</button>`}
                   <div style="font-size:11px;color:#475569;text-align:right;max-width:150px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${mobileEsc(driverLabel)}</div>
                   <div style="font-size:11px;color:#64748b;text-align:right">${mobileEsc(vanLabel)}</div>
                 </div>
@@ -9480,6 +9601,7 @@ async function applyOptimizedSchedule(){
   }
   const ds = dateStr(selectedDate);
   await backfillRidePhonesForDate(ds);
+  await saveSentScheduleSnapshot(ds);
   const driverCounts = {};
   Object.entries(optimizedSchedule.schedules || {}).forEach(([driverName, sched])=>{
     driverCounts[driverName] = (sched.rides || []).length;
@@ -9922,6 +10044,96 @@ async function deleteRide(){
   closeRideModal();renderDayView();if(document.getElementById('screen-mobile')?.classList.contains('active'))renderMobileDashboard();
 }
 
+function scheduleSnapshotRide(rideKey,ride){
+  return {
+    rideKey,date:ride.date||'',time:ride.time||'',client:ride.client||'',facility:ride.facility||'',
+    pickup:ride.pickup||'',dropoff:ride.dropoff||'',ridetype:ride.ridetype||'wc',triptype:ride.triptype||'rt',
+    driver:ride.driver||'',helper:ride.helper||'',van:ride.van||'',status:ride.status||'',
+    pickupCompletedAt:Number(ride.pickupCompletedAt)||null,dropoffCompletedAt:Number(ride.dropoffCompletedAt)||null,
+    helperPickupCompletedAt:Number(ride.helperPickupCompletedAt)||null,helperDropoffCompletedAt:Number(ride.helperDropoffCompletedAt)||null
+  };
+}
+
+async function saveSentScheduleSnapshot(ds){
+  const snap=await ridesRef().once('value');
+  const snapshot={};
+  Object.entries(snap.val()||{}).forEach(([key,ride])=>{
+    if(ride&&ride.date===ds&&!isRideCancelledForScheduling(ride)) snapshot[key]=scheduleSnapshotRide(key,ride);
+  });
+  await db.ref('schedules').child(ds).child('rideSnapshot').set(snapshot);
+  return Object.keys(snapshot).length;
+}
+
+function initSentSchedules(){
+  sentScheduleDate=new Date(selectedDate||new Date());
+  renderSentSchedule(false);
+}
+
+function selectSentScheduleDate(value,mobile=false){
+  if(value) sentScheduleDate=new Date(value+'T12:00:00');
+  renderSentSchedule(mobile);
+}
+
+function shiftSentScheduleDay(direction,mobile=false){
+  sentScheduleDate=new Date(sentScheduleDate||new Date());
+  sentScheduleDate.setDate(sentScheduleDate.getDate()+(Number(direction)||0));
+  renderSentSchedule(mobile);
+}
+
+function goToTodaySentSchedule(mobile=false){
+  sentScheduleDate=new Date();
+  renderSentSchedule(mobile);
+}
+
+function sentScheduleRideHtml(ride){
+  const status=ride.status?statusLabelText(ride.status):'Not started';
+  const helper=String(ride.helper||'').trim();
+  return `<div class="sent-ride">
+    <div class="sent-ride-top"><div class="sent-ride-time">${escHtml(ride.time?fmtTime12(ride.time):'Time TBD')}</div><div class="sent-ride-client">${escHtml(ride.client||ride.facility||'Ride')}</div></div>
+    ${ride.client&&ride.facility?`<div style="font-size:11px;color:#64748b;text-align:right;margin-top:2px">${escHtml(ride.facility)}</div>`:''}
+    <div class="sent-ride-route"><div><strong>Pickup:</strong> ${escHtml(ride.pickup||'Not saved')}</div><div><strong>Drop-off:</strong> ${escHtml(ride.dropoff||'Not saved')}</div></div>
+    <div class="sent-ride-tags"><span class="mobile-tag">${escHtml(rideTypeLabel(ride.ridetype))}</span><span class="mobile-tag">${ride.triptype==='rt'?'RT':'1 Way'}</span>${helper?`<span class="mobile-tag" style="background:#fff7ed;color:#b45309">Helper: ${escHtml(helper)}</span>`:''}<span class="mobile-tag" style="background:#e0f2fe;color:#0369a1">${escHtml(status)}</span></div>
+    ${rideCompletionTimesHtml(ride,true)}
+  </div>`;
+}
+
+async function renderSentSchedule(mobile=false){
+  const ds=dateStr(sentScheduleDate||new Date());
+  const dateInput=document.getElementById(mobile?'mobile-sent-schedule-date':'sent-schedule-date');
+  const meta=document.getElementById(mobile?'mobile-sent-schedule-meta':'sent-schedule-meta');
+  const content=document.getElementById(mobile?'mobile-sent-schedule-content':'sent-schedule-content');
+  if(dateInput) dateInput.value=ds;
+  if(!content||!db) return;
+  content.innerHTML=mobileEmpty('Loading sent schedule...');
+  try{
+    const [scheduleSnap,ridesSnap]=await Promise.all([db.ref('schedules').child(ds).once('value'),ridesRef().once('value')]);
+    const schedule=scheduleSnap.val()||{};
+    const liveRides=ridesSnap.val()||{};
+    const sentAt=schedule.sentAt||schedule.appliedAt||null;
+    let snapshot=Object.values(schedule.rideSnapshot||{});
+    let legacyFallback=false;
+    if(!snapshot.length&&sentAt){
+      legacyFallback=true;
+      snapshot=Object.entries(liveRides).filter(([,ride])=>ride?.date===ds&&!isRideCancelledForScheduling(ride)).map(([key,ride])=>scheduleSnapshotRide(key,ride));
+    }
+    const rides=snapshot.map(saved=>{
+      const live=liveRides[saved.rideKey]||{};
+      return {...saved,status:live.status??saved.status,pickupCompletedAt:live.pickupCompletedAt??saved.pickupCompletedAt,dropoffCompletedAt:live.dropoffCompletedAt??saved.dropoffCompletedAt,helperPickupCompletedAt:live.helperPickupCompletedAt??saved.helperPickupCompletedAt,helperDropoffCompletedAt:live.helperDropoffCompletedAt??saved.helperDropoffCompletedAt};
+    }).filter(ride=>!isRideCancelledForScheduling(ride)).sort((a,b)=>(a.time||'99:99').localeCompare(b.time||'99:99'));
+    if(meta) meta.textContent=sentAt?`Sent ${fmtScheduleStamp(sentAt)} · ${rides.length} ride${rides.length===1?'':'s'}${legacyFallback?' · Current records for this earlier schedule':''}`:'No schedule has been sent for this date.';
+    if(!sentAt){content.innerHTML=mobileEmpty('No sent schedule for '+new Date(ds+'T12:00:00').toLocaleDateString('en-US',{weekday:'long',month:'long',day:'numeric'})+'.');return;}
+    const grouped={};
+    rides.forEach(ride=>{const driver=String(ride.driver||'').trim()||'Unassigned';(grouped[driver]||(grouped[driver]=[])).push(ride);});
+    const groups=Object.entries(grouped).sort((a,b)=>a[0]==='Unassigned'?1:b[0]==='Unassigned'?-1:a[0].localeCompare(b[0]));
+    if(!groups.length){content.innerHTML=mobileEmpty('This sent schedule contained no rides.');return;}
+    content.innerHTML=`<div class="sent-schedule-grid">${groups.map(([driver,driverRides])=>`<div class="sent-driver-card"><div class="sent-driver-head" style="${driver==='Unassigned'?'background:#9a3412':''}"><div class="sent-driver-name">${escHtml(driver)}</div><div class="sent-driver-count">${driverRides.length} ride${driverRides.length===1?'':'s'}</div></div><div>${driverRides.map(sentScheduleRideHtml).join('')}</div></div>`).join('')}</div>`;
+  }catch(e){
+    console.error('Could not load sent schedule',e);
+    if(meta) meta.textContent='Unable to load this schedule.';
+    content.innerHTML=mobileEmpty('Could not load the sent schedule. Please refresh and try again.');
+  }
+}
+
 async function backfillRidePhonesForDate(ds){
   const snap=await ridesRef().once('value');
   const updates={};
@@ -9948,6 +10160,7 @@ async function sendSelectedSchedule(){
   const label=d.toLocaleDateString('en-US',{weekday:'long',month:'short',day:'numeric'});
   const driverCounts={};
   Object.entries(byDriver).forEach(([dr,dRides])=>{driverCounts[dr]=dRides.length;});
+  await saveSentScheduleSnapshot(ds);
   await db.ref('schedules').child(ds).update({
     sentAt:Date.now(),
     label,
@@ -9977,7 +10190,10 @@ async function sendTomorrowSchedule(){
   const unassigned=rides.filter(r=>!r.driver);
   const d=new Date(ds+'T12:00:00');
   const label=d.toLocaleDateString('en-US',{weekday:'long',month:'short',day:'numeric'});
-  await db.ref('schedules').child(ds).set({sentAt:Date.now(),label});
+  const driverCounts={};
+  Object.entries(byDriver).forEach(([dr,dRides])=>{driverCounts[dr]=dRides.length;});
+  await saveSentScheduleSnapshot(ds);
+  await db.ref('schedules').child(ds).update({sentAt:Date.now(),label,selectedDate:ds,totalRides:rides.length,assignedRides:rides.length-unassigned.length,unassignedRides:unassigned.length,driverCounts,status:'sent-to-driver-app'});
   let msg=`✅ Schedule sent for ${label}!\n\n`;
   if(Object.keys(byDriver).length)msg+=Object.entries(byDriver).map(([dr,dRides])=>`${dr}: ${dRides.length} ride${dRides.length!==1?'s':''}`).join('\n');
   if(unassigned.length)msg+=`\n\n⚠️ ${unassigned.length} ride${unassigned.length!==1?'s':''} still have no driver assigned!`;
@@ -10331,11 +10547,13 @@ function applySquareReportDefaults(){
   const facEl = document.getElementById('rep-facility');
   const drvEl = document.getElementById('rep-driver');
   const paidEl = document.getElementById('rep-paid');
+  const invoiceEl = document.getElementById('rep-invoice');
   if(fromEl) fromEl.value = `${now.getFullYear()}-01-01`;
   if(toEl) toEl.value = dateStr(now);
   if(facEl) facEl.value = '';
   if(drvEl) drvEl.value = '';
   if(paidEl) paidEl.value = 'yes';
+  if(invoiceEl) invoiceEl.value = '';
 }
 
 function clearSquareReportFilters(){
@@ -10350,6 +10568,7 @@ async function loadReports(){
   const facilityFilter = document.getElementById('rep-facility').value;
   const driverFilter = document.getElementById('rep-driver').value;
   const paidFilter = document.getElementById('rep-paid').value;
+  const invoiceFilter = document.getElementById('rep-invoice').value;
 
   let snap;
   try{
@@ -10369,6 +10588,9 @@ async function loadReports(){
     if(!reportRideMatchesFacilityFilter(r, facilityFilter)) return false;
     if(driverFilter && r.driver !== driverFilter) return false;
     if(paidFilter && r.paid !== paidFilter) return false;
+    const hasInvoice=!!String(r.invoice||'').trim();
+    if(invoiceFilter==='invoiced'&&!hasInvoice) return false;
+    if(invoiceFilter==='uninvoiced'&&hasInvoice) return false;
     if(repView === 'square' && !isSquarePaidRide(r)) return false;
     return true;
   }).sort((a,b)=>(a.date||'').localeCompare(b.date||'')||(a.time||'').localeCompare(b.time||''));
@@ -10592,6 +10814,8 @@ function renderRideLog(){
     const editKey = mobileKey(r._key || '');
     const invoiceValue = String(r.invoice || '').trim();
     const invoiceLabel = invoiceValue || 'Add';
+    const cancelledBilling = isNonBillableCancelledRide(r);
+    const cancelledBillingLabel = cancelledReportBillingLabel(r,r.price||'');
     html += `<tr style="background:${bg};border-bottom:1px solid #f0f4f8" id="log-row-${r._key||i}">
       <td style="padding:9px 12px;white-space:nowrap;color:#0d1b2a;font-weight:600">${dateDisp}</td>
       <td style="padding:9px 12px;font-weight:700;color:#0d1b2a">${r.facility||'—'}</td>
@@ -10602,8 +10826,12 @@ function renderRideLog(){
       <td style="padding:9px 12px;color:#6b82a8">${r.van?'#'+r.van:'—'}</td>
       <td style="padding:9px 12px;color:#0d1b2a">${r.driver||'—'}${r.helper?' + '+r.helper:''}</td>
       <td style="padding:9px 12px;text-align:right;font-weight:800;color:${isUnpaid?'#f59e0b':'#0d1b2a'}">${r.price||'—'}</td>
-      <td style="padding:9px 12px;text-align:center"><button title="Toggle paid" onclick="desktopToggleReportPaid(event,'${editKey}','${isPaid?'yes':'no'}')" style="border:none;cursor:pointer;font-size:11px;font-weight:800;padding:3px 8px;border-radius:6px;background:${isPaid?'#f0fdf4':'#fff7ed'};color:${isPaid?'#16a34a':'#f59e0b'}">${isPaid?'✓ Paid':'✗ Unpaid'}</button></td>
-      <td style="padding:9px 12px;color:#6b82a8"><button title="Add or change invoice number" onclick="desktopPromptReportInvoice(event,'${editKey}','${mobileKey(invoiceValue)}')" style="border:1px solid ${invoiceValue?'#bae6fd':'#e2e8f0'};background:${invoiceValue?'#e0f2fe':'#f8fafc'};color:${invoiceValue?'#0369a1':'#475569'};cursor:pointer;border-radius:6px;padding:3px 7px;font-size:11px;font-weight:800;max-width:72px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${escHtml(invoiceLabel)}</button></td>
+      <td style="padding:9px 12px;text-align:center">${cancelledBilling
+        ? `<span style="display:inline-block;background:#fef2f2;color:#dc2626;border-radius:6px;padding:4px 7px;font-size:10px;font-weight:900;white-space:nowrap">${escHtml(cancelledBillingLabel)}</span>`
+        : `<button title="Toggle paid" onclick="desktopToggleReportPaid(event,'${editKey}','${isPaid?'yes':'no'}')" style="border:none;cursor:pointer;font-size:11px;font-weight:800;padding:3px 8px;border-radius:6px;background:${isPaid?'#f0fdf4':'#fff7ed'};color:${isPaid?'#16a34a':'#f59e0b'}">${isPaid?'✓ Paid':'✗ Unpaid'}</button>`}</td>
+      <td style="padding:9px 12px;color:#6b82a8">${cancelledBilling
+        ? '<span style="color:#dc2626;font-size:11px;font-weight:800">Cancelled</span>'
+        : `<button title="Add or change invoice number" onclick="desktopPromptReportInvoice(event,'${editKey}','${mobileKey(invoiceValue)}')" style="border:1px solid ${invoiceValue?'#bae6fd':'#e2e8f0'};background:${invoiceValue?'#e0f2fe':'#f8fafc'};color:${invoiceValue?'#0369a1':'#475569'};cursor:pointer;border-radius:6px;padding:3px 7px;font-size:11px;font-weight:800;max-width:72px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${escHtml(invoiceLabel)}</button>`}</td>
       <td style="padding:9px 12px;color:#94a3b8;font-style:italic;font-size:11px"><div class="rep-wrap">${r.notes||''}</div></td>
       <td style="padding:9px 12px;text-align:center">${statusBadgeTableHtml(r.status||'')}</td>
       <td style="padding:9px 12px;text-align:center">
