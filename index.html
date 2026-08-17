@@ -6229,6 +6229,7 @@ async function saveDriverRate(){
   alert(`✓ ${driverName}'s rates saved: $${rate.toFixed(2)}/hr regular and $${overtimeRate.toFixed(2)}/hr overtime`);
 }
 function openDriverPinModal(name){
+  dpDriverName=name;
   document.getElementById('dp-driver-name').textContent=name;
   document.getElementById('dp-pin').value='';
   document.getElementById('dp-pin2').value='';
@@ -6242,10 +6243,17 @@ async function saveDriverPin(){
   const msg=document.getElementById('dp-msg');
   if(p1.length!==4||!/^\d+$/.test(p1)){msg.textContent='PIN must be 4 digits.';msg.style.color='#ef4444';msg.style.display='block';return;}
   if(p1!==p2){msg.textContent='PINs do not match.';msg.style.color='#ef4444';msg.style.display='block';return;}
-  await drvsRef().child(safe(dpDriverName)).update({pin:p1});
-  closeDriverPinModal();
-  renderDriverPins();
-  alert(`✓ ${dpDriverName}'s PIN updated!`);
+  const driverName=dpDriverName;
+  if(!driverName){msg.textContent='No driver selected. Close this window and try again.';msg.style.color='#ef4444';msg.style.display='block';return;}
+  try{
+    await drvsRef().child(safe(driverName)).update({pin:p1});
+    closeDriverPinModal();
+    renderDriverPins();
+    alert(`✓ ${driverName}'s PIN updated!`);
+  }catch(e){
+    console.error('Could not update driver PIN',e);
+    msg.textContent='Could not save the PIN. Please try again.';msg.style.color='#ef4444';msg.style.display='block';
+  }
 }
 
 function renderFacilitiesList(){
