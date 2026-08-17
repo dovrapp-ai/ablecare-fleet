@@ -10085,14 +10085,31 @@ function goToTodaySentSchedule(mobile=false){
   renderSentSchedule(mobile);
 }
 
+function groupSentScheduleAssignments(rides){
+  const grouped={};
+  (rides||[]).forEach(ride=>{
+    const driver=String(ride.driver||'').trim()||'Unassigned';
+    (grouped[driver]||(grouped[driver]=[])).push({...ride,_scheduleRole:'driver'});
+    const helper=String(ride.helper||'').trim();
+    if(helper&&helper!==driver){
+      (grouped[helper]||(grouped[helper]=[])).push({...ride,_scheduleRole:'helper',primaryDriver:driver});
+    }
+  });
+  return grouped;
+}
+
 function sentScheduleRideHtml(ride){
   const status=ride.status?statusLabelText(ride.status):'Not started';
   const helper=String(ride.helper||'').trim();
+  const isHelperAssignment=ride._scheduleRole==='helper';
+  const roleTag=isHelperAssignment
+    ? `<span class="mobile-tag" style="background:#fff7ed;color:#b45309">Helper · Driver: ${escHtml(ride.primaryDriver||ride.driver||'Not assigned')}</span>`
+    : '<span class="mobile-tag" style="background:#dcfce7;color:#166534">Primary Driver</span>';
   return `<div class="sent-ride">
     <div class="sent-ride-top"><div class="sent-ride-time">${escHtml(ride.time?fmtTime12(ride.time):'Time TBD')}</div><div class="sent-ride-client">${escHtml(ride.client||ride.facility||'Ride')}</div></div>
     ${ride.client&&ride.facility?`<div style="font-size:11px;color:#64748b;text-align:right;margin-top:2px">${escHtml(ride.facility)}</div>`:''}
     <div class="sent-ride-route"><div><strong>Pickup:</strong> ${escHtml(ride.pickup||'Not saved')}</div><div><strong>Drop-off:</strong> ${escHtml(ride.dropoff||'Not saved')}</div></div>
-    <div class="sent-ride-tags"><span class="mobile-tag">${escHtml(rideTypeLabel(ride.ridetype))}</span><span class="mobile-tag">${ride.triptype==='rt'?'RT':'1 Way'}</span>${helper?`<span class="mobile-tag" style="background:#fff7ed;color:#b45309">Helper: ${escHtml(helper)}</span>`:''}<span class="mobile-tag" style="background:#e0f2fe;color:#0369a1">${escHtml(status)}</span></div>
+    <div class="sent-ride-tags">${roleTag}<span class="mobile-tag">${escHtml(rideTypeLabel(ride.ridetype))}</span><span class="mobile-tag">${ride.triptype==='rt'?'RT':'1 Way'}</span>${helper&&!isHelperAssignment?`<span class="mobile-tag" style="background:#fff7ed;color:#b45309">Helper: ${escHtml(helper)}</span>`:''}<span class="mobile-tag" style="background:#e0f2fe;color:#0369a1">${escHtml(status)}</span></div>
     ${rideCompletionTimesHtml(ride,true)}
   </div>`;
 }
@@ -10122,11 +10139,17 @@ async function renderSentSchedule(mobile=false){
     }).filter(ride=>!isRideCancelledForScheduling(ride)).sort((a,b)=>(a.time||'99:99').localeCompare(b.time||'99:99'));
     if(meta) meta.textContent=sentAt?`Sent ${fmtScheduleStamp(sentAt)} · ${rides.length} ride${rides.length===1?'':'s'}${legacyFallback?' · Current records for this earlier schedule':''}`:'No schedule has been sent for this date.';
     if(!sentAt){content.innerHTML=mobileEmpty('No sent schedule for '+new Date(ds+'T12:00:00').toLocaleDateString('en-US',{weekday:'long',month:'long',day:'numeric'})+'.');return;}
-    const grouped={};
-    rides.forEach(ride=>{const driver=String(ride.driver||'').trim()||'Unassigned';(grouped[driver]||(grouped[driver]=[])).push(ride);});
+    const grouped=groupSentScheduleAssignments(rides);
     const groups=Object.entries(grouped).sort((a,b)=>a[0]==='Unassigned'?1:b[0]==='Unassigned'?-1:a[0].localeCompare(b[0]));
     if(!groups.length){content.innerHTML=mobileEmpty('This sent schedule contained no rides.');return;}
-    content.innerHTML=`<div class="sent-schedule-grid">${groups.map(([driver,driverRides])=>`<div class="sent-driver-card"><div class="sent-driver-head" style="${driver==='Unassigned'?'background:#9a3412':''}"><div class="sent-driver-name">${escHtml(driver)}</div><div class="sent-driver-count">${driverRides.length} ride${driverRides.length===1?'':'s'}</div></div><div>${driverRides.map(sentScheduleRideHtml).join('')}</div></div>`).join('')}</div>`;
+    content.innerHTML=`<div class="sent-schedule-grid">${groups.map(([driver,driverRides])=>{
+      const primaryCount=driverRides.filter(ride=>ride._scheduleRole==='driver').length;
+      const helperCount=driverRides.filter(ride=>ride._scheduleRole==='helper').length;
+      const countParts=[];
+      if(primaryCount) countParts.push(`${primaryCount} driving`);
+      if(helperCount) countParts.push(`${helperCount} helping`);
+      return `<div class="sent-driver-card"><div class="sent-driver-head" style="${driver==='Unassigned'?'background:#9a3412':''}"><div class="sent-driver-name">${escHtml(driver)}</div><div class="sent-driver-count">${countParts.join(' · ')||'No assignments'}</div></div><div>${driverRides.sort((a,b)=>(a.time||'99:99').localeCompare(b.time||'99:99')).map(sentScheduleRideHtml).join('')}</div></div>`;
+    }).join('')}</div>`;
   }catch(e){
     console.error('Could not load sent schedule',e);
     if(meta) meta.textContent='Unable to load this schedule.';
