@@ -6628,14 +6628,41 @@ function buildCalendarRides(){
 
 function returnRequestSummaryHtml(r, mode='desktop'){
   if(!r||!r.returnRequested) return '';
-  const assigned=r.returnAssignedTo||r.returnDriver||'Unassigned';
-  const requestedAt=r.returnRequestedAt?fmtTime(r.returnRequestedAt):(r.returnTime?fmtTime12(r.returnTime):'now');
-  const pickup=r.returnPickup||'';
-  const label=`Return requested ${requestedAt} - assigned to ${assigned}`;
+  const assigned=r.returnClaimedBy||r.returnAssignedTo||r.returnDriver||'Unassigned';
+  const acceptedAt=r.returnClaimedAt||r.returnRequestedAt||null;
+  const completedAt=r.returnDropoffCompletedAt||r.returnCompletedAt||null;
+  const pickupAt=r.returnPickupCompletedAt||null;
+  const isAttached=!!r.returnClaimedAt||!!r.returnClaimedBy;
+  const label=completedAt
+    ? `Returned by ${assigned} · Completed at ${fmtTime(completedAt)}`
+    : (isAttached
+      ? `Return accepted by ${assigned}${acceptedAt?' at '+fmtTime(acceptedAt):''}${pickupAt?' · Pickup completed at '+fmtTime(pickupAt):''}`
+      : `Return requested ${acceptedAt?fmtTime(acceptedAt):(r.returnTime?fmtTime12(r.returnTime):'now')} - assigned to ${assigned}`);
+  const controls=isAttached?` <button type="button" onclick="changeAttachedReturnDriver(event,'${mobileKey(r._key||'')}')" style="border:0;background:transparent;color:inherit;text-decoration:underline;font-size:10px;font-weight:900;cursor:pointer">Change</button>`:'';
   if(mode==='mobile'){
-    return `<div class="mobile-tag" style="background:#dcfce7;color:#15803d">${mobileEsc(label)}</div>`;
+    return `<div class="mobile-tag" style="background:#dcfce7;color:#15803d">${mobileEsc(label)}${controls}</div>`;
   }
-  return `<div style="font-size:11px;font-weight:900;color:#15803d;background:#dcfce7;border:1px solid #86efac;border-radius:7px;padding:5px 8px;margin-top:6px">↩ ${escHtml(label)}${pickup?` · pickup: ${escHtml(pickup)}`:''}</div>`;
+  return `<div style="font-size:11px;font-weight:900;color:#15803d;background:#dcfce7;border:1px solid #86efac;border-radius:7px;padding:5px 8px;margin-top:6px">↩ ${escHtml(label)}${controls}</div>`;
+}
+
+async function changeAttachedReturnDriver(event,rideKey){
+  if(event)event.stopPropagation();
+  const key=decodeURIComponent(rideKey||'');
+  if(!key)return;
+  const [rideSnap,drivers]=await Promise.all([ridesRef().child(key).once('value'),loadDrivers()]);
+  const ride=rideSnap.val()||{};
+  const names=drivers.map(driver=>driver.name);
+  const current=ride.returnClaimedBy||ride.returnAssignedTo||ride.returnDriver||'';
+  const next=prompt(`Return driver\n\nActive drivers: ${names.join(', ')}`,current);
+  if(next===null)return;
+  const match=names.find(name=>name.toLowerCase()===String(next).trim().toLowerCase());
+  if(!match){alert('Choose an active driver: '+names.join(', '));return;}
+  await ridesRef().child(key).update({returnClaimedBy:match,returnAssignedTo:match,returnDriver:match,returnReassignedAt:Date.now(),returnReassignedBy:currentUserName(),updatedAt:Date.now()});
+  showToast(`Return reassigned to ${match}`);
+  if(document.getElementById('screen-rides')?.classList.contains('active'))renderDayView();
+  if(document.getElementById('screen-mobile')?.classList.contains('active'))renderMobileDashboard();
+  if(document.getElementById('screen-sent-schedules')?.classList.contains('active'))renderSentSchedule(false);
+  if(mobilePanel==='sent-schedules')renderSentSchedule(true);
 }
 
 function renderMiniCal(){
@@ -10051,7 +10078,13 @@ function scheduleSnapshotRide(rideKey,ride){
     pickup:ride.pickup||'',dropoff:ride.dropoff||'',ridetype:ride.ridetype||'wc',triptype:ride.triptype||'rt',
     driver:ride.driver||'',helper:ride.helper||'',van:ride.van||'',status:ride.status||'',helperStatus:ride.helperStatus||'',
     pickupCompletedAt:Number(ride.pickupCompletedAt)||null,dropoffCompletedAt:Number(ride.dropoffCompletedAt)||null,
-    helperPickupCompletedAt:Number(ride.helperPickupCompletedAt)||null,helperDropoffCompletedAt:Number(ride.helperDropoffCompletedAt)||null
+    helperPickupCompletedAt:Number(ride.helperPickupCompletedAt)||null,helperDropoffCompletedAt:Number(ride.helperDropoffCompletedAt)||null,
+    returnClaimedBy:ride.returnClaimedBy||'',returnClaimedAt:Number(ride.returnClaimedAt)||null,
+    returnAssignedTo:ride.returnAssignedTo||'',returnDriver:ride.returnDriver||'',returnStatus:ride.returnStatus||'',
+    returnPickup:ride.returnPickup||'',returnDropoff:ride.returnDropoff||'',
+    returnPickupCompletedAt:Number(ride.returnPickupCompletedAt)||null,
+    returnDropoffCompletedAt:Number(ride.returnDropoffCompletedAt)||null,
+    returnCompletedAt:Number(ride.returnCompletedAt)||null
   };
 }
 
@@ -10095,12 +10128,21 @@ function groupSentScheduleAssignments(rides){
     if(helper&&helper!==driver){
       (grouped[helper]||(grouped[helper]=[])).push({...ride,_scheduleRole:'helper',primaryDriver:driver});
     }
+    const returnDriver=String(ride.returnClaimedBy||ride.returnAssignedTo||ride.returnDriver||'').trim();
+    if(returnDriver&&returnDriver!==driver&&returnDriver!==helper){
+      (grouped[returnDriver]||(grouped[returnDriver]=[])).push({...ride,_scheduleRole:'return',primaryDriver:driver});
+    }
   });
   return grouped;
 }
 
 function sentAssignmentStatusText(ride){
   if(isRideCancelledForScheduling(ride)) return 'Cancelled';
+  if(ride?._scheduleRole==='return'){
+    if(ride.returnDropoffCompletedAt||ride.returnStatus==='complete') return 'Return completed';
+    if(ride.returnPickupCompletedAt||ride.returnStatus==='onboard') return 'Return pickup completed';
+    return 'Return accepted';
+  }
   if(ride?._scheduleRole==='helper'){
     const helperStatus=String(ride.helperStatus||'').toLowerCase();
     if(ride.helperDropoffCompletedAt||['complete','completed'].includes(helperStatus)) return 'Helper drop-off completed';
@@ -10113,11 +10155,33 @@ function sentAssignmentStatusText(ride){
   return driverStatus?statusLabelText(ride.status):'Driver not started';
 }
 
+function sentAttachedReturnHtml(ride){
+  const assigned=String(ride.returnClaimedBy||ride.returnAssignedTo||ride.returnDriver||'').trim();
+  if(!assigned)return'';
+  const pickup=ride.returnPickup||ride.dropoff||'Not saved';
+  const dropoff=ride.returnDropoff||ride.pickup||'Not saved';
+  const acceptedAt=ride.returnClaimedAt?fmtTime(ride.returnClaimedAt):'';
+  const pickupAt=ride.returnPickupCompletedAt?fmtTime(ride.returnPickupCompletedAt):'';
+  const dropoffAt=(ride.returnDropoffCompletedAt||ride.returnCompletedAt)?fmtTime(ride.returnDropoffCompletedAt||ride.returnCompletedAt):'';
+  const key=mobileKey(ride.rideKey||ride._key||'');
+  return `<div style="margin:12px -2px 0;background:#eef2ff;border:2px solid #a5b4fc;border-radius:12px;padding:11px;color:#312e81">
+    <div style="font-size:10px;font-weight:900;letter-spacing:1px;color:#4338ca">↩ ATTACHED RETURN</div>
+    <div style="font-size:13px;font-weight:900;margin-top:4px">${escHtml(assigned)}${acceptedAt?` accepted at ${escHtml(acceptedAt)}`:''} <button type="button" onclick="changeAttachedReturnDriver(event,'${key}')" style="border:0;background:transparent;color:#4338ca;text-decoration:underline;font-size:11px;font-weight:900;cursor:pointer">Change driver</button></div>
+    <div style="font-size:12px;margin-top:8px"><strong>Return pickup:</strong> ${escHtml(pickup)}</div>
+    ${pickupAt?`<div style="font-size:11px;color:#15803d;font-weight:800">Pickup completed at ${escHtml(pickupAt)}</div>`:''}
+    <div style="font-size:12px;margin-top:5px"><strong>Return drop-off:</strong> ${escHtml(dropoff)}</div>
+    ${dropoffAt?`<div style="font-size:11px;color:#15803d;font-weight:800">Return completed at ${escHtml(dropoffAt)}</div>`:''}
+  </div>`;
+}
+
 function sentScheduleRideHtml(ride){
   const status=sentAssignmentStatusText(ride);
   const helper=String(ride.helper||'').trim();
   const isHelperAssignment=ride._scheduleRole==='helper';
-  const roleTag=isHelperAssignment
+  const isReturnAssignment=ride._scheduleRole==='return';
+  const roleTag=isReturnAssignment
+    ? `<span class="mobile-tag" style="background:#eef2ff;color:#4338ca">Return Driver · Original Driver: ${escHtml(ride.primaryDriver||ride.driver||'Not assigned')}</span>`
+    : isHelperAssignment
     ? `<span class="mobile-tag" style="background:#fff7ed;color:#b45309">Helper · Driver: ${escHtml(ride.primaryDriver||ride.driver||'Not assigned')}</span>`
     : '<span class="mobile-tag" style="background:#dcfce7;color:#166534">Primary Driver</span>';
   return `<div class="sent-ride">
@@ -10126,6 +10190,7 @@ function sentScheduleRideHtml(ride){
     <div class="sent-ride-route"><div><strong>Pickup:</strong> ${escHtml(ride.pickup||'Not saved')}</div><div><strong>Drop-off:</strong> ${escHtml(ride.dropoff||'Not saved')}</div></div>
     <div class="sent-ride-tags">${roleTag}<span class="mobile-tag">${escHtml(rideTypeLabel(ride.ridetype))}</span><span class="mobile-tag">${ride.triptype==='rt'?'RT':'1 Way'}</span>${helper&&!isHelperAssignment?`<span class="mobile-tag" style="background:#fff7ed;color:#b45309">Helper: ${escHtml(helper)}</span>`:''}<span class="mobile-tag" style="background:#e0f2fe;color:#0369a1">${escHtml(status)}</span></div>
     ${rideCompletionTimesHtml(ride,true)}
+    ${sentAttachedReturnHtml(ride)}
   </div>`;
 }
 
@@ -10155,7 +10220,10 @@ async function renderSentSchedule(mobile=false){
     }
     const rides=snapshot.map(saved=>{
       const live=liveRides[saved.rideKey]||{};
-      return {...saved,status:live.status??saved.status,helperStatus:live.helperStatus??saved.helperStatus,pickupCompletedAt:live.pickupCompletedAt??saved.pickupCompletedAt,dropoffCompletedAt:live.dropoffCompletedAt??saved.dropoffCompletedAt,helperPickupCompletedAt:live.helperPickupCompletedAt??saved.helperPickupCompletedAt,helperDropoffCompletedAt:live.helperDropoffCompletedAt??saved.helperDropoffCompletedAt};
+      const returnFields=['returnClaimedBy','returnClaimedAt','returnAssignedTo','returnDriver','returnStatus','returnPickup','returnDropoff','returnPickupCompletedAt','returnDropoffCompletedAt','returnCompletedAt'];
+      const merged={...saved,status:live.status??saved.status,helperStatus:live.helperStatus??saved.helperStatus,pickupCompletedAt:live.pickupCompletedAt??saved.pickupCompletedAt,dropoffCompletedAt:live.dropoffCompletedAt??saved.dropoffCompletedAt,helperPickupCompletedAt:live.helperPickupCompletedAt??saved.helperPickupCompletedAt,helperDropoffCompletedAt:live.helperDropoffCompletedAt??saved.helperDropoffCompletedAt};
+      returnFields.forEach(field=>{if(live[field]!==undefined)merged[field]=live[field]});
+      return merged;
     }).sort((a,b)=>(a.time||'99:99').localeCompare(b.time||'99:99'));
     if(meta) meta.textContent=sentAt?`Sent ${fmtScheduleStamp(sentAt)} · ${rides.length} ride${rides.length===1?'':'s'}${legacyFallback?' · Current records for this earlier schedule':''}`:'No schedule has been sent for this date.';
     if(!sentAt){content.innerHTML=mobileEmpty('No sent schedule for '+new Date(ds+'T12:00:00').toLocaleDateString('en-US',{weekday:'long',month:'long',day:'numeric'})+'.');return;}
@@ -10165,9 +10233,11 @@ async function renderSentSchedule(mobile=false){
     content.innerHTML=`<div class="sent-schedule-grid">${groups.map(([driver,driverRides])=>{
       const primaryCount=driverRides.filter(ride=>ride._scheduleRole==='driver').length;
       const helperCount=driverRides.filter(ride=>ride._scheduleRole==='helper').length;
+      const returnCount=driverRides.filter(ride=>ride._scheduleRole==='return').length;
       const countParts=[];
       if(primaryCount) countParts.push(`${primaryCount} driving`);
       if(helperCount) countParts.push(`${helperCount} helping`);
+      if(returnCount) countParts.push(`${returnCount} returning`);
       return `<div class="sent-driver-card"><div class="sent-driver-head" style="${driver==='Unassigned'?'background:#9a3412':''}"><div class="sent-driver-name">${escHtml(driver)}</div><div class="sent-driver-count">${countParts.join(' · ')||'No assignments'}</div></div><div>${driverRides.sort((a,b)=>(a.time||'99:99').localeCompare(b.time||'99:99')).map(sentScheduleRideHtml).join('')}</div></div>`;
     }).join('')}</div>`;
   }catch(e){
