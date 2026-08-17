@@ -10048,7 +10048,7 @@ function scheduleSnapshotRide(rideKey,ride){
   return {
     rideKey,date:ride.date||'',time:ride.time||'',client:ride.client||'',facility:ride.facility||'',
     pickup:ride.pickup||'',dropoff:ride.dropoff||'',ridetype:ride.ridetype||'wc',triptype:ride.triptype||'rt',
-    driver:ride.driver||'',helper:ride.helper||'',van:ride.van||'',status:ride.status||'',
+    driver:ride.driver||'',helper:ride.helper||'',van:ride.van||'',status:ride.status||'',helperStatus:ride.helperStatus||'',
     pickupCompletedAt:Number(ride.pickupCompletedAt)||null,dropoffCompletedAt:Number(ride.dropoffCompletedAt)||null,
     helperPickupCompletedAt:Number(ride.helperPickupCompletedAt)||null,helperDropoffCompletedAt:Number(ride.helperDropoffCompletedAt)||null
   };
@@ -10098,8 +10098,21 @@ function groupSentScheduleAssignments(rides){
   return grouped;
 }
 
+function sentAssignmentStatusText(ride){
+  if(ride?._scheduleRole==='helper'){
+    const helperStatus=String(ride.helperStatus||'').toLowerCase();
+    if(ride.helperDropoffCompletedAt||['complete','completed'].includes(helperStatus)) return 'Helper drop-off completed';
+    if(ride.helperPickupCompletedAt||helperStatus==='onboard') return 'Helper pickup completed';
+    return 'Helper not started';
+  }
+  const driverStatus=String(ride?.status||'').toLowerCase();
+  if(ride?.dropoffCompletedAt||['complete','completed'].includes(driverStatus)) return 'Driver drop-off completed';
+  if(ride?.pickupCompletedAt||driverStatus==='onboard') return 'Driver pickup completed';
+  return driverStatus?statusLabelText(ride.status):'Driver not started';
+}
+
 function sentScheduleRideHtml(ride){
-  const status=ride.status?statusLabelText(ride.status):'Not started';
+  const status=sentAssignmentStatusText(ride);
   const helper=String(ride.helper||'').trim();
   const isHelperAssignment=ride._scheduleRole==='helper';
   const roleTag=isHelperAssignment
@@ -10135,7 +10148,7 @@ async function renderSentSchedule(mobile=false){
     }
     const rides=snapshot.map(saved=>{
       const live=liveRides[saved.rideKey]||{};
-      return {...saved,status:live.status??saved.status,pickupCompletedAt:live.pickupCompletedAt??saved.pickupCompletedAt,dropoffCompletedAt:live.dropoffCompletedAt??saved.dropoffCompletedAt,helperPickupCompletedAt:live.helperPickupCompletedAt??saved.helperPickupCompletedAt,helperDropoffCompletedAt:live.helperDropoffCompletedAt??saved.helperDropoffCompletedAt};
+      return {...saved,status:live.status??saved.status,helperStatus:live.helperStatus??saved.helperStatus,pickupCompletedAt:live.pickupCompletedAt??saved.pickupCompletedAt,dropoffCompletedAt:live.dropoffCompletedAt??saved.dropoffCompletedAt,helperPickupCompletedAt:live.helperPickupCompletedAt??saved.helperPickupCompletedAt,helperDropoffCompletedAt:live.helperDropoffCompletedAt??saved.helperDropoffCompletedAt};
     }).filter(ride=>!isRideCancelledForScheduling(ride)).sort((a,b)=>(a.time||'99:99').localeCompare(b.time||'99:99'));
     if(meta) meta.textContent=sentAt?`Sent ${fmtScheduleStamp(sentAt)} · ${rides.length} ride${rides.length===1?'':'s'}${legacyFallback?' · Current records for this earlier schedule':''}`:'No schedule has been sent for this date.';
     if(!sentAt){content.innerHTML=mobileEmpty('No sent schedule for '+new Date(ds+'T12:00:00').toLocaleDateString('en-US',{weekday:'long',month:'long',day:'numeric'})+'.');return;}
