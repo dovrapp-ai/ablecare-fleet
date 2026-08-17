@@ -6665,6 +6665,49 @@ async function changeAttachedReturnDriver(event,rideKey){
   if(mobilePanel==='sent-schedules')renderSentSchedule(true);
 }
 
+async function changeSentScheduleRideDriver(event,encodedRideKey){
+  if(event)event.stopPropagation();
+  const key=decodeURIComponent(encodedRideKey||'');
+  if(!key||!db)return;
+  try{
+    const [rideSnap,scheduleSnap,drivers]=await Promise.all([
+      ridesRef().child(key).once('value'),
+      db.ref('schedules').child(dateStr(sentScheduleDate||new Date())).once('value'),
+      loadDrivers()
+    ]);
+    const ride=rideSnap.val();
+    if(!ride){alert('This ride could not be found. Refresh Sent Schedules and try again.');return;}
+    const names=drivers.map(driver=>driver.name).filter(Boolean);
+    const current=String(ride.driver||'').trim();
+    const next=prompt(`Change primary driver\n\nActive drivers: ${names.join(', ')}`,current);
+    if(next===null)return;
+    const match=names.find(name=>name.toLowerCase()===String(next).trim().toLowerCase());
+    if(!match){alert('Choose an active driver: '+names.join(', '));return;}
+    if(match===current)return;
+    const ds=ride.date||dateStr(sentScheduleDate||new Date());
+    const now=Date.now();
+    const updates={
+      [`rides/${key}/driver`]:match,
+      [`rides/${key}/driverReassignedAt`]:now,
+      [`rides/${key}/driverReassignedBy`]:currentUserName(),
+      [`rides/${key}/previousDriver`]:current,
+      [`rides/${key}/updatedAt`]:now
+    };
+    const savedSchedule=scheduleSnap.val()||{};
+    if(savedSchedule.rideSnapshot&&savedSchedule.rideSnapshot[key]){
+      updates[`schedules/${ds}/rideSnapshot/${key}/driver`]=match;
+    }
+    await db.ref().update(updates);
+    showToast(`Ride moved from ${current||'Unassigned'} to ${match}`);
+    await renderSentSchedule(!!document.getElementById('screen-mobile')?.classList.contains('active'));
+    if(document.getElementById('screen-rides')?.classList.contains('active'))renderDayView();
+    if(document.getElementById('screen-mobile')?.classList.contains('active')&&mobilePanel!=='sent-schedules')renderMobileDashboard();
+  }catch(e){
+    console.error('Could not change sent schedule driver',e);
+    alert('Could not change the driver. Please refresh and try again.');
+  }
+}
+
 function renderMiniCal(){
   const now=new Date();
   const base=new Date(now.getFullYear(),now.getMonth()+miniMonthOffset,1);
@@ -10186,11 +10229,13 @@ function sentScheduleRideHtml(ride){
     ? `<span class="mobile-tag" style="background:#fff7ed;color:#b45309">Helper · Driver: ${escHtml(ride.primaryDriver||ride.driver||'Not assigned')}</span>`
     : '<span class="mobile-tag" style="background:#dcfce7;color:#166534">Primary Driver</span>';
   const statusStyle=isCancelled?'background:#fee2e2;color:#b91c1c;border:1px solid #fca5a5':'background:#e0f2fe;color:#0369a1';
+  const rideKey=encodeURIComponent(ride.rideKey||ride._key||'');
   return `<div class="sent-ride"${isCancelled?' style="background:#fff7f7;border-left:4px solid #dc2626"':''}>
     <div class="sent-ride-top"><div class="sent-ride-time">${escHtml(ride.time?fmtTime12(ride.time):'Time TBD')}</div><div class="sent-ride-client">${escHtml(ride.client||ride.facility||'Ride')}</div></div>
     ${ride.client&&ride.facility?`<div style="font-size:11px;color:#64748b;text-align:right;margin-top:2px">${escHtml(ride.facility)}</div>`:''}
     <div class="sent-ride-route"><div><strong>Pickup:</strong> ${escHtml(ride.pickup||'Not saved')}</div><div><strong>Drop-off:</strong> ${escHtml(ride.dropoff||'Not saved')}</div></div>
     <div class="sent-ride-tags">${roleTag}<span class="mobile-tag">${escHtml(rideTypeLabel(ride.ridetype))}</span><span class="mobile-tag">${ride.triptype==='rt'?'RT':'1 Way'}</span>${helper&&!isHelperAssignment?`<span class="mobile-tag" style="background:#fff7ed;color:#b45309">Helper: ${escHtml(helper)}</span>`:''}<span class="mobile-tag" style="${statusStyle}">${escHtml(status)}</span></div>
+    <button type="button" onclick="changeSentScheduleRideDriver(event,'${rideKey}')" style="margin-top:9px;border:1px solid #93c5fd;background:#eff6ff;color:#1d4ed8;border-radius:8px;padding:7px 10px;font-size:11px;font-weight:900;cursor:pointer">Change Driver</button>
     ${rideCompletionTimesHtml(ride,true)}
     ${sentAttachedReturnHtml(ride)}
   </div>`;
@@ -10223,7 +10268,7 @@ async function renderSentSchedule(mobile=false){
     const rides=snapshot.map(saved=>{
       const live=liveRides[saved.rideKey]||{};
       const returnFields=['returnClaimedBy','returnClaimedAt','returnAssignedTo','returnDriver','returnStatus','returnPickup','returnDropoff','returnPickupCompletedAt','returnDropoffCompletedAt','returnCompletedAt'];
-      const merged={...saved,status:live.status??saved.status,helperStatus:live.helperStatus??saved.helperStatus,pickupCompletedAt:live.pickupCompletedAt??saved.pickupCompletedAt,dropoffCompletedAt:live.dropoffCompletedAt??saved.dropoffCompletedAt,helperPickupCompletedAt:live.helperPickupCompletedAt??saved.helperPickupCompletedAt,helperDropoffCompletedAt:live.helperDropoffCompletedAt??saved.helperDropoffCompletedAt};
+      const merged={...saved,driver:live.driver??saved.driver,helper:live.helper??saved.helper,status:live.status??saved.status,helperStatus:live.helperStatus??saved.helperStatus,pickupCompletedAt:live.pickupCompletedAt??saved.pickupCompletedAt,dropoffCompletedAt:live.dropoffCompletedAt??saved.dropoffCompletedAt,helperPickupCompletedAt:live.helperPickupCompletedAt??saved.helperPickupCompletedAt,helperDropoffCompletedAt:live.helperDropoffCompletedAt??saved.helperDropoffCompletedAt};
       returnFields.forEach(field=>{if(live[field]!==undefined)merged[field]=live[field]});
       return merged;
     }).sort((a,b)=>(a.time||'99:99').localeCompare(b.time||'99:99'));
