@@ -6678,7 +6678,7 @@ async function renderDayView(){
     ]);
     allRidesCache=ridesSnap.val()||{};
     allRideLogCache=logSnap.val()||{};
-    allRides=buildCalendarRides().filter(r=>!isRideCancelledForScheduling(r));
+    allRides=buildCalendarRides();
   }catch(e){
     if(renderSeq!==dayViewRenderSeq) return;
     console.error('Could not load rides calendar data:', e);
@@ -6686,7 +6686,7 @@ async function renderDayView(){
     return;
   }
   if(renderSeq!==dayViewRenderSeq) return;
-  const unpaid=allRides.filter(r=>r.price&&r.price!==''&&r.paid!=='yes');
+  const unpaid=allRides.filter(r=>r.price&&r.price!==''&&r.paid!=='yes'&&!isNonBillableCancelledRide(r));
   const unpaidBar=document.getElementById('unpaid-bar');
   if(unpaid.length>0){unpaidBar.style.display='block';document.getElementById('unpaid-count').textContent=unpaid.length;}
   else{unpaidBar.style.display='none';}
@@ -6694,11 +6694,12 @@ async function renderDayView(){
   const today=dateStr(new Date());const isToday=ds===today;
   document.getElementById('day-title').textContent=(isToday?'Today — ':'')+selectedDate.toLocaleDateString('en-US',{weekday:'long',month:'long',day:'numeric',year:'numeric'});
   let dayRides=allRides.filter(r=>r.date===ds);
-  if(ridesFilter==='unpaid') dayRides=dayRides.filter(r=>r.price&&r.price!==''&&r.paid!=='yes');
-  if(ridesFilter==='unassigned') dayRides=dayRides.filter(r=>!r.driver);
-  await renderScheduleSyncBar(ds, dayRides);
+  if(ridesFilter==='unpaid') dayRides=dayRides.filter(r=>r.price&&r.price!==''&&r.paid!=='yes'&&!isNonBillableCancelledRide(r));
+  if(ridesFilter==='unassigned') dayRides=dayRides.filter(r=>!r.driver&&!isRideCancelledForScheduling(r));
+  const schedulableDayRides=dayRides.filter(r=>!isRideCancelledForScheduling(r));
+  await renderScheduleSyncBar(ds, schedulableDayRides);
   if(renderSeq!==dayViewRenderSeq) return;
-  renderDriverActivityPanel(ds, dayRides);
+  renderDriverActivityPanel(ds, schedulableDayRides);
   const grid=document.getElementById('time-grid');
   if(!dayRides.length){
     grid.innerHTML=`<div class="no-rides-msg"><div>🚐</div><div style="font-size:15px;font-weight:700;color:#6b82a8;margin-bottom:8px">No rides scheduled</div><div style="font-size:13px">Click "+ Add Ride" or tap a time slot to add a ride</div></div>`;
@@ -8097,14 +8098,14 @@ async function renderMobileDashboard(){
       .filter(([,v])=>!v.hideFromDashboard && !v.returnOf)
       .map(([k,v])=>({...v,_key:k,_source:'schedule'}));
     const mobileLogs=Object.entries(allRideLogCache||{}).map(([k,v])=>({...v,_key:k,_source:'log'}));
-    const allRides=annotateScheduledRidesWithReportLogs(rawMobileRides, mobileLogs.filter(isVisibleRideLog))
-      .filter(r=>!isRideCancelledForScheduling(r));
+    const allRides=annotateScheduledRidesWithReportLogs(rawMobileRides, mobileLogs.filter(isVisibleRideLog));
     const mobileRideDates=new Set(allRides.map(r=>r.date).filter(Boolean));
     renderMobileWeekStrip(mobileRideDates);
     const dayRides=allRides.filter(r=>r.date===ds).sort((a,b)=>(a.time||'').localeCompare(b.time||''));
-    const assigned=dayRides.filter(r=>r.driver);
-    const unassigned=dayRides.filter(r=>!r.driver);
-    const unpaid=dayRides.filter(r=>r.price&&r.paid!=='yes');
+    const schedulableDayRides=dayRides.filter(r=>!isRideCancelledForScheduling(r));
+    const assigned=schedulableDayRides.filter(r=>r.driver);
+    const unassigned=schedulableDayRides.filter(r=>!r.driver);
+    const unpaid=dayRides.filter(r=>r.price&&r.paid!=='yes'&&!isNonBillableCancelledRide(r));
 
     mobileSetText('mobile-stat-total',dayRides.length);
     mobileSetText('mobile-stat-assigned',assigned.length);
@@ -8113,7 +8114,7 @@ async function renderMobileDashboard(){
     document.getElementById('mobile-needs-list').innerHTML=dayRides.length?dayRides.map(mobileRideCard).join(''):mobileEmpty('No rides scheduled for this day.');
 
     const driverRows=drivers.map(d=>{
-      const ridesForDriver=dayRides.filter(r=>r.driver===d.name);
+      const ridesForDriver=schedulableDayRides.filter(r=>r.driver===d.name);
       const miles=ridesForDriver.reduce((sum,r)=>sum+(parseFloat(r.estimatedMiles)||0),0);
       return `<div class="mobile-driver-row">
         <div>
@@ -8126,7 +8127,7 @@ async function renderMobileDashboard(){
     document.getElementById('mobile-drivers-list').innerHTML=driverRows||mobileEmpty('No active drivers found.');
 
     document.getElementById('mobile-opt-summary-text').textContent=
-      `${dayRides.length} total rides. ${assigned.length} assigned. ${unassigned.length} unassigned. ${unpaid.length} unpaid.`;
+      `${schedulableDayRides.length} active rides. ${assigned.length} assigned. ${unassigned.length} unassigned. ${unpaid.length} unpaid.`;
     document.getElementById('mobile-opt-warnings').innerHTML=unassigned.length
       ? unassigned.map(r=>`<div class="mobile-opt-warning"><strong>Unassigned ride</strong><br>${mobileEsc(r.time?fmtTime12(r.time):'No time')} - ${mobileEsc(r.facility||r.client||'Ride')}${r.client&&r.facility?' - '+mobileEsc(r.client):''}</div>`).join('')
       : `<div class="mobile-opt-warning" style="background:#f0fdf4;border-color:#bbf7d0;color:#166534">All visible rides have drivers assigned.</div>`;
