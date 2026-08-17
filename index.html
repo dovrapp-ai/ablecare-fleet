@@ -10137,7 +10137,7 @@ function groupSentScheduleAssignments(rides){
 }
 
 function sentAssignmentStatusText(ride){
-  if(isRideCancelledForScheduling(ride)) return 'Cancelled';
+  if(isRideCancelledForScheduling(ride)) return '❌ Cancelled';
   if(ride?._scheduleRole==='return'){
     if(ride.returnDropoffCompletedAt||ride.returnStatus==='complete') return 'Return completed';
     if(ride.returnPickupCompletedAt||ride.returnStatus==='onboard') return 'Return pickup completed';
@@ -10176,6 +10176,7 @@ function sentAttachedReturnHtml(ride){
 
 function sentScheduleRideHtml(ride){
   const status=sentAssignmentStatusText(ride);
+  const isCancelled=isRideCancelledForScheduling(ride);
   const helper=String(ride.helper||'').trim();
   const isHelperAssignment=ride._scheduleRole==='helper';
   const isReturnAssignment=ride._scheduleRole==='return';
@@ -10184,11 +10185,12 @@ function sentScheduleRideHtml(ride){
     : isHelperAssignment
     ? `<span class="mobile-tag" style="background:#fff7ed;color:#b45309">Helper · Driver: ${escHtml(ride.primaryDriver||ride.driver||'Not assigned')}</span>`
     : '<span class="mobile-tag" style="background:#dcfce7;color:#166534">Primary Driver</span>';
-  return `<div class="sent-ride">
+  const statusStyle=isCancelled?'background:#fee2e2;color:#b91c1c;border:1px solid #fca5a5':'background:#e0f2fe;color:#0369a1';
+  return `<div class="sent-ride"${isCancelled?' style="background:#fff7f7;border-left:4px solid #dc2626"':''}>
     <div class="sent-ride-top"><div class="sent-ride-time">${escHtml(ride.time?fmtTime12(ride.time):'Time TBD')}</div><div class="sent-ride-client">${escHtml(ride.client||ride.facility||'Ride')}</div></div>
     ${ride.client&&ride.facility?`<div style="font-size:11px;color:#64748b;text-align:right;margin-top:2px">${escHtml(ride.facility)}</div>`:''}
     <div class="sent-ride-route"><div><strong>Pickup:</strong> ${escHtml(ride.pickup||'Not saved')}</div><div><strong>Drop-off:</strong> ${escHtml(ride.dropoff||'Not saved')}</div></div>
-    <div class="sent-ride-tags">${roleTag}<span class="mobile-tag">${escHtml(rideTypeLabel(ride.ridetype))}</span><span class="mobile-tag">${ride.triptype==='rt'?'RT':'1 Way'}</span>${helper&&!isHelperAssignment?`<span class="mobile-tag" style="background:#fff7ed;color:#b45309">Helper: ${escHtml(helper)}</span>`:''}<span class="mobile-tag" style="background:#e0f2fe;color:#0369a1">${escHtml(status)}</span></div>
+    <div class="sent-ride-tags">${roleTag}<span class="mobile-tag">${escHtml(rideTypeLabel(ride.ridetype))}</span><span class="mobile-tag">${ride.triptype==='rt'?'RT':'1 Way'}</span>${helper&&!isHelperAssignment?`<span class="mobile-tag" style="background:#fff7ed;color:#b45309">Helper: ${escHtml(helper)}</span>`:''}<span class="mobile-tag" style="${statusStyle}">${escHtml(status)}</span></div>
     ${rideCompletionTimesHtml(ride,true)}
     ${sentAttachedReturnHtml(ride)}
   </div>`;
