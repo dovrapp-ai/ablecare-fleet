@@ -10525,33 +10525,48 @@ async function logRideToReports(){
   });
 }
 
+let logAllRidesInProgress=false;
+function setLogAllButtonsBusy(busy){
+  document.querySelectorAll('button[onclick="logAllRidesForDay()"]' ).forEach(button=>{
+    if(!button.dataset.logAllIdleText)button.dataset.logAllIdleText=button.textContent;
+    button.disabled=busy;
+    button.textContent=busy?'Logging…':button.dataset.logAllIdleText;
+    button.style.opacity=busy?'0.55':'';
+    button.style.cursor=busy?'not-allowed':'';
+  });
+}
+
 async function logAllRidesForDay(){
-  const ds = dateStr(selectedDate);
-  const snap = await ridesRef().once('value');
-  const all = snap.val()||{};
-  const dayRides = Object.entries(all).filter(([k,v])=>v.date===ds && !v.returnOf && !isRideCancelledForScheduling(v));
-  if(!dayRides.length){alert('No rides on this day to log.');return;}
+  if(logAllRidesInProgress)return;
+  logAllRidesInProgress=true;
+  setLogAllButtonsBusy(true);
+  try{
+    const ds = dateStr(selectedDate);
+    const snap = await ridesRef().once('value');
+    const all = snap.val()||{};
+    const dayRides = Object.entries(all).filter(([k,v])=>v.date===ds && !v.returnOf && !isRideCancelledForScheduling(v));
+    if(!dayRides.length){alert('No rides on this day to log.');return;}
 
-  // Check how many already logged
-  const logSnap = await rideLogRef().once('value');
-  const loggedKeys = new Set();
-  if(logSnap.val()) Object.values(logSnap.val()).forEach(r=>{ if(r.calendarKey) loggedKeys.add(r.calendarKey); });
+    // Check how many already logged
+    const logSnap = await rideLogRef().once('value');
+    const loggedKeys = new Set();
+    if(logSnap.val()) Object.values(logSnap.val()).forEach(r=>{ if(r.calendarKey) loggedKeys.add(r.calendarKey); });
 
-  const newRides = dayRides.filter(([k])=>!loggedKeys.has(k));
-  const alreadyLogged = dayRides.length - newRides.length;
+    const newRides = dayRides.filter(([k])=>!loggedKeys.has(k));
+    const alreadyLogged = dayRides.length - newRides.length;
 
-  let msg = `Log ${newRides.length} ride${newRides.length!==1?'s':''} to Reports?`;
-  if(alreadyLogged>0) msg += `\n(${alreadyLogged} already logged will be skipped)`;
-  if(!newRides.length){alert('All rides for this day are already in your log.');return;}
-  if(!confirm(msg)) return;
+    let msg = `Log ${newRides.length} ride${newRides.length!==1?'s':''} to Reports?`;
+    if(alreadyLogged>0) msg += `\n(${alreadyLogged} already logged will be skipped)`;
+    if(!newRides.length){alert('All rides for this day are already in your log.');return;}
+    if(!confirm(msg)) return;
 
-  const updates = {};
-  const needsCompletion = [];
-  for(const [k,r] of newRides){
-    const newKey = rideLogRef().push().key;
-    const triptype = r.triptype || 'rt';
-    const { oneWayMiles: oneWay, billableMiles, source: milesSource } = await computeReportMilesForRide(r, triptype);
-    updates[newKey] = {
+    const updates = {};
+    const needsCompletion = [];
+    for(const [k,r] of newRides){
+      const newKey = rideLogRef().push().key;
+      const triptype = r.triptype || 'rt';
+      const { oneWayMiles: oneWay, billableMiles, source: milesSource } = await computeReportMilesForRide(r, triptype);
+      updates[newKey] = {
       date: r.date||'', time: r.time||'', facility: r.facility||'',
       client: r.client||'', ridetype: r.ridetype||'wc', triptype,
       van: r.van||'', driver: r.driver||'', helper: r.helper||'',
@@ -10577,13 +10592,20 @@ async function logAllRidesForDay(){
       loggedFromRides: true,
       logSource: 'rides-tab',
       logMethod: 'bulk'
-    };
-    if(reportLogEntryNeedsCompletion(updates[newKey])) needsCompletion.push(newKey);
-  }
-  await rideLogRef().update(updates);
-  showToast(`✓ ${newRides.length} ride${newRides.length!==1?'s':''} logged to Reports!`);
-  if(needsCompletion.length){
-    startReportCompletionWizard(needsCompletion);
+      };
+      if(reportLogEntryNeedsCompletion(updates[newKey])) needsCompletion.push(newKey);
+    }
+    await rideLogRef().update(updates);
+    showToast(`✓ ${newRides.length} ride${newRides.length!==1?'s':''} logged to Reports!`);
+    if(needsCompletion.length){
+      startReportCompletionWizard(needsCompletion);
+    }
+  }catch(e){
+    console.error('Could not log all rides',e);
+    alert('Could not finish logging the rides. Please try again.');
+  }finally{
+    logAllRidesInProgress=false;
+    setLogAllButtonsBusy(false);
   }
 }
 
