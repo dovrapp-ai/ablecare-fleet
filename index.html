@@ -6325,6 +6325,26 @@ async function saveDriverPin(){
     msg.textContent='Could not save the PIN. Please try again.';msg.style.color='#ef4444';msg.style.display='block';
   }
 }
+function rideProgressInfo(ride){
+  const status=String(ride?.status||'');
+  if(isRideCancelledForScheduling(ride))return{label:statusLabelText(status)||'Cancelled',color:'#dc2626',bg:'#fef2f2'};
+  if(ride?.triptype!=='rt'){
+    const found=getStatuses().find(item=>item.value===status);
+    return{label:statusLabelText(status),color:found?.color||'#334155',bg:found?.bg||'#f1f5f9'};
+  }
+  if(ride.returnDropoffCompletedAt||ride.returnCompletedAt||ride.returnStatus==='complete')return{label:'Round Trip Complete',color:'#15803d',bg:'#dcfce7'};
+  if(ride.returnClaimedBy||ride.returnStatus==='claimed'||ride.returnStatus==='onboard')return{label:'Return in Progress',color:'#4338ca',bg:'#eef2ff'};
+  if(ride.dropoffCompletedAt||['complete','completed'].includes(status.toLowerCase()))return{label:'Outbound Complete — Return Pending',color:'#b45309',bg:'#fff7ed'};
+  const found=getStatuses().find(item=>item.value===status);
+  return{label:statusLabelText(status),color:found?.color||'#334155',bg:found?.bg||'#f1f5f9'};
+}
+function rideProgressBadgeHtml(ride){const info=rideProgressInfo(ride);return info.label?`<div style="font-size:10px;font-weight:800;padding:2px 6px;border-radius:5px;margin-bottom:3px;background:${info.bg};color:${info.color}">${escHtml(info.label)}</div>`:''}
+
+function dashboardDriverNotesHtml(ride,mobile=false){
+  const notes=Object.values(ride?.driverNotes||{}).filter(note=>note&&note.text).sort((a,b)=>Number(a.createdAt)-Number(b.createdAt));
+  if(!notes.length)return'';
+  return `<div style="margin-top:8px">${notes.map(note=>`<div style="background:#f5f3ff;color:#5b21b6;border:1px solid #ddd6fe;border-radius:8px;padding:7px 9px;margin-top:5px;font-size:${mobile?'11':'10'}px"><strong>${mobile?mobileEsc(note.author||'Driver'):escHtml(note.author||'Driver')}</strong>${note.createdAt?' · '+fmtTime(note.createdAt):''}<div style="margin-top:2px">${mobile?mobileEsc(note.text):escHtml(note.text)}</div></div>`).join('')}</div>`;
+}
 
 function isNonBillableCancelledRide(ride){
   const status=String(ride?.status||'').toLowerCase().trim().replace(/[\s-]+/g,'_');
@@ -6783,7 +6803,7 @@ async function renderDayView(){
     const isReturn=!!r.returnOf;
     const isLogged=r._source==='log' || !!r._loggedReportKey;
     const cls=isLogged?'logged-block':(isReturn?'return-ride':(isUnpaid?'unpaid-block':(isStretcherLikeRideType(r.ridetype)?'str':'wc')));
-    const statusBadge = r.status ? statusBadgeHtml(r.status) : '';
+    const statusBadge = r.status ? rideProgressBadgeHtml(r) : '';
     const editAction=r._source==='log'?`openLogEdit('${r._key}')`:`openRideModal('${r._key}')`;
     const title=escHtml(r.facility||r.client||'-');
     const client=r.client&&r.facility?escHtml(r.client):'';
@@ -6807,7 +6827,7 @@ async function renderDayView(){
         <span class="ride-block-tag">${rideTypeShortLabel(r.ridetype)}</span>
         <span class="ride-block-tag">${r.triptype==='rt'?'RT':'1 Way'}</span>
         ${rideSourceTagHtml(r)}
-        ${r.status?`<span class="ride-block-tag" style="background:#e0f2fe;color:#0369a1;font-weight:800">App: ${statusLabelText(r.status)}</span>`:''}
+        ${r.status?(()=>{const progress=rideProgressInfo(r);return `<span class="ride-block-tag" style="background:${progress.bg};color:${progress.color};font-weight:800">App: ${escHtml(progress.label)}</span>`})():''}
         <span class="ride-block-tag" style="${r.driver?'':'color:#f59e0b'}">${driver}</span>
         ${rideCreatedByTagHtml(r)}
         ${r.van?`<span class="ride-block-tag">Van #${escHtml(r.van)}</span>`:''}
@@ -6817,6 +6837,7 @@ async function renderDayView(){
         ${r.price&&r.paid==='yes'?`<span class="ride-block-tag" style="background:#f0fdf4;color:#16a34a">Paid ${escHtml(r.price)}</span>`:''}
       </div>
       ${!isReturn?returnRequestSummaryHtml(r):''}
+      ${dashboardDriverNotesHtml(r)}
       <div class="ride-focus-actions" style="${r.triptype==='rt'&&!isReturn?'':'grid-template-columns:repeat(2,minmax(0,1fr))'}" onclick="event.stopPropagation()">
         ${r.triptype==='rt'&&!isReturn?`<button class="add-return-btn" onclick="event.stopPropagation();openReturnModal('${r._key}')">Return</button>`:''}
         <button class="add-return-btn" style="background:#ecfeff;border-color:#06b6d4;color:#0369a1" onclick="event.stopPropagation();openRideConfirmationModal('${r._key}')">Confirm</button>
@@ -7807,9 +7828,9 @@ function mobileRideCard(r){
   const canReturn=r.triptype==='rt'&&!isReturn;
   const canLog=!isReturn&&!isLogged&&r._source!=='log';
   const actionCount=(canReturn?1:0)+2+(canLog?1:0);
-  const statusInfo = r.status ? getStatuses().find(s=>s.value===r.status) : null;
+  const statusInfo = r.status ? rideProgressInfo(r) : null;
   const statusStyle = statusInfo ? `background:${statusInfo.bg};color:${statusInfo.color}` : 'background:#f1f5f9;color:#334155';
-  const statusText = r.status ? statusLabelText(r.status) : '';
+  const statusText = statusInfo?.label||'';
   return `<div class="mobile-card mobile-ride-card ${assigned?'':'unassigned'}">
     <div class="mobile-ride-top">
       <div class="mobile-ride-time">${mobileEsc(time)}</div>
@@ -7833,6 +7854,7 @@ function mobileRideCard(r){
       ${!isReturn?returnRequestSummaryHtml(r,'mobile'):''}
     </div>
     ${rideCompletionTimesHtml(r,true)}
+    ${dashboardDriverNotesHtml(r,true)}
     <div class="mobile-ride-actions" style="grid-template-columns:repeat(${actionCount},minmax(0,1fr))">
       ${canReturn?`<button class="mobile-action-btn light" style="background:#dcfce7;color:#15803d" onclick="openReturnModal('${key}')">Return</button>`:''}
       <button class="mobile-action-btn dark" onclick="openRideModal('${key}')">Open Ride</button>
