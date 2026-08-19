@@ -2809,6 +2809,11 @@ body[data-user-role="manager"] .owner-only-setting{display:none !important}
       <label>Client Phone</label>
       <input type="tel" id="r-client-phone" placeholder="e.g. (443) 555-0123"/>
     </div>
+    <div class="modal-field">
+      <label>Driver Arrival Instructions</label>
+      <input type="text" id="r-arrival-instructions" placeholder="e.g. Call the client when you arrive at pickup"/>
+      <div style="font-size:11px;color:#64748b;margin-top:4px">Shown prominently near the client contact information in the driver app.</div>
+    </div>
     <div class="modal-grid" style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
       <div class="modal-field">
         <label>Client Email</label>
@@ -9941,6 +9946,7 @@ async function openRideModal(key,defaultDate){
     document.getElementById('r-facility').value=r.facility||'';
     document.getElementById('r-client').value=r.client||'';
     document.getElementById('r-client-phone').value=r.clientPhone||r.phone||'';
+    document.getElementById('r-arrival-instructions').value=r.arrivalInstructions||'';
     document.getElementById('r-client-email').value=r.clientEmail||r.email||r.requesterEmail||'';
     document.getElementById('r-reminder-method').value=r.reminderMethod||r.communicationChannel||'auto';
     const sourceEl=document.getElementById('r-communication-source');
@@ -9971,6 +9977,7 @@ async function openRideModal(key,defaultDate){
     document.getElementById('r-facility').value='';
     document.getElementById('r-client').value='';
     document.getElementById('r-client-phone').value='';
+    document.getElementById('r-arrival-instructions').value='';
     document.getElementById('r-client-email').value='';
     document.getElementById('r-reminder-method').value=rideSourceContext==='email_paste'?'email':'auto';
     const sourceEl=document.getElementById('r-communication-source');
@@ -10033,6 +10040,7 @@ async function saveRide(){
     date,time:document.getElementById('r-time').value||'',
     facility,client:document.getElementById('r-client').value.trim(),
     clientPhone:normalizePhoneValue(document.getElementById('r-client-phone').value),
+    arrivalInstructions:document.getElementById('r-arrival-instructions').value.trim(),
     clientEmail:document.getElementById('r-client-email').value.trim(),
     reminderMethod:document.getElementById('r-reminder-method').value||'auto',
     communicationSource:document.getElementById('r-communication-source')?.value||'manual',
@@ -10141,7 +10149,7 @@ function scheduleSnapshotRide(rideKey,ride){
   return {
     rideKey,date:ride.date||'',time:ride.time||'',client:ride.client||'',facility:ride.facility||'',
     pickup:ride.pickup||'',dropoff:ride.dropoff||'',ridetype:ride.ridetype||'wc',triptype:ride.triptype||'rt',
-    driver:ride.driver||'',helper:ride.helper||'',van:ride.van||'',status:ride.status||'',helperStatus:ride.helperStatus||'',
+    driver:ride.driver||'',helper:ride.helper||'',van:ride.van||'',status:ride.status||'',helperStatus:ride.helperStatus||'',arrivalInstructions:ride.arrivalInstructions||'',driverNotes:ride.driverNotes||{},
     pickupCompletedAt:Number(ride.pickupCompletedAt)||null,dropoffCompletedAt:Number(ride.dropoffCompletedAt)||null,
     helperPickupCompletedAt:Number(ride.helperPickupCompletedAt)||null,helperDropoffCompletedAt:Number(ride.helperDropoffCompletedAt)||null,
     returnClaimedBy:ride.returnClaimedBy||'',returnClaimedAt:Number(ride.returnClaimedAt)||null,
@@ -10222,16 +10230,18 @@ function sentAssignmentStatusText(ride){
 
 function sentAttachedReturnHtml(ride){
   const assigned=String(ride.returnClaimedBy||ride.returnAssignedTo||ride.returnDriver||'').trim();
-  if(!assigned)return'';
+  const outboundDone=!!ride.dropoffCompletedAt||['complete','completed'].includes(String(ride.status||'').toLowerCase());
+  if(ride.triptype!=='rt'||!outboundDone||isRideCancelledForScheduling(ride))return'';
   const pickup=ride.returnPickup||ride.dropoff||'Not saved';
   const dropoff=ride.returnDropoff||ride.pickup||'Not saved';
   const acceptedAt=ride.returnClaimedAt?fmtTime(ride.returnClaimedAt):'';
   const pickupAt=ride.returnPickupCompletedAt?fmtTime(ride.returnPickupCompletedAt):'';
   const dropoffAt=(ride.returnDropoffCompletedAt||ride.returnCompletedAt)?fmtTime(ride.returnDropoffCompletedAt||ride.returnCompletedAt):'';
   const key=mobileKey(ride.rideKey||ride._key||'');
+  const returnLabel=dropoffAt?`Returned by ${assigned||'driver'} · Completed at ${dropoffAt}`:assigned?`Return by ${assigned}${acceptedAt?' · Accepted at '+acceptedAt:''}`:'Return Pending';
   return `<div style="margin:12px -2px 0;background:#eef2ff;border:2px solid #a5b4fc;border-radius:12px;padding:11px;color:#312e81">
     <div style="font-size:10px;font-weight:900;letter-spacing:1px;color:#4338ca">↩ ATTACHED RETURN</div>
-    <div style="font-size:13px;font-weight:900;margin-top:4px">${escHtml(assigned)}${acceptedAt?` accepted at ${escHtml(acceptedAt)}`:''} <button type="button" onclick="changeAttachedReturnDriver(event,'${key}')" style="border:0;background:transparent;color:#4338ca;text-decoration:underline;font-size:11px;font-weight:900;cursor:pointer">Change driver</button></div>
+    <div style="font-size:13px;font-weight:900;margin-top:4px">${escHtml(returnLabel)} ${assigned?`<button type="button" onclick="changeAttachedReturnDriver(event,'${key}')" style="border:0;background:transparent;color:#4338ca;text-decoration:underline;font-size:11px;font-weight:900;cursor:pointer">Change driver</button>`:''}</div>
     <div style="font-size:12px;margin-top:8px"><strong>Return pickup:</strong> ${escHtml(pickup)}</div>
     ${pickupAt?`<div style="font-size:11px;color:#15803d;font-weight:800">Pickup completed at ${escHtml(pickupAt)}</div>`:''}
     <div style="font-size:12px;margin-top:5px"><strong>Return drop-off:</strong> ${escHtml(dropoff)}</div>
@@ -10260,6 +10270,7 @@ function sentScheduleRideHtml(ride){
     <button type="button" onclick="changeSentScheduleRideDriver(event,'${rideKey}')" style="margin-top:9px;border:1px solid #93c5fd;background:#eff6ff;color:#1d4ed8;border-radius:8px;padding:7px 10px;font-size:11px;font-weight:900;cursor:pointer">Change Driver</button>
     ${rideCompletionTimesHtml(ride,true)}
     ${sentAttachedReturnHtml(ride)}
+    ${dashboardDriverNotesHtml(ride)}
   </div>`;
 }
 
@@ -10290,7 +10301,7 @@ async function renderSentSchedule(mobile=false){
     const rides=snapshot.map(saved=>{
       const live=liveRides[saved.rideKey]||{};
       const returnFields=['returnClaimedBy','returnClaimedAt','returnAssignedTo','returnDriver','returnStatus','returnPickup','returnDropoff','returnPickupCompletedAt','returnDropoffCompletedAt','returnCompletedAt'];
-      const merged={...saved,driver:live.driver??saved.driver,helper:live.helper??saved.helper,status:live.status??saved.status,helperStatus:live.helperStatus??saved.helperStatus,pickupCompletedAt:live.pickupCompletedAt??saved.pickupCompletedAt,dropoffCompletedAt:live.dropoffCompletedAt??saved.dropoffCompletedAt,helperPickupCompletedAt:live.helperPickupCompletedAt??saved.helperPickupCompletedAt,helperDropoffCompletedAt:live.helperDropoffCompletedAt??saved.helperDropoffCompletedAt};
+      const merged={...saved,driver:live.driver??saved.driver,helper:live.helper??saved.helper,arrivalInstructions:live.arrivalInstructions??saved.arrivalInstructions,driverNotes:live.driverNotes??saved.driverNotes,status:live.status??saved.status,helperStatus:live.helperStatus??saved.helperStatus,pickupCompletedAt:live.pickupCompletedAt??saved.pickupCompletedAt,dropoffCompletedAt:live.dropoffCompletedAt??saved.dropoffCompletedAt,helperPickupCompletedAt:live.helperPickupCompletedAt??saved.helperPickupCompletedAt,helperDropoffCompletedAt:live.helperDropoffCompletedAt??saved.helperDropoffCompletedAt};
       returnFields.forEach(field=>{if(live[field]!==undefined)merged[field]=live[field]});
       return merged;
     }).sort((a,b)=>(a.time||'99:99').localeCompare(b.time||'99:99'));
