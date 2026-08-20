@@ -7858,7 +7858,7 @@ function mobileRideCard(r){
       ${r.driver?`<div class="mobile-tag">${mobileEsc(r.driver)}${r.helper?' + '+mobileEsc(r.helper):''}</div>`:''}
       ${r.van?`<div class="mobile-tag">Van #${mobileEsc(r.van)}</div>`:''}
       ${unpaid?`<div class="mobile-tag" style="background:#fef3c7;color:#b45309">Unpaid</div>`:''}
-      ${paid?`<div class="mobile-tag" style="background:#dcfce7;color:#15803d">Paid</div>`:''}
+      ${paid?`<div class="mobile-tag" style="background:#dcfce7;color:#15803d">Paid ${mobileEsc(r.price)}</div>`:''}
       ${isLogged?`<div class="mobile-tag" style="background:#dcfce7;color:#15803d">Logged in Reports</div>`:''}
       ${r.status?`<div class="mobile-tag" style="${statusStyle}">${mobileEsc(statusText)}</div>`:''}
       ${!isReturn?returnRequestSummaryHtml(r,'mobile'):''}
