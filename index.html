@@ -3368,6 +3368,7 @@ let ridesFilter='all';
 let lastRenderedRideDate='';
 let dayViewRenderSeq=0;
 let mobileRenderSeq=0;
+let mobileScrollVersion=0;
 let ridesScrollGuardsBound=false;
 let ridesScrollActiveUntil=0;
 let pendingRidesRefreshTimer=null;
@@ -4824,6 +4825,7 @@ function restoreRidesScrollState(state){
 
 function markRidesUserScrolling(){
   ridesScrollActiveUntil=Date.now()+850;
+  if(document.getElementById('screen-mobile')?.classList.contains('active')) mobileScrollVersion++;
 }
 
 function bindRidesScrollGuards(){
@@ -4848,7 +4850,7 @@ function scheduleRidesRender(){
 
 function scheduleMobileDashboardRender(){
   const wait=ridesScrollActiveUntil-Date.now();
-  if(wait>0 && document.getElementById('screen-mobile')?.classList.contains('active') && mobilePanel==='rides'){
+  if(wait>0 && document.getElementById('screen-mobile')?.classList.contains('active')){
     clearTimeout(pendingMobileRefreshTimer);
     pendingMobileRefreshTimer=setTimeout(scheduleMobileDashboardRender,wait+80);
     return;
@@ -5181,6 +5183,7 @@ window.checkPin = checkPin;
 const MOBILE_DASHBOARD_QUERY='(max-width: 760px), (hover: none) and (pointer: coarse)';
 let desktopLastTab='map';
 let responsiveDashTimer=null;
+let responsiveDashWidth=Math.round(window.innerWidth||0);
 
 function isMobileDashboardViewport(){
   return window.matchMedia&&window.matchMedia(MOBILE_DASHBOARD_QUERY).matches;
@@ -5225,19 +5228,21 @@ function applyResponsiveDashboard(){
       desktopLastTab=activeDesktopTab.id.replace('tab-','');
     }
     if(!mobileScreen.classList.contains('active')) switchTab('mobile');
-    else initMobileDashboard();
   }else if(mobileScreen.classList.contains('active')){
     switchTab(desktopLastTab&&desktopLastTab!=='mobile'?desktopLastTab:'map');
   }
 }
 
-function queueResponsiveDashboard(){
+function queueResponsiveDashboard(force=false){
+  const nextWidth=Math.round(window.innerWidth||0);
+  if(!force && isMobileDashboardViewport() && nextWidth===responsiveDashWidth) return;
+  responsiveDashWidth=nextWidth;
   clearTimeout(responsiveDashTimer);
   responsiveDashTimer=setTimeout(applyResponsiveDashboard,120);
 }
 
-window.addEventListener('resize',queueResponsiveDashboard);
-window.addEventListener('orientationchange',queueResponsiveDashboard);
+window.addEventListener('resize',()=>queueResponsiveDashboard(false));
+window.addEventListener('orientationchange',()=>queueResponsiveDashboard(true));
 
 // ── DASHBOARD INIT ──
 function initDash(){
@@ -8149,7 +8154,7 @@ async function renderMobileDashboard(){
   const shell=document.getElementById('screen-mobile');
   if(!shell) return;
   const preserveMobileScroll=shell.classList.contains('active') && !document.body.classList.contains('modal-open')
-    ? {x:window.scrollX||0,y:window.scrollY||0,panel:mobilePanel}
+    ? {x:window.scrollX||0,y:window.scrollY||0,panel:mobilePanel,version:mobileScrollVersion}
     : null;
   const ds=dateStr(selectedDate||new Date());
   mobileSetText('mobile-dashboard-date',selectedDate.toLocaleDateString('en-US',{weekday:'long',month:'long',day:'numeric'}));
@@ -8408,7 +8413,7 @@ async function renderMobileDashboard(){
     mobileSetText('mobile-setting-base',settings.baseAddress||BASE_ADDRESS);
     mobileSetText('mobile-setting-phone',settings.phone||'(443) 819-1808');
     mobileSetText('mobile-setting-drivers',drivers.map(d=>d.name).join(', ')||'None');
-    if(preserveMobileScroll && preserveMobileScroll.panel===mobilePanel){
+    if(preserveMobileScroll && preserveMobileScroll.panel===mobilePanel && preserveMobileScroll.version===mobileScrollVersion){
       requestAnimationFrame(()=>window.scrollTo(preserveMobileScroll.x, preserveMobileScroll.y));
     }
   }catch(e){
